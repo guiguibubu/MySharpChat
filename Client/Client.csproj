@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -37,5 +37,22 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MySharpChat\MySharpChat.csproj">
+      <Private>true</Private>
+      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;"/>
+    <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
+  </Target>
+  <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
+    <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
+  </Target>
 
 </Project>
