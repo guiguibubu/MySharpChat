@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -43,13 +44,19 @@ namespace MySharpChat.Client
                 // Establish the remote endpoint for the socket.  
                 // The name of the
                 // remote device is "host.contoso.com".  
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                IPAddress ipAddress = ipHostInfo.AddressList[0];
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
+                ConnexionInfos connexionInfos = new ConnexionInfos();
+#if DEBUG
+                connexionInfos.Hostname = "localhost";
+#else
+                connexionInfos.Hostname = Dns.GetHostName();
+#endif
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(connexionInfos.Hostname);
+                connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+                connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
+                IPEndPoint remoteEP = CreateEndPoint(connexionInfos);
 
                 // Create a TCP/IP socket.  
-                Socket client = new Socket(ipAddress.AddressFamily,
-                    SocketType.Stream, ProtocolType.Tcp);
+                Socket client = OpenListener(connexionInfos);
 
                 // Connect to the remote endpoint.  
                 client.BeginConnect(remoteEP,
@@ -79,6 +86,20 @@ namespace MySharpChat.Client
 
             Console.WriteLine("\nPress ENTER to continue...");
             Console.Read();
+        }
+
+        public static Socket OpenListener(ConnexionInfos connexionInfos)
+        {
+            // Create a TCP/IP socket.  
+            Socket listener = new Socket(connexionInfos.Ip.AddressFamily,
+                SocketType.Stream, ProtocolType.Tcp);
+            return listener;
+        }
+
+        public static IPEndPoint CreateEndPoint(ConnexionInfos connexionInfos)
+        {
+            IPEndPoint endPoint = new IPEndPoint(connexionInfos.Ip, connexionInfos.Port);
+            return endPoint;
         }
 
         private static void ConnectCallback(IAsyncResult ar)

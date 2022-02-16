@@ -33,20 +33,29 @@ namespace MySharpChat.Server
         {
             // Establish the local endpoint for the socket.  
             // The DNS name of the computer  
-            // running the listener is "host.contoso.com".  
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
+            // running the listener is "host.contoso.com".
+            ConnexionInfos connexionInfos = new ConnexionInfos();
+#if DEBUG
+            connexionInfos.Hostname = "localhost";
+#else
+            connexionInfos.Hostname = Dns.GetHostName();
+#endif
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(connexionInfos.Hostname);
+            connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+            connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
+            IPEndPoint localEndPoint = CreateEndPoint(connexionInfos);
 
             // Create a TCP/IP socket.  
-            Socket listener = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            Socket listener = OpenListener(connexionInfos);
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try
             {
                 listener.Bind(localEndPoint);
                 listener.Listen(100);
+
+                Console.WriteLine("Server started !");
+                Console.WriteLine("Listenning at {0} : {1}:{2}", connexionInfos.Hostname, connexionInfos.Ip, connexionInfos.Port);
 
                 while (true)
                 {
@@ -72,6 +81,20 @@ namespace MySharpChat.Server
             Console.WriteLine("\nPress ENTER to continue...");
             Console.Read();
 
+        }
+
+        public static Socket OpenListener(ConnexionInfos connexionInfos)
+        {
+            // Create a TCP/IP socket.  
+            Socket listener = new Socket(connexionInfos.Ip.AddressFamily,
+                SocketType.Stream, ProtocolType.Tcp);
+            return listener;
+        }
+
+        public static IPEndPoint CreateEndPoint(ConnexionInfos connexionInfos)
+        {
+            IPEndPoint endPoint = new IPEndPoint(connexionInfos.Ip, connexionInfos.Port);
+            return endPoint;
         }
 
         public static void AcceptCallback(IAsyncResult ar)
