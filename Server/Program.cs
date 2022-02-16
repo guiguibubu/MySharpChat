@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Serveur
+namespace MySharpChat.Server
 {
     class Program
     {

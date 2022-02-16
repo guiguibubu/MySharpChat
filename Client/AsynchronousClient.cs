@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 
-namespace Client
+namespace MySharpChat.Client
 {
     // State object for receiving data from remote device.  
     public class StateObject

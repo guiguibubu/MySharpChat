@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace Serveur
+namespace MySharpChat.Server
 {
     // State object for reading client data asynchronously  
     public class StateObject
