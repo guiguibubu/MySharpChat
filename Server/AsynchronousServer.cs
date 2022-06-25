@@ -7,6 +7,8 @@ using System.Web;
 using System.Text;
 using System.Threading;
 
+using MySharpChat;
+
 namespace MySharpChat.Server
 {
     // State object for reading client data asynchronously  
@@ -118,25 +120,11 @@ namespace MySharpChat.Server
             if (!noData)
                 Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
 
-            /*
-             GET / HTTP/1.1
-            User-Agent: PostmanRuntime/7.28.4
-            Accept: * /*
-            Postman - Token: 48442a24 - 780f - 4664 - a9c6 - 6830ce575132
-            Host: localhost: 11000
-            Accept - Encoding: gzip, deflate, br
-            Connection: keep - alive
-            */
-            bool isHttpRequest = content.Contains(" HTTP/1.1");
-
-            //https://gist.github.com/define-private-public/d05bc52dd0bed1c4699d49e2737e80e7
-            //HttpMethod
-
             // Echo the data back to the client.
-            if (isHttpRequest)
+            if (HttpParser.TryParseHttpRequest(content, out _))
             {
                 string text = "Welcome on MySharpChat server.";
-                content = string.Format("HTTP/1.1 {0} {1}\r\nContent-Type : text/plain\r\nContent-Length: {2}\r\n\r\n{3}\r\n", (int)HttpStatusCode.OK, HttpStatusCode.OK.ToString(), text.Length, text);
+                content = string.Format("HTTP/1.1 {0} {1}{4}Content-Type : text/plain{4}Content-Length: {2}{4}{4}{3}{4}", (int)HttpStatusCode.OK, HttpStatusCode.OK.ToString(), text.Length, text, Environment.NewLine);
             }
             else if(content.Length > 0)
             {
