@@ -11,23 +11,13 @@ using MySharpChat;
 
 namespace MySharpChat.Server
 {
-    // State object for reading client data asynchronously  
-    public class StateObject
-    {
-        // Client  socket.  
-        public Socket workSocket = null;
-        // Size of receive buffer.  
-        public const int BufferSize = 256;
-        // Receive buffer.  
-        public byte[] buffer = new byte[BufferSize];
-        // Received data string.  
-        public StringBuilder sb = new StringBuilder();
-    }
-
     class AsynchronousServer
     {
         // Thread signal.  
-        public static readonly ManualResetEvent allDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent newThreadDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent connectDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent sendDone = new ManualResetEvent(false);
+        private static readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
 
         protected AsynchronousServer()
         {
@@ -35,6 +25,11 @@ namespace MySharpChat.Server
 
         public static void StartListening()
         {
+            if (Thread.CurrentThread.Name == null)
+            {
+                Thread.CurrentThread.Name = "MainServerThread";
+            }
+
             // Establish the local endpoint for the socket.  
             // The DNS name of the computer  
             // running the listener is "host.contoso.com".
@@ -47,10 +42,10 @@ namespace MySharpChat.Server
             IPHostEntry ipHostInfo = Dns.GetHostEntry(connexionInfos.Hostname);
             connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
             connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
-            IPEndPoint localEndPoint = CreateEndPoint(connexionInfos);
+            IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(connexionInfos);
 
             // Create a TCP/IP socket.  
-            Socket listener = OpenListener(connexionInfos);
+            Socket listener = SocketUtils.OpenListener(connexionInfos);
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try
@@ -64,16 +59,14 @@ namespace MySharpChat.Server
                 while (true)
                 {
                     // Set the event to nonsignaled state.  
-                    allDone.Reset();
+                    newThreadDone.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
                     Console.WriteLine("Waiting for a connection...");
-                    listener.BeginAccept(
-                        new AsyncCallback(AcceptCallback),
-                        listener);
+                    listener.BeginAccept(AcceptCallback, listener);
 
                     // Wait until a connection is made before continuing.  
-                    allDone.WaitOne();
+                    newThreadDone.WaitOne();
                 }
 
             }
@@ -87,38 +80,31 @@ namespace MySharpChat.Server
 
         }
 
-        public static Socket OpenListener(ConnexionInfos connexionInfos)
-        {
-            // Create a TCP/IP socket.  
-            Socket listener = new Socket(connexionInfos.Ip.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
-            return listener;
-        }
-
-        public static IPEndPoint CreateEndPoint(ConnexionInfos connexionInfos)
-        {
-            IPEndPoint endPoint = new IPEndPoint(connexionInfos.Ip, connexionInfos.Port);
-            return endPoint;
-        }
-
         public static void AcceptCallback(IAsyncResult ar)
         {
             // Signal the main thread to continue.  
-            allDone.Set();
+            newThreadDone.Set();
 
             // Get the socket that handles the client request.  
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);
 
-            string content = Read(handler);
+            if (Thread.CurrentThread.Name == null)
+            {
+                Thread.CurrentThread.Name = $"WorkingThread{handler.RemoteEndPoint}";
+            }
+
+            string content = SocketUtils.Read(handler, ReadCallback);
 
             //if (content.Contains("<EOF>"))
             //|| content.Contains(Environment.NewLine + Environment.NewLine))
+#if DEBUG
             // All the data has been read from the
             // client. Display it on the console.  
             bool noData = content.Length == 0;
             if (!noData)
                 Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
+#endif
 
             // Echo the data back to the client.
             if (HttpParser.TryParseHttpRequest(content, out _))
@@ -131,87 +117,26 @@ namespace MySharpChat.Server
                 content = "No Data";
             }
 
-            Send(handler, content);
-        }
+            SocketUtils.Send(handler, content, SendCallback);
 
-        public static string Read(Socket handler)
-        {
-            string content = string.Empty;
-
-            // Create the state object.  
-            StateObject stateReader = new StateObject();
-            stateReader.workSocket = handler;
-            handler.BeginReceive(stateReader.buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReadCallback), stateReader);
-
-            // Check for end-of-file tag. If it is not there, read
-            // more data.  
-            content = stateReader.sb.ToString();
-
-            return content;
+            // Release the socket.  
+            handler.Shutdown(SocketShutdown.Both);
+            handler.Close();
         }
 
         public static void ReadCallback(IAsyncResult ar)
         {
-            // Retrieve the state object and the handler socket  
-            // from the asynchronous state object.  
-            StateObject state = (StateObject)ar.AsyncState;
-            Socket handler = state.workSocket;
-
-            if (handler.Connected)
-            {
-                // Read data from the client socket.
-                int bytesRead = handler.EndReceive(ar);
-
-                if (bytesRead > 0)
-                {
-                    // There  might be more data, so store the data received so far.  
-                    state.sb.Append(Encoding.ASCII.GetString(
-                        state.buffer, 0, bytesRead));
-
-                    bool continueReceive = bytesRead == StateObject.BufferSize;
-                    if (continueReceive)
-                    {
-                        // Not all data received. Get more.  
-                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, SocketFlags.None,
-                        new AsyncCallback(ReadCallback), state);
-                    }
-                }
-            }
-        }
-
-        private static void Send(Socket handler, string data)
-        {
-            // Convert the string data to byte data using ASCII encoding.  
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-            // Create the state object.  
-            StateObject state = new StateObject();
-            state.workSocket = handler;
-            state.sb.Append(data);
-
-            // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0,
-                new AsyncCallback(SendCallback), state);
+            SocketUtils.ReadCallback(ar);
         }
 
         private static void SendCallback(IAsyncResult ar)
         {
             try
             {
-                // Retrieve the socket from the state object.  
-                StateObject state = (StateObject)ar.AsyncState;
+                int bytesSent = SocketUtils.SendCallback(ar, out string text);
+                SocketContext state = (SocketContext)ar.AsyncState;
                 Socket handler = state.workSocket;
-
-                // Complete sending the data to the remote device.  
-                int bytesSent = handler.EndSend(ar);
-
-                string text = state.sb.ToString();
-                Console.WriteLine("Send {0} bytes to client. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);
-
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close(1);
-
+                Console.WriteLine("Send {0} bytes to client {2}. {3}Data :{3}{1}", bytesSent, text, handler.RemoteEndPoint, Environment.NewLine);
             }
             catch (Exception e)
             {
