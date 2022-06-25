@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
+using System.Web;
 using System.Text;
 using System.Threading;
 
@@ -13,7 +15,7 @@ namespace MySharpChat.Server
         // Client  socket.  
         public Socket workSocket = null;
         // Size of receive buffer.  
-        public const int BufferSize = 1024;
+        public const int BufferSize = 256;
         // Receive buffer.  
         public byte[] buffer = new byte[BufferSize];
         // Received data string.  
@@ -23,9 +25,9 @@ namespace MySharpChat.Server
     class AsynchronousServer
     {
         // Thread signal.  
-        public static ManualResetEvent allDone = new ManualResetEvent(false);
+        public static readonly ManualResetEvent allDone = new ManualResetEvent(false);
 
-        public AsynchronousServer()
+        protected AsynchronousServer()
         {
         }
 
@@ -106,60 +108,103 @@ namespace MySharpChat.Server
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);
 
+            string content = Read(handler);
+
+            //if (content.Contains("<EOF>"))
+            //|| content.Contains(Environment.NewLine + Environment.NewLine))
+            // All the data has been read from the
+            // client. Display it on the console.  
+            bool noData = content.Length == 0;
+            if (!noData)
+                Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
+
+            /*
+             GET / HTTP/1.1
+            User-Agent: PostmanRuntime/7.28.4
+            Accept: * /*
+            Postman - Token: 48442a24 - 780f - 4664 - a9c6 - 6830ce575132
+            Host: localhost: 11000
+            Accept - Encoding: gzip, deflate, br
+            Connection: keep - alive
+            */
+            bool isHttpRequest = content.Contains(" HTTP/1.1");
+
+            //https://gist.github.com/define-private-public/d05bc52dd0bed1c4699d49e2737e80e7
+            //HttpMethod
+
+            // Echo the data back to the client.
+            if (isHttpRequest)
+            {
+                string text = "Welcome on MySharpChat server.";
+                content = string.Format("HTTP/1.1 {0} {1}\r\nContent-Type : text/plain\r\nContent-Length: {2}\r\n\r\n{3}\r\n", (int)HttpStatusCode.OK, HttpStatusCode.OK.ToString(), text.Length, text);
+            }
+            else if(content.Length > 0)
+            {
+                content = "No Data";
+            }
+
+            Send(handler, content);
+        }
+
+        public static string Read(Socket handler)
+        {
+            string content = string.Empty;
+
             // Create the state object.  
-            StateObject state = new StateObject();
-            state.workSocket = handler;
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReadCallback), state);
+            StateObject stateReader = new StateObject();
+            stateReader.workSocket = handler;
+            handler.BeginReceive(stateReader.buffer, 0, StateObject.BufferSize, 0,
+                new AsyncCallback(ReadCallback), stateReader);
+
+            // Check for end-of-file tag. If it is not there, read
+            // more data.  
+            content = stateReader.sb.ToString();
+
+            return content;
         }
 
         public static void ReadCallback(IAsyncResult ar)
         {
-            String content = String.Empty;
-
             // Retrieve the state object and the handler socket  
             // from the asynchronous state object.  
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
 
-            // Read data from the client socket.
-            int bytesRead = handler.EndReceive(ar);
-
-            if (bytesRead > 0)
+            if (handler.Connected)
             {
-                // There  might be more data, so store the data received so far.  
-                state.sb.Append(Encoding.ASCII.GetString(
-                    state.buffer, 0, bytesRead));
+                // Read data from the client socket.
+                int bytesRead = handler.EndReceive(ar);
 
-                // Check for end-of-file tag. If it is not there, read
-                // more data.  
-                content = state.sb.ToString();
-                if (content.IndexOf("<EOF>") > -1)
+                if (bytesRead > 0)
                 {
-                    // All the data has been read from the
-                    // client. Display it on the console.  
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}",
-                        content.Length, content);
-                    // Echo the data back to the client.  
-                    Send(handler, content);
-                }
-                else
-                {
-                    // Not all data received. Get more.  
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
+                    // There  might be more data, so store the data received so far.  
+                    state.sb.Append(Encoding.ASCII.GetString(
+                        state.buffer, 0, bytesRead));
+
+                    bool continueReceive = bytesRead == StateObject.BufferSize;
+                    if (continueReceive)
+                    {
+                        // Not all data received. Get more.  
+                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, SocketFlags.None,
+                        new AsyncCallback(ReadCallback), state);
+                    }
                 }
             }
         }
 
-        private static void Send(Socket handler, String data)
+        private static void Send(Socket handler, string data)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
 
+            // Create the state object.  
+            StateObject state = new StateObject();
+            state.workSocket = handler;
+            state.sb.Append(data);
+
             // Begin sending the data to the remote device.  
             handler.BeginSend(byteData, 0, byteData.Length, 0,
-                new AsyncCallback(SendCallback), handler);
+                new AsyncCallback(SendCallback), state);
         }
 
         private static void SendCallback(IAsyncResult ar)
@@ -167,14 +212,17 @@ namespace MySharpChat.Server
             try
             {
                 // Retrieve the socket from the state object.  
-                Socket handler = (Socket)ar.AsyncState;
+                StateObject state = (StateObject)ar.AsyncState;
+                Socket handler = state.workSocket;
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);
-                Console.WriteLine("Sent {0} bytes to client.", bytesSent);
+
+                string text = state.sb.ToString();
+                Console.WriteLine("Send {0} bytes to client. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);
 
                 handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
+                handler.Close(1);
 
             }
             catch (Exception e)
