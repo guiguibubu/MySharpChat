@@ -2,12 +2,11 @@
 
 namespace MySharpChat.Server
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {
             AsynchronousServer.StartListening();
-            //SynchronousServer.StartListening();
         }
     }
 }
