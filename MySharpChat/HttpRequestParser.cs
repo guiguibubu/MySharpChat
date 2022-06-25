@@ -52,7 +52,7 @@ namespace MySharpChat
                             if (components.Length >= 3)
                             {
                                 string version = components[2];
-                                if (version.StartsWith("HTTP/") && Version.TryParse(components[2].Replace("HTTP/", ""), out Version requestVersion))
+                                if (TryParseHttpVersion(version, out Version requestVersion))
                                 {
                                     request.Version = requestVersion;
                                 }
@@ -99,6 +99,38 @@ namespace MySharpChat
                 }
 
                 return request;
+            }
+
+            public static async Task<string> ToString(HttpRequestMessage request)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                string line1 = $"{request.Method} {request.RequestUri} HTTP/{request.Version}";
+                sb.AppendLine(line1);
+
+                foreach ((string key, IEnumerable<string> values) in request.Headers)
+                    foreach (var value in values)
+                    {
+                        string header = $"{key}: {value}";
+                        sb.AppendLine(header);
+                    }
+
+                if (request.Content?.Headers != null)
+                {
+                    foreach ((string key, IEnumerable<string> values) in request.Content.Headers)
+                        foreach (var valus in values)
+                        {
+                            string header = $"{key}: {valus}";
+                            sb.AppendLine(header);
+                        }
+                }
+                sb.AppendLine();
+
+                string body = await (request.Content?.ReadAsStringAsync() ?? Task.FromResult<string>(null));
+                if (!string.IsNullOrWhiteSpace(body))
+                    sb.AppendLine(body);
+
+                return sb.ToString();
             }
         }
     }

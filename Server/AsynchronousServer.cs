@@ -110,7 +110,10 @@ namespace MySharpChat.Server
             if (HttpParser.TryParseHttpRequest(content, out _))
             {
                 string text = "Welcome on MySharpChat server.";
-                content = string.Format("HTTP/1.1 {0} {1}{4}Content-Type : text/plain{4}Content-Length: {2}{4}{4}{3}{4}", (int)HttpStatusCode.OK, HttpStatusCode.OK.ToString(), text.Length, text, Environment.NewLine);
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                response.Content = new StringContent(text);
+                //content = string.Format("HTTP/1.1 {0} {1}{4}Content-Type : text/plain{4}Content-Length: {2}{4}{4}{3}{4}", (int)HttpStatusCode.OK, HttpStatusCode.OK.ToString(), text.Length, text, Environment.NewLine);
+                content = HttpParser.ToString(response).Result;
             }
             else if(content.Length > 0)
             {

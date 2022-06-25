@@ -14,6 +14,8 @@ namespace MySharpChat
     public static partial class HttpParser
     {
         public const string DEFAULT_HTTP_VERSION = "1.1";
+
+        #region Request
         /// <summary>
         /// Converts a raw HTTP request into an System.Net.Http.HttpRequestMessage instance.
         /// </summary>
@@ -40,61 +42,51 @@ namespace MySharpChat
             return success;
         }
 
+        public static async Task<string> ToString(HttpRequestMessage request)
+        {
+            return await HttpRequestParser.ToString(request);
+        }
+        #endregion
+
+        #region Response
         /// <summary>
         /// Convert a raw HTTP response into an System.Net.Http.HttpResponseMessage instance.
         /// </summary>
         /// <param name="responseString"></param>
         /// <returns>System.Net.Http.HttpResponseMessage</returns>
-        /*
         public static HttpResponseMessage ParseHttpResponse(string responseString)
         {
-            StringReader reader = new StringReader(responseString);
-            string line;
-            ParserState mode = ParserState.FirstLine;
-
-            HttpResponseMessage response = new HttpResponseMessage();
-
-            while ((line = reader.ReadLine()) != null)
-            {
-                switch (mode)
-                {
-                    case ParserState.FirstLine:
-                        var components = line.Split(' ');
-                        if (components.Length < 3) throw new ArgumentException("responseString does not contain a proper HTTP request first line.");
-
-                        response.HttpVersion = components[0];
-                        response.StatusCode = int.Parse(components[1]);
-                        response.StatusMessage = components.ComponentsJoinedByString(" ", 2);
-
-                        mode = ParserState.Headers;
-                        break;
-
-                    case ParserState.Headers:
-                        if (string.IsNullOrEmpty(line))
-                        {
-                            mode = ParserState.Content;
-                            continue;
-                        }
-
-                        // Parse each header
-                        int split = line.IndexOf(": ", StringComparison.Ordinal);
-                        if (split < 1) throw new ArgumentException($"Request contains an invalid header definition: \"{line}\". Missing whitespace between the headers and body?");
-
-                        var headerName = line.Substring(0, split);
-                        var headerValue = line.Substring(split + 1);
-                        response.Headers.Add(headerName, headerValue);
-
-                        break;
-
-                    case ParserState.Content:
-                        response.Body = line + Environment.NewLine + reader.ReadToEnd();
-                        break;
-                }
-            }
-
-            return response;
+            return HttpResponseParser.ParseHttpResponse(responseString);
         }
-        */
+
+        public static bool TryParseHttpResponse(string responseString, out HttpResponseMessage httpResponsetMessage)
+        {
+            bool success;
+            try
+            {
+                httpResponsetMessage = ParseHttpResponse(responseString);
+                success = true;
+            }
+            catch
+            {
+                httpResponsetMessage = null;
+                success = false;
+            }
+            return success;
+        }
+
+        private static bool TryParseHttpVersion(string text, out Version httpVersion)
+        {
+            httpVersion = null;
+            string version = text;
+            return version.StartsWith("HTTP/") && Version.TryParse(version.Replace("HTTP/", ""), out httpVersion);
+        }
+
+        public static async Task<string> ToString(HttpResponseMessage response)
+        {
+            return await HttpResponseParser.ToString(response);
+        }
+#endregion
 
         private enum ParserState
         {
