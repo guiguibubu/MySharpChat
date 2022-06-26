@@ -61,7 +61,7 @@ namespace MySharpChat.Client
                 m_clientThread = new Thread(Run);
                 m_clientThread.Start(new ConnectionContext() { m_remoteEP = remoteEP, m_client = this });
 
-                while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { }
+                while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
                 Console.WriteLine("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
 

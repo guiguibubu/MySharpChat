@@ -67,7 +67,7 @@ namespace MySharpChat.Server
                 m_serverThread = new Thread(Run);
                 m_serverThread.Start(this);
 
-                while (!m_serverRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { }
+                while (!m_serverRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
                 Console.WriteLine("Server started (in {0} ms) !", sw.ElapsedMilliseconds);
                 Console.WriteLine("Listenning at {0} : {1}:{2}", m_connexionInfos.Hostname, m_connexionInfos.Ip, m_connexionInfos.Port);
