@@ -6,6 +6,8 @@ using System.Threading;
 using System.Text;
 using System.Diagnostics;
 
+using MySharpChat.SocketModule;
+
 namespace MySharpChat.Client
 {
     class AsynchronousClient

@@ -7,9 +7,10 @@ using System.Web;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
-using MySharpChat;
 using System.Diagnostics;
+
+using MySharpChat.SocketModule;
+using MySharpChat.Http;
 
 namespace MySharpChat.Server
 {
@@ -150,8 +151,6 @@ namespace MySharpChat.Server
 
             string content = SocketUtils.Read(handler, ReadCallback, server);
 
-            //if (content.Contains("<EOF>"))
-            //|| content.Contains(Environment.NewLine + Environment.NewLine))
 #if DEBUG
             // All the data has been read from the
             // client. Display it on the console.  

@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat
+namespace MySharpChat.SocketModule
 {
     // State object for reading client data asynchronously  
     public class SocketContext

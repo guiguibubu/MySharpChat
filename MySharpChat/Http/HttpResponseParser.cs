@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat
+namespace MySharpChat.Http
 {
     public static partial class HttpParser
     {

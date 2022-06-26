@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 
-namespace MySharpChat
+namespace MySharpChat.Http
 {
     /// <summary>
     /// Inspiration from https://github.com/rgregg/markdown-scanner/blob/master/ApiDocs.Validation/Http/HttpParser.cs
