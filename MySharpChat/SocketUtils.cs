@@ -24,13 +24,14 @@ namespace MySharpChat
             return endPoint;
         }
 
-        public static string Read(Socket handler, AsyncCallback callback)
+        public static string Read(Socket handler, AsyncCallback callback, object caller = null)
         {
             string content = string.Empty;
 
             // Create the state object.  
             SocketContext state = new SocketContext();
             state.workSocket = handler;
+            state.owner = caller;
             handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, callback, state);
 
             content = state.dataStringBuilder.ToString();
@@ -66,7 +67,7 @@ namespace MySharpChat
             }
         }
 
-        public static void Send(Socket handler, string data, AsyncCallback callback)
+        public static void Send(Socket handler, string data, AsyncCallback callback, object caller = null)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -74,6 +75,7 @@ namespace MySharpChat
             // Create the state object.  
             SocketContext state = new SocketContext();
             state.workSocket = handler;
+            state.owner = caller;
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 

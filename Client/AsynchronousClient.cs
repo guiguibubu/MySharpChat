@@ -4,60 +4,66 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
+using System.Diagnostics;
 
 namespace MySharpChat.Client
 {
     class AsynchronousClient
     {
         // ManualResetEvent instances signal completion.  
-        private static ManualResetEvent connectDone = new ManualResetEvent(false);
-        private static ManualResetEvent sendDone = new ManualResetEvent(false);
-        private static ManualResetEvent receiveDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent sendDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
+
+        private readonly ConnexionInfos m_connexionInfos = null;
+        private bool m_clientRun = false;
+        private Thread m_clientThread = null;
+        private Socket m_socketHandler = null;
 
         // The response from the remote device.  
-        private static String response = String.Empty;
+        private string response = string.Empty;
 
-        public static void StartClient()
+        public AsynchronousClient(ConnexionInfos connexionInfos)
+        {
+            m_connexionInfos = connexionInfos;
+        }
+
+        public bool Start()
         {
             // Connect to a remote device.  
+
+            // Establish the remote endpoint for the socket.  
+            // The name of the
+            // remote device is "host.contoso.com".  
+#if DEBUG
+            m_connexionInfos.Hostname = "localhost";
+#else
+                m_connexionInfos.Hostname = Dns.GetHostName();
+#endif
+
+            Stopwatch sw = Stopwatch.StartNew();
+            sw.Start();
+
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(m_connexionInfos.Hostname);
+            m_connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+            m_connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
+            IPEndPoint remoteEP = SocketUtils.CreateEndPoint(m_connexionInfos);
+
+            // Create a TCP/IP socket.  
+            m_socketHandler = SocketUtils.OpenListener(m_connexionInfos);
+
+            bool clientStarted = false;
+
             try
             {
-                // Establish the remote endpoint for the socket.  
-                // The name of the
-                // remote device is "host.contoso.com".  
-                ConnexionInfos connexionInfos = new ConnexionInfos();
-#if DEBUG
-                connexionInfos.Hostname = "localhost";
-#else
-                connexionInfos.Hostname = Dns.GetHostName();
-#endif
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(connexionInfos.Hostname);
-                connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
-                connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
-                IPEndPoint remoteEP = SocketUtils.CreateEndPoint(connexionInfos);
+                m_clientThread = new Thread(Run);
+                m_clientThread.Start(new ConnectionContext() { m_remoteEP = remoteEP, m_client = this });
 
-                // Create a TCP/IP socket.  
-                Socket handler = SocketUtils.OpenListener(connexionInfos);
+                while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { }
 
-                // Connect to the remote endpoint.  
-                handler.BeginConnect(remoteEP,
-                    new AsyncCallback(ConnectCallback), handler);
-                connectDone.WaitOne();
+                Console.WriteLine("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
 
-                // Send test data to the remote device.  
-                SocketUtils.Send(handler, "This is a test<EOF>", SendCallback);
-                sendDone.WaitOne();
-
-                // Receive the response from the remote device.  
-                response = SocketUtils.Read(handler, ReadCallback);
-                receiveDone.WaitOne();
-
-                // Write the response to the console.  
-                Console.WriteLine("Response received : {0}", response);
-
-                // Release the socket.  
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
+                clientStarted = true;
 
             }
             catch (Exception e)
@@ -65,8 +71,67 @@ namespace MySharpChat.Client
                 Console.WriteLine(e.ToString());
             }
 
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
+            return clientStarted;
+        }
+
+        private static void Run(object connectionContextObj)
+        {
+            ConnectionContext context = (ConnectionContext)connectionContextObj;
+            AsynchronousClient client = context.m_client;
+            EndPoint remoteEP = context.m_remoteEP;
+
+            if (Thread.CurrentThread.Name == null)
+            {
+                Thread.CurrentThread.Name = "RunningClientThread";
+                Console.WriteLine("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId);
+            }
+
+            client.m_clientRun = true;
+            while (client.m_clientRun)
+            {
+                // Connect to the remote endpoint.  
+                client.m_socketHandler.BeginConnect(remoteEP, ConnectCallback, client);
+                client.connectDone.WaitOne();
+
+                // Send test data to the remote device.  
+                SocketUtils.Send(client.m_socketHandler, "This is a test<EOF>", SendCallback, client);
+                client.sendDone.WaitOne();
+
+                // Receive the response from the remote device.  
+                client.response = SocketUtils.Read(client.m_socketHandler, ReadCallback, client);
+                client.receiveDone.WaitOne();
+
+                // Write the response to the console.  
+                Console.WriteLine("Response received : {0}", client.response);
+
+                // Release the socket.  
+                client.m_socketHandler.Shutdown(SocketShutdown.Both);
+                client.m_socketHandler.Close();
+
+                client.Stop();
+            }
+
+            Console.WriteLine("Client stopped !");
+        }
+
+        public bool IsRunning()
+        {
+            return m_clientRun;
+        }
+
+        public void Stop()
+        {
+            m_clientRun = false;
+        }
+
+        public void Wait()
+        {
+            m_clientThread.Join();
+        }
+
+        public bool Wait(int millisecondsTimeout)
+        {
+            return m_clientThread.Join(millisecondsTimeout);
         }
 
         private static void ConnectCallback(IAsyncResult ar)
@@ -74,7 +139,8 @@ namespace MySharpChat.Client
             try
             {
                 // Retrieve the socket from the state object.  
-                Socket handler = (Socket)ar.AsyncState;
+                AsynchronousClient client = (AsynchronousClient)ar.AsyncState;
+                Socket handler = client.m_socketHandler;
 
                 // Complete the connection.  
                 handler.EndConnect(ar);
@@ -82,7 +148,7 @@ namespace MySharpChat.Client
                 Console.WriteLine("Socket connected to {0}", handler.RemoteEndPoint.ToString());
 
                 // Signal that the connection has been made.  
-                connectDone.Set();
+                client.connectDone.Set();
             }
             catch (Exception e)
             {
@@ -92,24 +158,35 @@ namespace MySharpChat.Client
 
         private static void ReadCallback(IAsyncResult ar)
         {
+            SocketContext context = (SocketContext)ar.AsyncState;
             SocketUtils.ReadCallback(ar);
-            receiveDone.Set();
+
+            AsynchronousClient client = (AsynchronousClient)context.owner;
+            client.receiveDone.Set();
         }
 
         private static void SendCallback(IAsyncResult ar)
         {
             try
             {
+                SocketContext context = (SocketContext)ar.AsyncState;
                 int bytesSent = SocketUtils.SendCallback(ar, out string text);
                 Console.WriteLine("Send {0} bytes to Server. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);
 
                 // Signal that all bytes have been sent.  
-                sendDone.Set();
+                AsynchronousClient client = (AsynchronousClient)context.owner;
+                client.sendDone.Set();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
+        }
+
+        private sealed class ConnectionContext
+        {
+            public EndPoint m_remoteEP;
+            public AsynchronousClient m_client;
         }
     }
 }

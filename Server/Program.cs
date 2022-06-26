@@ -6,7 +6,14 @@ namespace MySharpChat.Server
     {
         static void Main(string[] args)
         {
-            AsynchronousServer.StartListening();
+            AsynchronousServer server = new AsynchronousServer(new ConnexionInfos());
+            if (server.Start())
+            {
+                server.Wait();
+            }
+
+            Console.WriteLine("\nPress ENTER to continue...");
+            Console.Read();
         }
     }
 }

@@ -10,6 +10,8 @@ namespace MySharpChat
     // State object for reading client data asynchronously  
     public class SocketContext
     {
+        // Object owner of the socket
+        public object owner = null;
         // Client  socket.  
         public Socket workSocket = null;
         // Size of receive buffer.  
