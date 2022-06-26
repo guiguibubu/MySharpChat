@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MySharpChat.SocketModule
@@ -10,6 +11,9 @@ namespace MySharpChat.SocketModule
     // State object for reading client data asynchronously  
     public class SocketContext
     {
+        public ManualResetEvent connectDone = null;
+        public ManualResetEvent sendDone = null;
+        public ManualResetEvent receiveDone = null;
         // Object owner of the socket
         public object owner = null;
         // Client  socket.  

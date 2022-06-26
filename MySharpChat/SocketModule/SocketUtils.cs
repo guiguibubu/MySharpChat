@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MySharpChat.SocketModule
@@ -24,7 +25,7 @@ namespace MySharpChat.SocketModule
             return endPoint;
         }
 
-        public static string Read(Socket handler, AsyncCallback callback, object caller = null)
+        public static string Read(Socket handler, AsyncCallback callback, object caller = null, ManualResetEvent receiveDone = null)
         {
             string content = string.Empty;
 
@@ -32,8 +33,10 @@ namespace MySharpChat.SocketModule
             SocketContext state = new SocketContext();
             state.workSocket = handler;
             state.owner = caller;
+            state.receiveDone = receiveDone;
             handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, callback, state);
-
+            
+            receiveDone?.WaitOne();
             content = state.dataStringBuilder.ToString();
 
             return content;
@@ -51,6 +54,7 @@ namespace MySharpChat.SocketModule
                 // Read data from the client socket.
                 int bytesRead = handler.EndReceive(ar);
 
+                bool readFinished = false;
                 if (bytesRead > 0)
                 {
                     // There  might be more data, so store the data received so far.
@@ -63,11 +67,21 @@ namespace MySharpChat.SocketModule
                         // Not all data received. Get more.  
                         handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, SocketFlags.None, ReadCallback, state);
                     }
+                    readFinished = !continueReceive;
+                }
+                else
+                {
+                    readFinished = true;
+                }
+
+                if (readFinished)
+                {
+                    state.receiveDone?.Set();
                 }
             }
         }
 
-        public static void Send(Socket handler, string data, AsyncCallback callback, object caller = null)
+        public static void Send(Socket handler, string data, AsyncCallback callback, object caller = null, ManualResetEvent sendDone = null)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -76,6 +90,7 @@ namespace MySharpChat.SocketModule
             SocketContext state = new SocketContext();
             state.workSocket = handler;
             state.owner = caller;
+            state.sendDone = sendDone;
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 
@@ -97,6 +112,8 @@ namespace MySharpChat.SocketModule
                 bytesSent = handler.EndSend(ar);
 
                 text = state.dataStringBuilder.ToString();
+
+                state.sendDone?.Set();
             }
             catch (Exception e)
             {

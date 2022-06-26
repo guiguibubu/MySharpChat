@@ -94,6 +94,9 @@ namespace MySharpChat.Client
                 // Connect to the remote endpoint.  
                 client.m_socketHandler.BeginConnect(remoteEP, ConnectCallback, client);
                 client.connectDone.WaitOne();
+                client.m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+                Console.WriteLine("Connection success to {0} : {1}:{2}", client.m_connexionInfos.Hostname, client.m_connexionInfos.Ip, client.m_connexionInfos.Port);
 
                 // Send test data to the remote device.  
                 SocketUtils.Send(client.m_socketHandler, "This is a test<EOF>", SendCallback, client);

@@ -142,21 +142,29 @@ namespace MySharpChat.Server
             server.newConnectionAvailableEvent.Set();
 
             // Get the socket that handles the client request.  
-            Socket handler = server.m_listener.EndAccept(ar);
+            server.m_listener = server.m_listener.EndAccept(ar);
+
+            Console.WriteLine("Connection accepted from {0}", server.m_listener.RemoteEndPoint);
+
+            server.m_listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
             if (Thread.CurrentThread.Name == null)
             {
-                Thread.CurrentThread.Name = $"WorkingThread{handler.RemoteEndPoint}";
+                Thread.CurrentThread.Name = $"WorkingThread{server.m_listener.RemoteEndPoint}";
             }
 
-            string content = SocketUtils.Read(handler, ReadCallback, server);
+            string content = null;
+            do
+            {
+                content = SocketUtils.Read(server.m_listener, ReadCallback, server, server.receiveDone);
+            } while (string.IsNullOrEmpty(content));
 
-#if DEBUG
+
+
             // All the data has been read from the
             // client. Display it on the console.  
-            bool noData = content.Length == 0;
-            if (!noData)
-                Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
+#if DEBUG
+            Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
 #endif
 
             // Echo the data back to the client.
@@ -172,16 +180,12 @@ namespace MySharpChat.Server
                 response.Content = new StringContent(text);
                 content = HttpParser.ToString(response).Result;
             }
-            else if (content.Length > 0)
-            {
-                content = "No Data";
-            }
 
-            SocketUtils.Send(handler, content, SendCallback, server);
+            SocketUtils.Send(server.m_listener, content, SendCallback, server);
 
             // Release the socket.  
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
+            server.m_listener.Shutdown(SocketShutdown.Both);
+            server.m_listener.Close();
         }
 
         public static void ReadCallback(IAsyncResult ar)
@@ -196,7 +200,9 @@ namespace MySharpChat.Server
                 int bytesSent = SocketUtils.SendCallback(ar, out string text);
                 SocketContext state = (SocketContext)ar.AsyncState;
                 Socket handler = state.workSocket;
+#if DEBUG
                 Console.WriteLine("Send {0} bytes to client {2}. {3}Data :{3}{1}", bytesSent, text, handler.RemoteEndPoint, Environment.NewLine);
+#endif
             }
             catch (Exception e)
             {
