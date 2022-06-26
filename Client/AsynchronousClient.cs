@@ -98,8 +98,11 @@ namespace MySharpChat.Client
 
                 Console.WriteLine("Connection success to {0} : {1}:{2}", client.m_connexionInfos.Hostname, client.m_connexionInfos.Ip, client.m_connexionInfos.Port);
 
+                Console.Write(string.Format("{0}@{1}> ", Environment.UserName, client.m_socketHandler.LocalEndPoint));
+                string text = Console.ReadLine();
+
                 // Send test data to the remote device.  
-                SocketUtils.Send(client.m_socketHandler, "This is a test<EOF>", SendCallback, client);
+                SocketUtils.Send(client.m_socketHandler, $"{text}<EOF>", SendCallback, client);
                 client.sendDone.WaitOne();
 
                 // Receive the response from the remote device.  
