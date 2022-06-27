@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MySharpChat\MySharpChat.csproj">
+    <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj">
       <Private>true</Private>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
