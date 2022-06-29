@@ -1,58 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <AssemblyVersion>0.0.0.1</AssemblyVersion>
-    <FileVersion>0.0.0.1</FileVersion>
-    <RepositoryUrl>https://github.com/guiguibubu/MySharpChat</RepositoryUrl>
-    <RepositoryType>Git</RepositoryType>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Company />
-    <Authors>gbuchle</Authors>
-    <Version>0.0.1</Version>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <AssemblyVersion>0.0.0.1</AssemblyVersion>
+        <FileVersion>0.0.0.1</FileVersion>
+        <RepositoryUrl>https://github.com/guiguibubu/MySharpChat</RepositoryUrl>
+        <RepositoryType>Git</RepositoryType>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <Company />
+        <Authors>gbuchle</Authors>
+        <Version>0.0.1</Version>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DefineConstants>RELEASE;TRACE</DefineConstants>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DefineConstants>RELEASE;TRACE</DefineConstants>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <BaseOutputPath>..\bin\</BaseOutputPath>
-    <IntermediateOutputPath>$(BaseOutputPath)$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
-    <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
-  </PropertyGroup>
+    <PropertyGroup>
+        <BaseOutputPath>..\bin\</BaseOutputPath>
+        <IntermediateOutputPath>$(BaseOutputPath)$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
+        <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\LICENSE">
+            <Pack>True</Pack>
+            <PackagePath></PackagePath>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj">
-      <Private>true</Private>
-      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj">
+            <Private>true</Private>
+            <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+            <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+        </ProjectReference>
+    </ItemGroup>
 
-  <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
-    <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
-  </Target>
-  <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
-    <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
-    <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
-  </Target>
+    <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
+        <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
+    </Target>
+    <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+        <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
+        <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
+    </Target>
 
 </Project>
