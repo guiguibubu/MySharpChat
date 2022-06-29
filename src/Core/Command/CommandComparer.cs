@@ -10,7 +10,7 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
-    internal sealed class CommandComparer : Singleton<CommandComparer>, IEqualityComparer<ICommand>
+    internal class CommandComparer : Singleton<CommandComparer>, IEqualityComparer<ICommand>
     {
         private static readonly StringComparer nameComparer = StringComparer.InvariantCultureIgnoreCase;
         protected CommandComparer() { }

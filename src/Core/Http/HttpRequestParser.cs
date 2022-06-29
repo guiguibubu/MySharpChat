@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Http
+namespace MySharpChat.Core.Http
 {
     public static partial class HttpParser
     {
@@ -25,14 +25,12 @@ namespace MySharpChat.Http
                 }
 
                 StringReader reader = new StringReader(requestString);
-                string line;
+                string? line;
                 ParserState state = ParserState.FirstLine;
 
                 HttpRequestMessage request = new HttpRequestMessage();
 
-                bool parsingFinished = false;
-
-                while ((line = reader.ReadLine()) != null && !parsingFinished)
+                while ((line = reader.ReadLine()) != null)
                 {
                     switch (state)
                     {
@@ -52,9 +50,11 @@ namespace MySharpChat.Http
                             if (components.Length >= 3)
                             {
                                 string version = components[2];
-                                if (TryParseHttpVersion(version, out Version requestVersion))
+                                if (TryParseHttpVersion(version, out Version? requestVersion))
                                 {
+#pragma warning disable CS8601 // Existence possible d'une assignation de référence null.
                                     request.Version = requestVersion;
+#pragma warning restore CS8601 // Existence possible d'une assignation de référence null.
                                 }
                                 else
                                 {
@@ -126,7 +126,7 @@ namespace MySharpChat.Http
                 }
                 sb.AppendLine();
 
-                string body = await (request.Content?.ReadAsStringAsync() ?? Task.FromResult<string>(null));
+                string body = await (request.Content?.ReadAsStringAsync() ?? Task.FromResult(""));
                 if (!string.IsNullOrWhiteSpace(body))
                     sb.AppendLine(body);
 

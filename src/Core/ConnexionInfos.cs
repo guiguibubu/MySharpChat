@@ -7,8 +7,8 @@ namespace MySharpChat
     public class ConnexionInfos
     {
         public const int DEFAULT_PORT = 11000;
-        public string Hostname;
-        public IPAddress Ip;
+        public string? Hostname = null;
+        public IPAddress? Ip = null;
         public int Port = DEFAULT_PORT;
     }
 }

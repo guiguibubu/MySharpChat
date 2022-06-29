@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Http
+namespace MySharpChat.Core.Http
 {
     public static partial class HttpParser
     {
@@ -21,7 +21,7 @@ namespace MySharpChat.Http
             public static HttpResponseMessage ParseHttpResponse(string responseString)
             {
                 StringReader reader = new StringReader(responseString);
-                string line;
+                string? line;
                 ParserState mode = ParserState.FirstLine;
 
                 HttpResponseMessage response = new HttpResponseMessage();
@@ -35,9 +35,11 @@ namespace MySharpChat.Http
                             if (components.Length < 3) throw new ArgumentException("responseString does not contain a proper HTTP request first line.");
 
                             string version = components[0];
-                            if (TryParseHttpVersion(version, out Version responseVersion))
+                            if (TryParseHttpVersion(version, out Version? responseVersion))
                             {
+#pragma warning disable CS8601 // Existence possible d'une assignation de référence null.
                                 response.Version = responseVersion;
+#pragma warning restore CS8601 // Existence possible d'une assignation de référence null.
                             }
                             else
                             {

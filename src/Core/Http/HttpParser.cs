@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 
-namespace MySharpChat.Http
+namespace MySharpChat.Core.Http
 {
     /// <summary>
     /// Inspiration from https://github.com/rgregg/markdown-scanner/blob/master/ApiDocs.Validation/Http/HttpParser.cs
@@ -26,7 +26,7 @@ namespace MySharpChat.Http
             return HttpRequestParser.Parse(requestString);
         }
 
-        public static bool TryParseHttpRequest(string requestString, out HttpRequestMessage httpRequestMessage)
+        public static bool TryParseHttpRequest(string requestString, out HttpRequestMessage? httpRequestMessage)
         {
             bool success;
             try
@@ -59,7 +59,7 @@ namespace MySharpChat.Http
             return HttpResponseParser.ParseHttpResponse(responseString);
         }
 
-        public static bool TryParseHttpResponse(string responseString, out HttpResponseMessage httpResponsetMessage)
+        public static bool TryParseHttpResponse(string responseString, out HttpResponseMessage? httpResponsetMessage)
         {
             bool success;
             try
@@ -75,7 +75,7 @@ namespace MySharpChat.Http
             return success;
         }
 
-        private static bool TryParseHttpVersion(string text, out Version httpVersion)
+        private static bool TryParseHttpVersion(string text, out Version? httpVersion)
         {
             httpVersion = null;
             string version = text;

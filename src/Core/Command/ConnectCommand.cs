@@ -11,16 +11,11 @@ namespace MySharpChat.Core.Command
 {
     public class ConnectCommand : Singleton<ConnectCommand>, ICommand
     {
-        static ConnectCommand()
-        {
-            CommandManager.Instance?.AddCommand(Instance);
-        }
-
         protected ConnectCommand() { }
 
         public string Name { get => "Connect"; }
 
-        public bool Execute(params string[] args)
+        public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
         {
             throw new NotImplementedException();
         }

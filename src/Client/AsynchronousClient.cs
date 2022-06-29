@@ -5,13 +5,16 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 using System.Diagnostics;
-
-using MySharpChat.SocketModule;
 using System.Diagnostics.CodeAnalysis;
+
+using MySharpChat.Core.Command;
+using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.Utils;
+
 
 namespace MySharpChat.Client
 {
-    class AsynchronousClient
+    class AsynchronousClient : IAsyncMachine
     {
         // ManualResetEvent instances signal completion.  
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -32,9 +35,30 @@ namespace MySharpChat.Client
                 throw new ArgumentNullException(nameof(connexionInfos));
 
             m_connexionInfos = connexionInfos;
+            Initialize();
         }
 
-        public bool Start()
+        public void Initialize(object? initObject = null)
+        {
+            InitCommands();
+        }
+
+        public void InitCommands()
+        {
+            CommandManager? commandManager = CommandManager.Instance;
+            if(commandManager != null)
+            {
+                commandManager.AddCommand(QuitCommand.Instance);
+                commandManager.AddCommand(ConnectCommand.Instance);
+            }
+        }
+
+        public bool Start(object? startObject = null)
+        {
+            return Start(startObject as string);
+        }
+
+        public bool Start(string? serverAdress)
         {
             // Connect to a remote device.  
 
@@ -44,9 +68,9 @@ namespace MySharpChat.Client
             if (m_connexionInfos == null)
                 return false;
 #if DEBUG
-            m_connexionInfos.Hostname = "localhost";
+            m_connexionInfos.Hostname = serverAdress ?? "localhost";
 #else
-                m_connexionInfos.Hostname = Dns.GetHostName();
+                m_connexionInfos.Hostname = serverAdress ?? Dns.GetHostName();
 #endif
 
             Stopwatch sw = Stopwatch.StartNew();
@@ -82,7 +106,7 @@ namespace MySharpChat.Client
             return clientStarted;
         }
 
-        private static void Run(object? connectionContextObj)
+        private void Run(object? connectionContextObj)
         {
             if (connectionContextObj is ConnectionContext context
                 && context.m_client != null
@@ -112,22 +136,28 @@ namespace MySharpChat.Client
                     Console.Write(string.Format("{0}@{1}> ", Environment.UserName, client.m_socketHandler.LocalEndPoint));
                     string? text = Console.ReadLine();
 
-                    // Send test data to the remote device.  
-                    SocketUtils.Send(client.m_socketHandler, $"{text}<EOF>", SendCallback, client);
-                    client.sendDone.WaitOne();
+                    CommandParser? parser = CommandParser.Instance;
+                    if (parser?.TryParse(text, out string[] args, out ICommand? command) ?? false)
+                    {
+                        command?.Execute(this, args);
+                    }
+                    else
+                    {
+                        // Send test data to the remote device.  
+                        SocketUtils.Send(client.m_socketHandler, $"{text}<EOF>", SendCallback, client);
+                        client.sendDone.WaitOne();
 
-                    // Receive the response from the remote device.  
-                    client.response = SocketUtils.Read(client.m_socketHandler, ReadCallback, client);
-                    client.receiveDone.WaitOne();
+                        // Receive the response from the remote device.  
+                        client.response = SocketUtils.Read(client.m_socketHandler, ReadCallback, client);
+                        client.receiveDone.WaitOne();
 
-                    // Write the response to the console.  
-                    Console.WriteLine("Response received : {0}", client.response);
+                        // Write the response to the console.  
+                        Console.WriteLine("Response received : {0}", client.response);
 
-                    // Release the socket.  
-                    client.m_socketHandler.Shutdown(SocketShutdown.Both);
-                    client.m_socketHandler.Close();
-
-                    client.Stop();
+                        // Release the socket.  
+                        client.m_socketHandler.Shutdown(SocketShutdown.Both);
+                        client.m_socketHandler.Close();
+                    }
                 }
 
                 Console.WriteLine("Client stopped !");
@@ -182,11 +212,11 @@ namespace MySharpChat.Client
 
         private static void ReadCallback(IAsyncResult ar)
         {
-            if (ar.AsyncState is SocketContext context)
+            if (ar.AsyncState is SocketContext context
+                && context.owner is AsynchronousClient client)
             {
                 SocketUtils.ReadCallback(ar);
 
-                AsynchronousClient client = (AsynchronousClient)context.owner;
                 client.receiveDone.Set();
             }
         }
@@ -195,13 +225,13 @@ namespace MySharpChat.Client
         {
             try
             {
-                if (ar.AsyncState is SocketContext context)
+                if (ar.AsyncState is SocketContext context
+                    && context.owner is AsynchronousClient client)
                 {
                     int bytesSent = SocketUtils.SendCallback(ar, out string text);
                     Console.WriteLine("Send {0} bytes to Server. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);
 
                     // Signal that all bytes have been sent.  
-                    AsynchronousClient client = (AsynchronousClient)context.owner;
                     client.sendDone.Set();
                 }
             }

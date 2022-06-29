@@ -7,12 +7,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MySharpChat.SocketModule
+namespace MySharpChat.Core.SocketModule
 {
     public static class SocketUtils
     {
         public static Socket OpenListener(ConnexionInfos connexionInfos)
         {
+            if (connexionInfos.Ip == null)
+                throw new ArgumentNullException("connexionInfos.Ip");
+
             // Create a TCP/IP socket.  
             Socket listener = new Socket(connexionInfos.Ip.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
@@ -21,11 +24,14 @@ namespace MySharpChat.SocketModule
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos connexionInfos)
         {
+            if (connexionInfos.Ip == null)
+                throw new ArgumentNullException("connexionInfos.Ip");
+
             IPEndPoint endPoint = new IPEndPoint(connexionInfos.Ip, connexionInfos.Port);
             return endPoint;
         }
 
-        public static string Read(Socket handler, AsyncCallback callback, object caller = null, ManualResetEvent receiveDone = null)
+        public static string Read(Socket handler, AsyncCallback callback, object? caller = null, ManualResetEvent? receiveDone = null)
         {
             string content = string.Empty;
 
@@ -46,42 +52,45 @@ namespace MySharpChat.SocketModule
         {
             // Retrieve the state object and the handler socket  
             // from the asynchronous state object.  
-            SocketContext state = (SocketContext)ar.AsyncState;
-            Socket handler = state.workSocket;
-
-            if (handler.Connected)
+            if (ar.AsyncState is SocketContext state
+                && state.workSocket != null)
             {
-                // Read data from the client socket.
-                int bytesRead = handler.EndReceive(ar);
+                Socket handler = state.workSocket;
 
-                bool readFinished = false;
-                if (bytesRead > 0)
+                if (handler.Connected)
                 {
-                    // There  might be more data, so store the data received so far.
-                    string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
-                    state.dataStringBuilder.Append(dataStr);
+                    // Read data from the client socket.
+                    int bytesRead = handler.EndReceive(ar);
 
-                    bool continueReceive = bytesRead == SocketContext.BUFFER_SIZE;
-                    if (continueReceive)
+                    bool readFinished = false;
+                    if (bytesRead > 0)
                     {
-                        // Not all data received. Get more.  
-                        handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, SocketFlags.None, ReadCallback, state);
-                    }
-                    readFinished = !continueReceive;
-                }
-                else
-                {
-                    readFinished = true;
-                }
+                        // There  might be more data, so store the data received so far.
+                        string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
+                        state.dataStringBuilder.Append(dataStr);
 
-                if (readFinished)
-                {
-                    state.receiveDone?.Set();
+                        bool continueReceive = bytesRead == SocketContext.BUFFER_SIZE;
+                        if (continueReceive)
+                        {
+                            // Not all data received. Get more.  
+                            handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, SocketFlags.None, ReadCallback, state);
+                        }
+                        readFinished = !continueReceive;
+                    }
+                    else
+                    {
+                        readFinished = true;
+                    }
+
+                    if (readFinished)
+                    {
+                        state.receiveDone?.Set();
+                    }
                 }
             }
         }
 
-        public static void Send(Socket handler, string data, AsyncCallback callback, object caller = null, ManualResetEvent sendDone = null)
+        public static void Send(Socket handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -100,20 +109,24 @@ namespace MySharpChat.SocketModule
 
         public static int SendCallback(IAsyncResult ar, out string text)
         {
-            int bytesSent;
+            int bytesSent = 0;
+            text = "";
 
             try
             {
-                // Retrieve the socket from the state object.  
-                SocketContext state = (SocketContext)ar.AsyncState;
-                Socket handler = state.workSocket;
+                if (ar.AsyncState is SocketContext state
+                    && state.workSocket != null)
+                {
+                    // Retrieve the socket from the state object.  
+                    Socket handler = state.workSocket;
 
-                // Complete sending the data to the remote device.  
-                bytesSent = handler.EndSend(ar);
+                    // Complete sending the data to the remote device.  
+                    bytesSent = handler.EndSend(ar);
 
-                text = state.dataStringBuilder.ToString();
+                    text = state.dataStringBuilder.ToString();
 
-                state.sendDone?.Set();
+                    state.sendDone?.Set();
+                }
             }
             catch (Exception e)
             {
