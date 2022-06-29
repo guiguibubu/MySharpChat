@@ -1,25 +1,35 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
 
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="NUnit" Version="3.13.3" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
-    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
-    <PackageReference Include="coverlet.collector" Version="3.1.2" />
-  </ItemGroup>
+    <ItemGroup>
+      <None Remove="InternalTrace.*.log" />
+      <None Remove="nunit-agent_*.log" />
+      <None Remove="TestResult.xml" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Client\MySharpChat.Client.csproj" />
-    <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj" />
-    <ProjectReference Include="..\Server\MySharpChat.Server.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+        <PackageReference Include="NUnit" Version="3.13.3" />
+        <PackageReference Include="NUnit.ConsoleRunner" Version="3.15.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+        <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+        <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Client\MySharpChat.Client.csproj" />
+        <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj" />
+        <ProjectReference Include="..\Server\MySharpChat.Server.csproj" />
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="call $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll --work $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../testResults'))" />
+    </Target>
 </Project>
