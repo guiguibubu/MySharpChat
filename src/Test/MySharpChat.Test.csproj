@@ -25,7 +25,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Client\MySharpChat.Client.csproj" />
-        <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj" />
+        <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
         <ProjectReference Include="..\Server\MySharpChat.Server.csproj" />
     </ItemGroup>
 

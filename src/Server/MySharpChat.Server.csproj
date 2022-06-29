@@ -23,7 +23,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <BaseOutputPath>..\bin\</BaseOutputPath>
+        <BaseOutputPath>..\..\bin\</BaseOutputPath>
         <IntermediateOutputPath>$(BaseOutputPath)$(Configuration)\$(AssemblyName)</IntermediateOutputPath>
         <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -33,14 +33,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\LICENSE">
+        <None Include="..\..\LICENSE">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
         </None>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MySharpChat\MySharpChat.Core.csproj">
+        <ProjectReference Include="..\Core\MySharpChat.Core.csproj">
             <Private>true</Private>
             <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
             <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
@@ -48,12 +48,12 @@
     </ItemGroup>
 
     <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
-        <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat\*.*&quot; &quot;$(TargetDir)&quot;" />
+        <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
+        <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
     </Target>
     <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
-        <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat/*.* $(TargetDir)" />
+        <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
+        <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
     </Target>
 
 </Project>
