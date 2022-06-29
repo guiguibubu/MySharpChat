@@ -34,9 +34,13 @@ namespace MySharpChat.Test
             {
                 IEnumerable<MethodInfo> possibleMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
                             .Where(m => m.Name == Singleton<object>.INSTANCE_CREATOR_NAME && m.GetParameters().Length == 0 && m.ReturnType == type);
-                ConstructorInfo? possibleConstructor = type.GetConstructor(BindingFlags.NonPublic, System.Type.EmptyTypes);
+                ConstructorInfo[] possibleConstructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-                testDelegate += () => { Assert.IsTrue(possibleMethods.Count() == 1 || possibleConstructor != null, "{0} must have a default constructor or one, and only one, static method \"{0} {1}()\"", type.FullName, Singleton<object>.INSTANCE_CREATOR_NAME); };
+                IEnumerable<ConstructorInfo> publicConstructors = possibleConstructors.Where(c => c.IsPublic);
+                ConstructorInfo? defaultConstructor = possibleConstructors.FirstOrDefault(c => c.GetParameters().Length == 0);
+
+                testDelegate += () => { Assert.IsFalse(publicConstructors.Any(), "{0} must not have public constructors (currently : {1})", type.FullName, publicConstructors.Count()); };
+                testDelegate += () => { Assert.IsTrue(possibleMethods.Count() == 1 || defaultConstructor != null, "{0} must have a default constructor (currently : {2}) or one, and only one, static method \"{0} {1}()\" (currently : {3})", type.FullName, Singleton<object>.INSTANCE_CREATOR_NAME, defaultConstructor?.ToString() ?? "null", possibleMethods.Count()); };
             }
             Assert.Multiple(testDelegate);
         }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,10 +10,10 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
-    internal class CommandComparer : Singleton<CommandComparer>, IEqualityComparer<ICommand>
+    internal sealed class CommandComparer : Singleton<CommandComparer>, IEqualityComparer<ICommand>
     {
         private static readonly StringComparer nameComparer = StringComparer.InvariantCultureIgnoreCase;
-        private CommandComparer() { }
+        protected CommandComparer() { }
 
         public static StringComparer NameComparer
         {

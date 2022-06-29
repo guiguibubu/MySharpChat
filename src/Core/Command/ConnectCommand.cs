@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,10 +13,10 @@ namespace MySharpChat.Core.Command
     {
         static ConnectCommand()
         {
-            CommandManager.Instance.AddCommand(Instance);
+            CommandManager.Instance?.AddCommand(Instance);
         }
 
-        private ConnectCommand() { }
+        protected ConnectCommand() { }
 
         public string Name { get => "Connect"; }
 

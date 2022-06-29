@@ -30,6 +30,6 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="call $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll --work $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../testResults'))" />
+      <Exec Command="call $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.bat $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
     </Target>
 </Project>

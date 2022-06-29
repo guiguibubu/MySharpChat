@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,22 +13,20 @@ namespace MySharpChat.Core.Command
 {
     public class CommandManager : Singleton<CommandManager>
     {
-        private CommandManager() { }
+        protected CommandManager() { }
 
         private readonly Dictionary<string, ICommand> _commands = new Dictionary<string, ICommand>(CommandComparer.NameComparer);
 
-        public ICommand GetCommand([DisallowNull] string name)
+        public ICommand? GetCommand(string? name)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentNullException(nameof(name));
 
             bool commandExist = _commands.TryGetValue(name, out ICommand? command);
-#pragma warning disable CS8603 // Existence possible d'un retour de référence null.
             return commandExist ? command : null;
-#pragma warning restore CS8603 // Existence possible d'un retour de référence null.
         }
 
-        public void AddCommand([DisallowNull] ICommand command)
+        public void AddCommand(ICommand? command)
         {
             if (command == null)
                 throw new ArgumentNullException(nameof(command));
@@ -38,7 +37,7 @@ namespace MySharpChat.Core.Command
             _commands.Add(command.Name, command);
         }
 
-        public ICommand this[string name]
+        public ICommand? this[string name]
         {
             get
             {
