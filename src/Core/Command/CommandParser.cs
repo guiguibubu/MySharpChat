@@ -10,20 +10,16 @@ namespace MySharpChat.Core.Command
 {
     public class CommandParser : Singleton<CommandParser>, IParser<ICommand>
     {
-        private const string COMMAND_PREFIX = "command";
-
         protected CommandParser() { }
 
         public ICommand? Parse(string? text, out string[] args)
         {
             args = new string[0];
 
-            if (text == null)
-                return null;
-            if (!text.StartsWith(COMMAND_PREFIX + " ", StringComparison.InvariantCultureIgnoreCase))
+            if (string.IsNullOrEmpty(text))
                 return null;
 
-            string[] commandTokens = text.Substring(COMMAND_PREFIX.Length + 1).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            string[] commandTokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             
             if(!commandTokens.Any())
                 return null;
