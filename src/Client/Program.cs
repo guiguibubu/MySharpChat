@@ -6,7 +6,7 @@ namespace MySharpChat.Client
     {
         static void Main(string[] args)
         {
-            AsynchronousClient client = new AsynchronousClient(new ConnexionInfos());
+            AsynchronousClient client = new AsynchronousClient();
 
             if (client.Start())
             {

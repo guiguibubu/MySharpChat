@@ -26,7 +26,7 @@ namespace MySharpChat.Server
         private readonly ConnexionInfos? m_connexionInfos = null;
         private bool m_serverRun = false;
         private Thread? m_serverThread = null;
-        private Socket? m_listener = null;
+        private Socket? m_socketHandler = null;
 
         public AsynchronousServer(ConnexionInfos connexionInfos)
         {
@@ -57,35 +57,35 @@ namespace MySharpChat.Server
                 return false;
 
 #if DEBUG
-            m_connexionInfos.Hostname = "localhost";
+            m_connexionInfos.Local!.Hostname = "localhost";
 #else
-            m_connexionInfos.Hostname = Dns.GetHostName();
+            m_connexionInfos.Local!.Hostname = Dns.GetHostName();
 #endif
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
 
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(m_connexionInfos.Hostname);
-            m_connexionInfos.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
-            m_connexionInfos.Port = ConnexionInfos.DEFAULT_PORT;
-            IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(m_connexionInfos);
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(m_connexionInfos.Local!.Hostname);
+            m_connexionInfos.Local!.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+            m_connexionInfos.Local!.Port = ConnexionInfos.DEFAULT_PORT;
+            IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(m_connexionInfos.Local!);
 
             // Create a TCP/IP socket.  
-            m_listener = SocketUtils.OpenListener(m_connexionInfos);
+            m_socketHandler = SocketUtils.OpenListener(m_connexionInfos.Local!);
 
             bool serverStarted = false;
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try
             {
-                m_listener.Bind(localEndPoint);
-                m_listener.Listen(100);
+                m_socketHandler.Bind(localEndPoint);
+                m_socketHandler.Listen(100);
 
                 m_serverThread = new Thread(Run);
-                m_serverThread.Start(this);
+                m_serverThread.Start();
 
                 while (!m_serverRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
                 Console.WriteLine("Server started (in {0} ms) !", sw.ElapsedMilliseconds);
-                Console.WriteLine("Listenning at {0} : {1}:{2}", m_connexionInfos.Hostname, m_connexionInfos.Ip, m_connexionInfos.Port);
+                Console.WriteLine("Listenning at {0} : {1}:{2}", m_connexionInfos.Local!.Hostname, m_connexionInfos.Local!.Ip, m_connexionInfos.Local!.Port);
 
                 serverStarted = true;
 
@@ -119,33 +119,28 @@ namespace MySharpChat.Server
             return m_serverThread?.Join(millisecondsTimeout) ?? true;
         }
 
-        private static void Run(object? serverObj)
+        private void Run()
         {
-            if(serverObj == null)
-                throw new ArgumentNullException(nameof(serverObj));
-
-            AsynchronousServer server = (AsynchronousServer)serverObj;
-
             if (Thread.CurrentThread.Name == null)
             {
                 Thread.CurrentThread.Name = "RunningServerThread";
                 Console.WriteLine("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId);
             }
 
-            server.m_serverRun = true;
-            while (server.m_serverRun)
+            m_serverRun = true;
+            while (m_serverRun)
             {
                 // Set the event to nonsignaled state.  
-                server.newConnectionAvailableEvent.Reset();
+                newConnectionAvailableEvent.Reset();
 
                 // Start an asynchronous socket to listen for connections.  
                 Console.WriteLine("Waiting for a connection...");
-                server.m_listener?.BeginAccept(AcceptCallback, server);
+                m_socketHandler?.BeginAccept(AcceptCallback, this);
 
                 // Wait until a connection is made before continuing.  
-                while (server.m_serverRun)
+                while (m_serverRun)
                 {
-                    server.newConnectionAvailableEvent.WaitOne(1000);
+                    newConnectionAvailableEvent.WaitOne(1000);
                 }
             }
 
@@ -155,27 +150,27 @@ namespace MySharpChat.Server
         public static void AcceptCallback(IAsyncResult ar)
         {
             if (ar.AsyncState is AsynchronousServer server
-                && server.m_listener != null)
+                && server.m_socketHandler != null)
             {
                 // Signal the main thread to continue.  
                 server.newConnectionAvailableEvent.Set();
 
                 // Get the socket that handles the client request.  
-                server.m_listener = server.m_listener.EndAccept(ar);
+                server.m_socketHandler = server.m_socketHandler.EndAccept(ar);
 
-                Console.WriteLine("Connection accepted from {0}", server.m_listener.RemoteEndPoint);
+                Console.WriteLine("Connection accepted from {0}", server.m_socketHandler.RemoteEndPoint);
 
-                server.m_listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                server.m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
                 if (Thread.CurrentThread.Name == null)
                 {
-                    Thread.CurrentThread.Name = $"WorkingThread{server.m_listener.RemoteEndPoint}";
+                    Thread.CurrentThread.Name = $"WorkingThread{server.m_socketHandler.RemoteEndPoint}";
                 }
 
                 string content = "";
                 do
                 {
-                    content = SocketUtils.Read(server.m_listener, ReadCallback, server, server.receiveDone);
+                    content = server.Read();
                 } while (string.IsNullOrEmpty(content));
 
 
@@ -202,11 +197,10 @@ namespace MySharpChat.Server
                     content = HttpParser.ToString(response).Result;
                 }
 
-                SocketUtils.Send(server.m_listener, content, SendCallback, server);
+                server.Send(content);
 
                 // Release the socket.  
-                server.m_listener.Shutdown(SocketShutdown.Both);
-                server.m_listener.Close();
+                server.Disconnect(server.m_connexionInfos!);
             }
         }
 
@@ -232,6 +226,32 @@ namespace MySharpChat.Server
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+            }
+        }
+
+        public bool Connect(ConnexionInfos connexionInfos)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Send(string? text)
+        {
+            if(string.IsNullOrEmpty(text))
+                throw new ArgumentNullException(nameof(text));
+
+            SocketUtils.Send(m_socketHandler!, text, SendCallback, this);
+        }
+
+        public string Read()
+        {
+            return SocketUtils.Read(m_socketHandler!, ReadCallback, this, receiveDone);
+        }
+
+        public void Disconnect(ConnexionInfos connexionInfos)
+        {
+            if (m_socketHandler != null)
+            {
+                SocketUtils.ShutdownListener(m_socketHandler);
             }
         }
     }

@@ -15,5 +15,10 @@ namespace MySharpChat.Core.Utils
         public void Stop();
         public void Wait();
         public bool Wait(int millisecondsTimeout);
+
+        public bool Connect(ConnexionInfos connexionInfos);
+        public void Send(string? text);
+        public string Read();
+        public void Disconnect(ConnexionInfos connexionInfos);
     }
 }

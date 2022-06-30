@@ -11,23 +11,28 @@ namespace MySharpChat.Core.SocketModule
 {
     public static class SocketUtils
     {
-        public static Socket OpenListener(ConnexionInfos connexionInfos)
+        public static Socket OpenListener(ConnexionInfos.Data data)
         {
-            if (connexionInfos.Ip == null)
-                throw new ArgumentNullException("connexionInfos.Ip");
+            if (data.Ip == null)
+                throw new ArgumentNullException("data.Ip");
 
             // Create a TCP/IP socket.  
-            Socket listener = new Socket(connexionInfos.Ip.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            Socket listener = new Socket(data.Ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             return listener;
         }
 
-        public static IPEndPoint CreateEndPoint(ConnexionInfos connexionInfos)
+        public static void ShutdownListener(Socket socket)
         {
-            if (connexionInfos.Ip == null)
-                throw new ArgumentNullException("connexionInfos.Ip");
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
+        }
 
-            IPEndPoint endPoint = new IPEndPoint(connexionInfos.Ip, connexionInfos.Port);
+        public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
+        {
+            if (data.Ip == null)
+                throw new ArgumentNullException("data.Ip");
+
+            IPEndPoint endPoint = new IPEndPoint(data.Ip, data.Port);
             return endPoint;
         }
 
