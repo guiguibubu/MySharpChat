@@ -26,6 +26,11 @@ namespace MySharpChat.Core.Command
             return commandExist ? command : null;
         }
 
+        public T? GetCommand<T>(string? name) where T : ICommand
+        {
+            return (T?)GetCommand(name);
+        }
+
         public void AddCommand(ICommand? command)
         {
             if (command == null)
