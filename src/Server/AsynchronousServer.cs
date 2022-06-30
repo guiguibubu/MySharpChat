@@ -18,7 +18,7 @@ using MySharpChat.Server.Command;
 
 namespace MySharpChat.Server
 {
-    class AsynchronousServer : IAsyncMachine
+    public class AsynchronousServer : IAsyncMachine
     {
         // Thread signal.  
         private readonly ManualResetEvent newConnectionAvailableEvent = new ManualResetEvent(false);

@@ -15,7 +15,7 @@ using MySharpChat.Client.Command;
 
 namespace MySharpChat.Client
 {
-    class AsynchronousClient : IAsyncMachine
+    public class AsynchronousClient : IAsyncMachine
     {
         // ManualResetEvent instances signal completion.  
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -43,6 +43,7 @@ namespace MySharpChat.Client
             {
                 commandManager.AddCommand(QuitCommand.Instance);
                 commandManager.AddCommand(ConnectCommand.Instance);
+                commandManager.AddCommand(DisconnectCommand.Instance);
                 commandManager.AddCommand(SendCommand.Instance);
             }
         }

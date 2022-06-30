@@ -13,28 +13,13 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {
-    public class ConnectCommand : Singleton<ConnectCommand>, ICommand
+    public class ConnectCommand : Singleton<ConnectCommand>, IClientCommand
     {
         protected ConnectCommand() { }
 
         public string Name { get => "Connect"; }
 
-        public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
-        {
-            if (asyncMachine == null)
-                throw new ArgumentNullException(nameof(asyncMachine));
-
-            if (asyncMachine is AsynchronousClient client)
-            {
-                return Execute(client, args);
-            }
-            else
-            {
-                throw new ArgumentException(string.Format("{0} must be a {1}", nameof(asyncMachine), typeof(AsynchronousClient)));
-            }
-        }
-
-        private bool Execute(AsynchronousClient client, params string[] args)
+        public bool Execute(AsynchronousClient client, params string[] args)
         {
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
