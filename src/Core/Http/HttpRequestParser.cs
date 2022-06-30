@@ -52,9 +52,7 @@ namespace MySharpChat.Core.Http
                                 string version = components[2];
                                 if (TryParseHttpVersion(version, out Version? requestVersion))
                                 {
-#pragma warning disable CS8601 // Existence possible d'une assignation de référence null.
-                                    request.Version = requestVersion;
-#pragma warning restore CS8601 // Existence possible d'une assignation de référence null.
+                                    request.Version = requestVersion!;
                                 }
                                 else
                                 {

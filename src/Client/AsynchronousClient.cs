@@ -26,9 +26,6 @@ namespace MySharpChat.Client
         private Thread? m_clientThread = null;
         private Socket? m_socketHandler = null;
 
-        // The response from the remote device.  
-        private string response = string.Empty;
-
         public AsynchronousClient()
         {
             Initialize();
@@ -99,7 +96,7 @@ namespace MySharpChat.Client
             m_clientRun = true;
             while (m_clientRun)
             {
-                if (IsConnected)
+                if (IsConnected(null))
                     Console.Write(string.Format("{0}@{1}> ", Environment.UserName, m_socketHandler!.LocalEndPoint));
                 else
                     Console.Write(string.Format("{0}> ", Environment.UserName));
@@ -123,6 +120,11 @@ namespace MySharpChat.Client
         public bool IsRunning()
         {
             return m_clientRun;
+        }
+
+        public bool IsConnected(ConnexionInfos? connexionInfos)
+        {
+            return m_socketHandler != null && m_socketHandler.Connected;
         }
 
         public void Stop()
@@ -157,7 +159,7 @@ namespace MySharpChat.Client
             m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
             bool isConnected = m_socketHandler.Connected;
-            if (IsConnected)
+            if (IsConnected(null))
                 Console.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             else
                 Console.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
@@ -165,7 +167,32 @@ namespace MySharpChat.Client
             return isConnected;
         }
 
-        public bool IsConnected => m_socketHandler != null && m_socketHandler.Connected;
+        public void Send(string? text)
+        {
+            if (string.IsNullOrEmpty(text))
+                throw new ArgumentNullException(nameof(text));
+
+            // Send test data to the remote device.  
+            SocketUtils.Send(m_socketHandler!, $"{text}<EOF>", SendCallback, this);
+            sendDone.WaitOne();
+        }
+
+        public string Read()
+        {
+            string result;
+            // Receive the response from the remote device.  
+            result = SocketUtils.Read(m_socketHandler!, ReadCallback, this, receiveDone);
+            Console.WriteLine("Response received : {0}", result);
+            return result;
+        }
+
+        public void Disconnect(ConnexionInfos? connexionInfos)
+        {
+            if (m_socketHandler != null)
+            {
+                SocketUtils.ShutdownListener(m_socketHandler);
+            }
+        }
 
         private static void ConnectCallback(IAsyncResult ar)
         {
@@ -221,33 +248,6 @@ namespace MySharpChat.Client
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
-            }
-        }
-
-        public void Send(string? text)
-        {
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException(nameof(text));
-
-            // Send test data to the remote device.  
-            SocketUtils.Send(m_socketHandler!, $"{text}<EOF>", SendCallback, this);
-            sendDone.WaitOne();
-        }
-
-        public string Read()
-        {
-            string result;
-            // Receive the response from the remote device.  
-            result = SocketUtils.Read(m_socketHandler!, ReadCallback, this, receiveDone);
-            Console.WriteLine("Response received : {0}", result);
-            return result;
-        }
-
-        public void Disconnect(ConnexionInfos connexionInfos)
-        {
-            if (m_socketHandler != null)
-            {
-                SocketUtils.ShutdownListener(m_socketHandler);
             }
         }
     }

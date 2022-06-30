@@ -11,7 +11,7 @@ using MySharpChat.Core.Command;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 
-namespace MySharpChat.Client.Command
+namespace MySharpChat.Server.Command
 {
     public class ConnectCommand : Singleton<ConnectCommand>, ICommand
     {
@@ -24,21 +24,21 @@ namespace MySharpChat.Client.Command
             if (asyncMachine == null)
                 throw new ArgumentNullException(nameof(asyncMachine));
 
-            if (asyncMachine is AsynchronousClient client)
+            if (asyncMachine is AsynchronousServer server)
             {
-                return Execute(client, args);
+                return Execute(server, args);
             }
             else
             {
-                throw new ArgumentException(string.Format("{0} must be a {1}", nameof(asyncMachine), typeof(AsynchronousClient)));
+                throw new ArgumentException(string.Format("{0} must be a {1}", nameof(asyncMachine), typeof(AsynchronousServer)));
             }
         }
 
-        private bool Execute(AsynchronousClient client, params string[] args)
+        private bool Execute(AsynchronousServer server, params string[] args)
         {
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
-            ConnexionInfos.Data data = connexionInfos.Remote!;
+            ConnexionInfos.Data data = connexionInfos.Local!;
 #if DEBUG
             data.Hostname = serverAdress ?? "localhost";
 #else
@@ -49,7 +49,7 @@ namespace MySharpChat.Client.Command
             data.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
-            return client.Connect(connexionInfos);
+            return server.Connect(connexionInfos);
         }
 
         public string GetHelp()

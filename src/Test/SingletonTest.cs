@@ -20,10 +20,8 @@ namespace MySharpChat.Test
             Type singletonType = typeof(Singleton<>);
             Type singletonTypeGeneric = singletonType.GetGenericTypeDefinition();
 
-#pragma warning disable CS8602 // Déréférencement d'une éventuelle référence null.
-            Type[] allTypes = Assembly.GetAssembly(singletonTypeGeneric).GetTypes();
+            Type[] allTypes = Assembly.GetAssembly(singletonTypeGeneric)!.GetTypes();
             singletonTypes = allTypes.Where(t => t.IsClass && !t.IsAbstract && IsSingleton(t)).ToList();
-#pragma warning restore CS8602 // Déréférencement d'une éventuelle référence null.
         }
 
         [Test]

@@ -27,9 +27,7 @@ namespace MySharpChat.Core.Command
         {
             bool notNull = x != null && y != null;
             bool allNull = x == null && y == null;
-#pragma warning disable CS8602 // Déréférencement d'une éventuelle référence null.
-            return allNull || (notNull && nameComparer.Equals(x.Name, y.Name));
-#pragma warning restore CS8602 // Déréférencement d'une éventuelle référence null.
+            return allNull || (notNull && nameComparer.Equals(x!.Name, y!.Name));
         }
 
         public int GetHashCode([DisallowNull] ICommand obj)
