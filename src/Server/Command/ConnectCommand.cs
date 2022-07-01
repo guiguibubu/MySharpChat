@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -30,8 +31,30 @@ namespace MySharpChat.Server.Command
             data.Hostname = serverAdress ?? Dns.GetHostName();
 #endif
 
+            List<NetworkInterface> networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet) //WiFI or Ethernet
+                .Where(ni => ni.GetIPProperties().GatewayAddresses.FirstOrDefault() != null) //Virtual (like VirtualBox) network interfaces does not have Gateway address
+                .ToList();
+
+            List<IPAddress> ipAddressesNonVirtual = networkInterfaces!.Select(ni => ni.GetIPProperties()).SelectMany(ipprop => ipprop.UnicastAddresses).Select(uniAddr => uniAddr.Address).ToList();
+
             IPHostEntry ipHostInfo = Dns.GetHostEntry(data.Hostname);
-            data.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+            IPAddress[] ipAddresses = ipHostInfo.AddressList;
+#if DEBUG
+            Console.WriteLine("Available ip adresses");
+            foreach(IPAddress ipAddress in ipAddresses)
+            {
+                Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+
+            }
+            Console.WriteLine("Available ip adresses non virtual");
+            foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+            {
+                Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+
+            }
+#endif
+            data.Ip = ipAddresses.First(a => a.AddressFamily == AddressFamily.InterNetwork);
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
             return server.Connect(connexionInfos);
