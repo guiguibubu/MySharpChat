@@ -176,7 +176,7 @@ namespace MySharpChat.Client
                 throw new ArgumentNullException(nameof(text));
 
             // Send test data to the remote device.  
-            if(SocketUtils.Send(m_socketHandler!, $"{text}<EOF>", SendCallback, this))
+            if(SocketUtils.Send(m_socketHandler!, $"{text}", SendCallback, this))
             {
                 sendDone.WaitOne();
                 // Set the event to nonsignaled state.  
