@@ -4,6 +4,10 @@ NUNIT_CONSOLE_PATH=$1
 ASSEMBLY_PATH=$2
 WORK_DIRECTORY=$3
 
+echo NUNIT_CONSOLE_PATH=$NUNIT_CONSOLE_PATH
+echo ASSEMBLY_PATH=$ASSEMBLY_PATH
+echo WORK_DIRECTORY=$WORK_DIRECTORY
+
 function failParameters {
 	echo 3 parameters are needed
 	echo 1 : full path to nunit console
