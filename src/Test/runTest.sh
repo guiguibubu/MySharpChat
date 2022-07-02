@@ -19,17 +19,17 @@ function failParameters {
 function isEnvVarDefined {
 	envar=$1
 	if [[ -z "${envar}" ]]; then
-		return 1
+		false
+		return
 	else
-		return 0
+		true
+		return
 	fi
 }
 
-echo $(isEnvVarDefined NUNIT_CONSOLE_PATH)
-
-if isEnvVarDefined NUNIT_CONSOLE_PATH; then failParameters; fi
-if isEnvVarDefined ASSEMBLY_PATH; then failParameters; fi
-if isEnvVarDefined WORK_DIRECTORY; then failParameters; fi
+if ! isEnvVarDefined NUNIT_CONSOLE_PATH; then echo failParameters; fi
+if ! isEnvVarDefined ASSEMBLY_PATH; then echo failParameters; fi
+if ! isEnvVarDefined WORK_DIRECTORY; then echo failParameters; fi
 
 if [ ! "$MYSHARPCHAT_SKIP_TEST" = "true" ]; then
 	$NUNIT_CONSOLE_PATH $ASSEMBLY_PATH --work $WORK_DIRECTORY
