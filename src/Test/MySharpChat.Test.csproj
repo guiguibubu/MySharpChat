@@ -29,7 +29,12 @@
         <ProjectReference Include="..\Server\MySharpChat.Server.csproj" />
     </ItemGroup>
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="call $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.bat $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
+    <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <Message Text="Run tests : call $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.bat $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
+        <Exec Command="call $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.bat $(PkgNUnit_ConsoleRunner)\tools\nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
+    </Target>
+    <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+        <Message Text="Run tests : call $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.bat $(PkgNUnit_ConsoleRunner)/tools/nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
+        <Exec Command="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))runTest.sh $(PkgNUnit_ConsoleRunner)/tools/nunit3-console.exe $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(OutputPath)'))$(AssemblyName).dll $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../../testResults'))" />
     </Target>
 </Project>
