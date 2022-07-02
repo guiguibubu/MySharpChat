@@ -49,6 +49,8 @@ namespace MySharpChat.Core.SocketModule
             handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, callback, state);
 
             receiveDone?.WaitOne();
+            // Set the event to nonsignaled state.  
+            receiveDone?.Reset();
             content = state.dataStringBuilder.ToString();
 
             return content;
@@ -96,7 +98,7 @@ namespace MySharpChat.Core.SocketModule
             }
         }
 
-        public static void Send(Socket handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
+        public static bool Send(Socket handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
         {
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -109,8 +111,17 @@ namespace MySharpChat.Core.SocketModule
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 
-            // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0, callback, state);
+            if (handler != null && handler.Connected)
+            {
+                // Begin sending the data to the remote device.  
+                handler.BeginSend(byteData, 0, byteData.Length, 0, callback, state);
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Can not send data. Socket is disconnect.");
+                return false;
+            }
         }
 
         public static int SendCallback(IAsyncResult ar, out string text)

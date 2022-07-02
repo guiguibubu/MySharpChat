@@ -158,6 +158,7 @@ namespace MySharpChat.Client
             // Connect to the remote endpoint.  
             m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
             connectDone.WaitOne();
+            connectDone.Reset();
             m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
             bool isConnected = m_socketHandler.Connected;
@@ -175,8 +176,12 @@ namespace MySharpChat.Client
                 throw new ArgumentNullException(nameof(text));
 
             // Send test data to the remote device.  
-            SocketUtils.Send(m_socketHandler!, $"{text}<EOF>", SendCallback, this);
-            sendDone.WaitOne();
+            if(SocketUtils.Send(m_socketHandler!, $"{text}<EOF>", SendCallback, this))
+            {
+                sendDone.WaitOne();
+                // Set the event to nonsignaled state.  
+                sendDone.Reset();
+            }
         }
 
         public string Read()
