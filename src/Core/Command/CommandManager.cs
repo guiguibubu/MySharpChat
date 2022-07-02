@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -16,6 +17,11 @@ namespace MySharpChat.Core.Command
         protected CommandManager() { }
 
         private readonly Dictionary<string, ICommand> _commands = new Dictionary<string, ICommand>(CommandComparer.NameComparer);
+
+        public IEnumerable<ICommand> GetCommands()
+        {
+            return _commands.Values;
+        }
 
         public ICommand? GetCommand(string? name)
         {
