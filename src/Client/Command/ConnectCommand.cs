@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -24,14 +25,27 @@ namespace MySharpChat.Client.Command
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
             ConnexionInfos.Data data = connexionInfos.Remote!;
-#if DEBUG
-            data.Hostname = serverAdress ?? "localhost";
-#else
-            data.Hostname = serverAdress ?? Dns.GetHostName();
-#endif
 
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(data.Hostname);
-            data.Ip = ipHostInfo.AddressList.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = SocketUtils.GetAvailableIpAdresses(serverAdress);
+            data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
+            if (data.Ip == null)
+            {
+                Console.WriteLine("No valid ip adress available");
+                Console.WriteLine("Available ip adresses Host");
+                foreach (IPAddress ipAddress in ipAddressesHost)
+                {
+                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+
+                }
+                Console.WriteLine("Available ip adresses non virtual");
+                foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+                {
+                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+
+                }
+                throw new InvalidOperationException("No valid ip adress available");
+            }
+
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
             return client.Connect(connexionInfos);

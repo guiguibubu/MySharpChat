@@ -25,36 +25,27 @@ namespace MySharpChat.Server.Command
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
             ConnexionInfos.Data data = connexionInfos.Local!;
-#if DEBUG
-            data.Hostname = serverAdress ?? "localhost";
-#else
-            data.Hostname = serverAdress ?? Dns.GetHostName();
-#endif
 
-            List<NetworkInterface> networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet) //WiFI or Ethernet
-                .Where(ni => ni.GetIPProperties().GatewayAddresses.FirstOrDefault() != null) //Virtual (like VirtualBox) network interfaces does not have Gateway address
-                .ToList();
-
-            List<IPAddress> ipAddressesNonVirtual = networkInterfaces!.Select(ni => ni.GetIPProperties()).SelectMany(ipprop => ipprop.UnicastAddresses).Select(uniAddr => uniAddr.Address).ToList();
-
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(data.Hostname);
-            IPAddress[] ipAddresses = ipHostInfo.AddressList;
-#if DEBUG
-            Console.WriteLine("Available ip adresses");
-            foreach(IPAddress ipAddress in ipAddresses)
+            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = SocketUtils.GetAvailableIpAdresses(serverAdress);
+            data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
+            if (data.Ip == null)
             {
-                Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+                Console.WriteLine("No valid ip adress available");
+                Console.WriteLine("Available ip adresses Host");
+                foreach (IPAddress ipAddress in ipAddressesHost)
+                {
+                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
 
-            }
-            Console.WriteLine("Available ip adresses non virtual");
-            foreach (IPAddress ipAddress in ipAddressesNonVirtual)
-            {
-                Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+                }
+                Console.WriteLine("Available ip adresses non virtual");
+                foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+                {
+                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
 
+                }
+                throw new InvalidOperationException("No valid ip adress available");
             }
-#endif
-            data.Ip = ipAddresses.First(a => a.AddressFamily == AddressFamily.InterNetwork);
+
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
             return server.Connect(connexionInfos);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -46,7 +47,7 @@ namespace MySharpChat.Core.SocketModule
             state.owner = caller;
             state.receiveDone = receiveDone;
             handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, callback, state);
-            
+
             receiveDone?.WaitOne();
             content = state.dataStringBuilder.ToString();
 
@@ -141,6 +142,43 @@ namespace MySharpChat.Core.SocketModule
             }
 
             return bytesSent;
+        }
+
+        public static Tuple<IEnumerable<IPAddress>,IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
+        {
+#if DEBUG
+            string actualHostName = hostname ?? "localhost";
+#else
+            string actualHostName = hostname ?? Dns.GetHostName();
+#endif
+
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(actualHostName);
+            List<IPAddress> ipAddressesHost = ipHostInfo.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).ToList(); //Keep only IPv4
+
+#if DEBUG
+            List<IPAddress> ipAddressesNonVirtual = ipAddressesHost.ToList();
+#else
+            List<NetworkInterface> networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet) //WiFI or Ethernet
+                .Where(ni => ni.GetIPProperties().GatewayAddresses.FirstOrDefault() != null) //Virtual (like VirtualBox) network interfaces does not have Gateway address
+                .ToList();
+
+            List<IPAddress> ipAddressesNonVirtual = networkInterfaces!.Select(ni => ni.GetIPProperties()).SelectMany(ipprop => ipprop.UnicastAddresses).Select(uniAddr => uniAddr.Address).ToList();
+#endif
+
+#if DEBUG
+            Console.WriteLine("Available ip adresses");
+            foreach (IPAddress ipAddress in ipAddressesHost)
+            {
+                Console.WriteLine("{0}", ipAddress);
+            }
+            Console.WriteLine("Available ip adresses non virtual");
+            foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+            {
+                Console.WriteLine("{0}", ipAddress);
+            }
+#endif
+            return Tuple.Create((IEnumerable<IPAddress>) ipAddressesHost, (IEnumerable<IPAddress>)ipAddressesNonVirtual);
         }
     }
 }
