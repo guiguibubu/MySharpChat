@@ -37,6 +37,11 @@ namespace MySharpChat.Server
             Initialize();
         }
 
+        ~AsynchronousServer()
+        {
+            Stop();
+        }
+
         public void Initialize(object? initObject = null)
         {
             InitCommands();
@@ -94,6 +99,7 @@ namespace MySharpChat.Server
 
         public void Stop()
         {
+            Disconnect(null);
             m_serverRun = false;
         }
 
