@@ -201,7 +201,7 @@ namespace MySharpChat.Server
                 Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
 #endif
 
-                //TODO Add a real ASP server to handle HTTP/WED requests. REST API ?
+                //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
                 // Echo the data back to the client.
                 if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
                 {
@@ -216,7 +216,7 @@ namespace MySharpChat.Server
                     content = HttpParser.ToString(response).Result;
                 }
 
-                //TODO Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
+                //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
                 Send(content);
             }
         }

@@ -108,8 +108,7 @@ namespace MySharpChat.Client
                 else
                     Console.Write(string.Format("{0}> ", Environment.UserName));
 
-                //TODO Better handle of user input
-                string? text = Console.ReadLine();
+                string? text = CommandInput.ReadLine();
 
                 CommandParser? parser = CommandParser.Instance;
                 if (parser?.TryParse(text, out string[] args, out ICommand? command) ?? false)
