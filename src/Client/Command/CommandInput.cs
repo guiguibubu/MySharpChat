@@ -48,8 +48,10 @@ namespace MySharpChat.Client.Command
                 }
                 else
                 {
-                    readingState.sb.Append(key.KeyChar);
-                    Console.Write(key.KeyChar);
+                    int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
+                    readingState.sb.Insert(currentPositionInText, key.KeyChar);
+                    UpdateRendering(readingState);
+                    MovePositionInText(1);
                 }
             }
 
@@ -106,12 +108,10 @@ namespace MySharpChat.Client.Command
             RegisterKeyAction(keyActions, ConsoleKey.RightArrow,
                 (ref ReadingState readingState) =>
                 {
-                    int dx = CurrentPositionX - readingState.InitialPositionX;
-                    int dy = CurrentPositionY - readingState.InitialPositionY;
-                    int currentPositionInText = GetCurrentPositionInText(dx, dy, readingState.InitialPositionX);
+                    int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
                     if (currentPositionInText < readingState.sb.Length)
                     {
-                        MoveCursorX(1);
+                        MovePositionInText(1);
                     }
 
                 }
@@ -119,38 +119,40 @@ namespace MySharpChat.Client.Command
             RegisterKeyAction(keyActions, ConsoleKey.LeftArrow,
                 (ref ReadingState readingState) =>
                 {
-                    int dx = CurrentPositionX - readingState.InitialPositionX;
-                    int dy = CurrentPositionY - readingState.InitialPositionY;
-                    int currentPositionInText = GetCurrentPositionInText(dx, dy, readingState.InitialPositionX);
+                    int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
                     if (currentPositionInText > 0)
                     {
-                        MoveCursorX(-1);
+                        MovePositionInText(-1);
                     }
                 }
             );
             RegisterKeyAction(keyActions, ConsoleKey.Backspace,
                 (ref ReadingState readingState) =>
                 {
-                    int dx = CurrentPositionX - readingState.InitialPositionX;
-                    int dy = CurrentPositionY - readingState.InitialPositionY;
-                    int currentPositionInText = GetCurrentPositionInText(dx, dy, readingState.InitialPositionX);
+                    int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
                     if (currentPositionInText > 0)
                     {
-                        MoveCursorX(-1);
-                        int positionInString = CurrentPositionX - readingState.InitialPositionX;
-                        int oldStringSize = readingState.sb.Length;
-                        readingState.sb.Remove(positionInString, 1);
+                        MovePositionInText(-1);
+                        currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
+                        readingState.sb.Remove(currentPositionInText, 1);
 
-                        // Rewrite the text in console to shift the tail of the word if deletion in middle of a word
-                        MoveCursorX(-positionInString);
-                        for (int i = 0; i < oldStringSize; i++)
-                            Console.Write(" ");
+                        UpdateRendering(readingState);
+                    }
+                }
+            );
+            RegisterKeyAction(keyActions, ConsoleKey.Delete,
+                (ref ReadingState readingState) =>
+                {
+                    int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
+                    if (currentPositionInText < readingState.sb.Length)
+                    {
+                        ClearCommand(ref readingState, true);
 
-                        MoveCursorX(-oldStringSize);
-                        Console.Write(readingState.sb.ToString());
+                        readingState.sb.Remove(currentPositionInText, 1);
 
-                        // Move cursor to previous position
-                        MoveCursorX(positionInString - readingState.sb.Length);
+                        UpdateRendering(readingState);
+
+                        MovePositionInText(currentPositionInText);
                     }
                 }
             );
@@ -181,16 +183,47 @@ namespace MySharpChat.Client.Command
             return keyActions;
         }
 
-        private static int GetCurrentPositionInText(int dx, int dy, int initX)
+        private static int GetCurrentPositionInText(int x, int y, int initX, int initY)
         {
             int currentPositionInText = 0;
+            int dy = y - initY;
             if (dy == 0)
-                currentPositionInText = dx - initX;
+                currentPositionInText = x - initX;
             else if (dy == 1)
-                currentPositionInText = dx + (Console.BufferWidth - initX);
+                currentPositionInText = x + (Console.BufferWidth - initX);
             else
-                currentPositionInText = dx + (Console.BufferWidth - initX) + (dy - 1) * Console.BufferWidth;
+                currentPositionInText = x + (Console.BufferWidth - initX) + (dy - 1) * Console.BufferWidth;
             return currentPositionInText;
+        }
+
+        // TODO !!!
+        private static void MovePositionInText(int move)
+        {
+            int newX = CurrentPositionX + move;
+            int bufferWidth = Console.BufferWidth;
+
+            int moveX;
+            int moveY;
+
+            if (newX >= bufferWidth)
+            {
+                moveY = newX / bufferWidth;
+                moveX = newX % bufferWidth - CurrentPositionX;
+            }
+            else if (newX < 0)
+            {
+                moveY = (newX / bufferWidth) - 1;
+                moveX = (bufferWidth - CurrentPositionX) - (-newX % bufferWidth);
+            }
+            else
+            {
+                moveX = move;
+                moveY = 0;
+            }
+
+            MoveCursorX(moveX);
+            MoveCursorY(moveY);
+
         }
 
         private static void MoveCursorX(int move)
@@ -207,16 +240,26 @@ namespace MySharpChat.Client.Command
                 Console.CursorTop = newPosition;
         }
 
-        private static void ClearCommand(ref ReadingState readingState)
+        private static void ClearCommand(ref ReadingState readingState, bool cursorOnly = false)
         {
             int oldStringSize = readingState.sb.Length;
-            readingState.sb.Clear();
+            if (!cursorOnly)
+                readingState.sb.Clear();
 
             // Rewrite the text in console to shift the tail of the word if deletion in middle of a word
             ResetPosition(readingState);
             for (int i = 0; i < oldStringSize; i++)
                 Console.Write(" ");
             ResetPosition(readingState);
+        }
+
+        private static void UpdateRendering(ReadingState readingState)
+        {
+            int currentPositionInText = GetCurrentPositionInText(CurrentPositionX, CurrentPositionY, readingState.InitialPositionX, readingState.InitialPositionY);
+            ClearCommand(ref readingState, true);
+            Console.Write(readingState.sb.ToString());
+            // Move cursor to previous position
+            MovePositionInText(currentPositionInText - readingState.sb.Length);
         }
 
         private static void ResetPosition(ReadingState readingState)
