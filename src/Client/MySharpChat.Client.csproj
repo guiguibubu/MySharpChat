@@ -30,6 +30,7 @@
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
         <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
         <Nullable>enable</Nullable>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -51,6 +52,10 @@
             <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
             <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
         </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Utils\Windows\" />
     </ItemGroup>
 
     <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
