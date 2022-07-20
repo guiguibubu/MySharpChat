@@ -22,7 +22,14 @@ namespace MySharpChat.Core.Command
 
             try
             {
-                asyncMachine.Stop();
+                if(args.Length == 1 && int.TryParse(args[0], out int exitCode))
+                {
+                    asyncMachine.Stop(exitCode);
+                }
+                else
+                {
+                    asyncMachine.Stop();
+                }
             }
             catch
             {

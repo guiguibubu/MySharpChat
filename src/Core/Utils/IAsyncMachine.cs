@@ -13,9 +13,11 @@ namespace MySharpChat.Core.Utils
         public bool Start(object? startObject = null);
         public bool IsRunning();
         public bool IsConnected(ConnexionInfos? connexionInfos);
-        public void Stop();
+        public void Stop(int exitCode = 0);
         public void Wait();
         public bool Wait(int millisecondsTimeout);
+
+        public int ExitCode { get; }
 
         public bool Connect(ConnexionInfos connexionInfos);
         public void Send(string? text);

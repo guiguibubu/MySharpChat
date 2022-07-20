@@ -134,10 +134,11 @@ namespace MySharpChat.Client
             return m_socketHandler != null && m_socketHandler.Connected;
         }
 
-        public void Stop()
+        public void Stop(int exitCode = 0)
         {
             Disconnect(null);
             m_clientRun = false;
+            ExitCode = exitCode;
         }
 
         public void Wait()
@@ -149,6 +150,8 @@ namespace MySharpChat.Client
         {
             return m_clientThread?.Join(millisecondsTimeout) ?? true;
         }
+
+        public int ExitCode { get; private set; }
 
         public bool Connect(ConnexionInfos connexionInfos)
         {

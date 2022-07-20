@@ -4,7 +4,7 @@ namespace MySharpChat.Client
 {
     static class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             AsynchronousClient client = new AsynchronousClient();
 
@@ -15,6 +15,8 @@ namespace MySharpChat.Client
 
             Console.WriteLine("\nPress ENTER to continue...");
             Console.Read();
+
+            return client.ExitCode;
         }
     }
 }
