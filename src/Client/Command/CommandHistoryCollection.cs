@@ -6,21 +6,28 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client.Command
 {
-    public class CommandHistoryCollection : List<string>
+    public class CommandHistoryCollection
     {
         private int currentPosition = -1;
+        private readonly List<string> commands = new List<string>();
 
-        public string? CurrentCommand { get { return (currentPosition >= 0 && currentPosition < Count) ? this[currentPosition] : null; } }
+        public string? CurrentCommand { get { return (currentPosition >= 0 && currentPosition < commands.Count) ? commands[currentPosition] : null; } }
+        public string? LastCommand { get { return (currentPosition >= 0 && currentPosition < commands.Count) ? commands[commands.Count - 1] : null; } }
 
         public void ResetPosition()
         {
-            currentPosition = Count - 1;
+            currentPosition = commands.Count;
+        }
+
+        public void Add(string newCommand)
+        {
+            commands.Add(newCommand);
         }
 
         public string? GetPreviousCommand()
         {
             if (currentPosition < 0)
-                currentPosition = Count - 1;
+                currentPosition = commands.Count - 1;
             else
                 currentPosition--;
 
