@@ -12,7 +12,7 @@ using MySharpChat.Client.Command;
 
 namespace MySharpChat.Client
 {
-    public class AsynchronousClient : IAsyncMachine
+    public class Client : IAsyncMachine
     {
         // ManualResetEvent instances signal completion.  
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -23,33 +23,27 @@ namespace MySharpChat.Client
         private Thread? m_clientThread = null;
         private Socket? m_socketHandler = null;
 
-        public AsynchronousClient()
+        private readonly LoaderClientLogic loaderLogic = new LoaderClientLogic();
+
+        private IClientLogic currentLogic;
+
+        public Client()
         {
             Initialize();
         }
 
-        ~AsynchronousClient()
+        ~Client()
         {
             Stop();
         }
 
         public void Initialize(object? initObject = null)
         {
-            InitCommands();
+            currentLogic = loaderLogic;
         }
 
         public void InitCommands()
         {
-            CommandManager? commandManager = CommandManager.Instance;
-            if (commandManager != null)
-            {
-                commandManager.AddCommand(QuitCommand.Instance);
-                commandManager.AddCommand(ExitCommand.Instance);
-                commandManager.AddCommand(ConnectCommand.Instance);
-                commandManager.AddCommand(DisconnectCommand.Instance);
-                commandManager.AddCommand(SendCommand.Instance);
-                commandManager.AddCommand(HelpCommand.Instance);
-            }
         }
 
         public bool Start(object? startObject = null)
@@ -59,12 +53,6 @@ namespace MySharpChat.Client
 
         public bool Start(string? serverAdress)
         {
-            // Connect to a remote device.  
-
-            // Establish the remote endpoint for the socket.  
-            // The name of the
-            // remote device is "host.contoso.com".
-
             Stopwatch sw = Stopwatch.StartNew();
             sw.Start();
 
@@ -101,15 +89,12 @@ namespace MySharpChat.Client
             m_clientRun = true;
             while (m_clientRun)
             {
-                if (IsConnected(null))
-                    Console.Write(string.Format("{0}@{1}> ", Environment.UserName, m_socketHandler!.LocalEndPoint));
-                else
-                    Console.Write(string.Format("{0}> ", Environment.UserName));
+                Console.Write(currentLogic.Prefix);
 
                 string? text = CommandInput.ReadLine();
 
-                CommandParser? parser = CommandParser.Instance;
-                if (parser?.TryParse(text, out string[] args, out ICommand? command) ?? false)
+                CommandParser parser = currentLogic.CommandParser;
+                if (parser.TryParse(text, out string[] args, out ICommand? command))
                 {
                     command?.Execute(this, args);
                 }
@@ -118,7 +103,7 @@ namespace MySharpChat.Client
                     Console.WriteLine("Fail to parse \"{0}\"", text);
                     Console.WriteLine();
                     Console.WriteLine("Available commands");
-                    HelpCommand.Instance?.Execute();
+                    parser.GetHelpCommand().Execute();
                 }
                 Console.WriteLine();
             }
@@ -174,7 +159,10 @@ namespace MySharpChat.Client
 
             bool isConnected = m_socketHandler.Connected;
             if (IsConnected(null))
+            {
                 Console.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                currentLogic = new ChatClientLogic(m_socketHandler!.LocalEndPoint!);
+            }
             else
                 Console.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
 
@@ -187,7 +175,7 @@ namespace MySharpChat.Client
                 throw new ArgumentNullException(nameof(text));
 
             // Send test data to the remote device.  
-            if(SocketUtils.Send(m_socketHandler!, $"{text}", SendCallback, this))
+            if (SocketUtils.Send(m_socketHandler!, $"{text}", SendCallback, this))
             {
                 sendDone.WaitOne();
                 // Set the event to nonsignaled state.  
@@ -209,6 +197,7 @@ namespace MySharpChat.Client
             if (m_socketHandler != null)
             {
                 SocketUtils.ShutdownListener(m_socketHandler);
+                currentLogic = loaderLogic;
             }
         }
 
@@ -217,7 +206,7 @@ namespace MySharpChat.Client
             try
             {
                 // Retrieve the socket from the state object.
-                if (ar.AsyncState is AsynchronousClient client
+                if (ar.AsyncState is Client client
                     && client.m_socketHandler != null
                     && client.m_socketHandler.RemoteEndPoint != null)
                 {
@@ -241,7 +230,7 @@ namespace MySharpChat.Client
         private static void ReadCallback(IAsyncResult ar)
         {
             if (ar.AsyncState is SocketContext context
-                && context.owner is AsynchronousClient client)
+                && context.owner is Client client)
             {
                 SocketUtils.ReadCallback(ar);
 
@@ -254,7 +243,7 @@ namespace MySharpChat.Client
             try
             {
                 if (ar.AsyncState is SocketContext context
-                    && context.owner is AsynchronousClient client)
+                    && context.owner is Client client)
                 {
                     int bytesSent = SocketUtils.SendCallback(ar, out string text);
                     Console.WriteLine("Send {0} bytes to Server. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);

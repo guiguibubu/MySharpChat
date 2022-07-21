@@ -27,6 +27,8 @@ namespace MySharpChat.Server
         private Thread? m_serverThread = null;
         private Socket? m_socketHandler = null;
 
+        private readonly CommandManager commandManager = new CommandManager();
+
         public AsynchronousServer(ConnexionInfos connexionInfos)
         {
             m_connexionInfos = connexionInfos;
@@ -45,7 +47,7 @@ namespace MySharpChat.Server
 
         public void InitCommands()
         {
-            CommandManager.Instance!.AddCommand(ConnectCommand.Instance);
+            commandManager.AddCommand(ConnectCommand.Instance);
         }
 
         public bool Start(object? startObject = null)
@@ -120,7 +122,7 @@ namespace MySharpChat.Server
                 Console.WriteLine("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId);
             }
 
-            ConnectCommand command = CommandManager.Instance!.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
+            ConnectCommand command = commandManager.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
             command.Execute(this);
 
             m_serverRun = true;

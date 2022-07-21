@@ -5,9 +5,18 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
-    public class CommandParser : Singleton<CommandParser>, IParser<ICommand>
+    public class CommandParser : IParser<ICommand>
     {
-        protected CommandParser() { }
+        private readonly CommandManager _commandManager;
+
+        public CommandParser(CommandManager commandManager) {
+            _commandManager = commandManager;
+        }
+
+        public HelpCommand GetHelpCommand()
+        {
+            return _commandManager.GetHelpCommand();
+        }
 
         public ICommand? Parse(string? text, out string[] args)
         {
@@ -23,7 +32,7 @@ namespace MySharpChat.Core.Command
 
             string commandName = commandTokens[0];
             args = new ArraySegment<string>(commandTokens, 1, commandTokens.Length - 1).ToArray();
-            return CommandManager.Instance?.GetCommand(commandName);
+            return _commandManager.GetCommand(commandName);
         }
 
         public ICommand? Parse(string? text)

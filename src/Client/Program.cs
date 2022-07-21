@@ -4,9 +4,10 @@ namespace MySharpChat.Client
 {
     static class Program
     {
+        // TODO Add CLI option for client
         static int Main(string[] args)
         {
-            AsynchronousClient client = new AsynchronousClient();
+            Client client = new Client();
 
             if (client.Start())
             {

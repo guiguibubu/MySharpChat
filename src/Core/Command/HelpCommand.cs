@@ -4,9 +4,14 @@ using System.Linq;
 
 namespace MySharpChat.Core.Command
 {
-    public class HelpCommand : Singleton<HelpCommand>, ICommand
+    public class HelpCommand : ICommand
     {
-        protected HelpCommand() { }
+        private readonly CommandManager _commandManager;
+
+        public HelpCommand(CommandManager commandManager)
+        {
+            _commandManager = commandManager;
+        }
 
         public string Name { get => "Help"; }
 
@@ -16,7 +21,7 @@ namespace MySharpChat.Core.Command
 
             if (string.IsNullOrEmpty(commandName))
             {
-                foreach (ICommand command in CommandManager.Instance!.GetCommands())
+                foreach (ICommand command in _commandManager.GetCommands())
                 {
                     Console.Write("{0} : ", command.Name);
                     string helpMsg;
@@ -35,7 +40,7 @@ namespace MySharpChat.Core.Command
             }
             else
             {
-                ICommand? command = CommandManager.Instance!.GetCommands().FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.InvariantCultureIgnoreCase));
+                ICommand? command = _commandManager.GetCommands().FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.InvariantCultureIgnoreCase));
 
                 if (command == null)
                 {

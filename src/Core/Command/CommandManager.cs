@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using MySharpChat.Core.Utils;
-
 namespace MySharpChat.Core.Command
 {
-    public class CommandManager : Singleton<CommandManager>
+    public class CommandManager
     {
-        protected CommandManager() { }
+        private readonly HelpCommand helpCommand;
+        public CommandManager() {
+            helpCommand = new HelpCommand(this);
+            AddCommand(helpCommand);
+        }
 
         private readonly Dictionary<string, ICommand> _commands = new Dictionary<string, ICommand>(CommandComparer.NameComparer);
 
@@ -29,6 +31,11 @@ namespace MySharpChat.Core.Command
         public T? GetCommand<T>(string? name) where T : ICommand
         {
             return (T?)GetCommand(name);
+        }
+
+        public HelpCommand GetHelpCommand()
+        {
+            return helpCommand;
         }
 
         public void AddCommand(ICommand? command)

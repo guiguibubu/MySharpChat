@@ -8,7 +8,7 @@ namespace MySharpChat.Client.Command
 
         public string Name { get => "Disconnect"; }
 
-        public bool Execute(AsynchronousClient client, params string[] args)
+        public bool Execute(Client client, params string[] args)
         {
             client.Disconnect(null);
             return true;
