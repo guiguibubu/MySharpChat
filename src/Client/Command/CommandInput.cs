@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Runtime.Versioning;
-using System.Runtime.InteropServices;
 
 using MySharpChat.Client.Input;
 using System.IO;
@@ -15,7 +13,7 @@ namespace MySharpChat.Client.Command
     public static class CommandInput
     {
 
-        private static readonly Dictionary<ConsoleKey, KeyActionDelegate> KeyActions = new Dictionary<ConsoleKey, KeyActionDelegate>();
+        private static readonly KeyActionsCollection KeyActions = new KeyActionsCollection();
         private static readonly KeyActionDelegate DefaultKeyAction = DefaultKeyActionImpl;
         private static readonly CommandHistoryCollection CommandHistory = new CommandHistoryCollection();
 
@@ -40,7 +38,7 @@ namespace MySharpChat.Client.Command
             {
                 ConsoleKeyInfo key = Console.ReadKey(true);
                 readingState.Key = key;
-                if (KeyActions.TryGetValue(key.Key, out KeyActionDelegate? keyAction))
+                if (KeyActions.TryGetValue(key, out KeyActionDelegate? keyAction))
                 {
                     keyAction?.Invoke(readingState);
                 }
@@ -89,28 +87,29 @@ namespace MySharpChat.Client.Command
             }
         }
 
+        // TODO Manage key modifiers (ex : ctrl + right arrow jump to end of text)
         private static void InitializeKeyActions()
         {
-            RegisterKeyAction(KeyActions, ConsoleKey.Enter,
+            KeyActions.Add(ConsoleKey.Enter,
                 (ReadingState readingState) =>
                 {
                     readingState.ReadingFinished = true;
                     Console.WriteLine();
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.Escape,
+            KeyActions.Add(ConsoleKey.Escape,
                 (ReadingState readingState) =>
                 {
                     ClearCommand(readingState);
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.Tab,
+            KeyActions.Add(ConsoleKey.Tab,
                 (ReadingState readingState) =>
                 {
                     Trace.WriteLine("TABULATION");
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.RightArrow,
+            KeyActions.Add(ConsoleKey.RightArrow,
                 (ReadingState readingState) =>
                 {
                     IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
@@ -122,7 +121,20 @@ namespace MySharpChat.Client.Command
 
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.LeftArrow,
+            KeyActions.Add(ConsoleKey.RightArrow, ConsoleModifiers.Control,
+                (ReadingState readingState) =>
+                {
+                    IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
+                    IUserInputTextHandler inputTextHandler = readingState.InputTextHandler;
+                    int textLength = inputTextHandler.Length;
+                    if (cursorHandler.Position < textLength)
+                    {
+                        cursorHandler.MovePositionToTail(textLength);
+                    }
+
+                }
+            );
+            KeyActions.Add(ConsoleKey.LeftArrow,
                 (ReadingState readingState) =>
                 {
                     IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
@@ -132,7 +144,18 @@ namespace MySharpChat.Client.Command
                     }
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.Backspace,
+
+            KeyActions.Add(ConsoleKey.LeftArrow, ConsoleModifiers.Control,
+                (ReadingState readingState) =>
+                {
+                    IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
+                    if (cursorHandler.Position > 0)
+                    {
+                        cursorHandler.MovePositionToOrigin();
+                    }
+                }
+            );
+            KeyActions.Add(ConsoleKey.Backspace,
                 (ReadingState readingState) =>
                 {
                     IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
@@ -163,7 +186,7 @@ namespace MySharpChat.Client.Command
                     }
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.Delete,
+            KeyActions.Add(ConsoleKey.Delete,
                 (ReadingState readingState) =>
                 {
                     IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
@@ -178,11 +201,11 @@ namespace MySharpChat.Client.Command
 
                         WriteStr(readingState, wordTail + " ");
                         cursorHandler.MovePositionNegative(cursorHandler.Position - oldPosition);
-                        
+
                     }
                 }
             );
-            RegisterKeyAction(KeyActions, ConsoleKey.UpArrow,
+            KeyActions.Add(ConsoleKey.UpArrow,
                 (ReadingState readingState) =>
                 {
                     if (CommandHistory.TryGetPreviousCommand(out string? oldCommand))
@@ -194,7 +217,7 @@ namespace MySharpChat.Client.Command
                 }
             );
 
-            RegisterKeyAction(KeyActions, ConsoleKey.DownArrow,
+            KeyActions.Add(ConsoleKey.DownArrow,
                 (ReadingState readingState) =>
                 {
                     if (CommandHistory.TryGetNextCommand(out string? oldCommand))
@@ -230,7 +253,7 @@ namespace MySharpChat.Client.Command
 
         private static void WriteStr(ReadingState readingState, string s)
         {
-            foreach(char c in s)
+            foreach (char c in s)
             {
                 WriteChar(readingState, c);
             }
@@ -240,33 +263,5 @@ namespace MySharpChat.Client.Command
         {
             readingState.CursorHandler.MovePositionToOrigin();
         }
-
-        private static void RegisterKeyAction(Dictionary<ConsoleKey, KeyActionDelegate> keyActions, ConsoleKey key, KeyActionDelegate action)
-        {
-            if (keyActions.ContainsKey(key))
-                keyActions[key] = action;
-            else
-                keyActions.Add(key, action);
-        }
-
-        private sealed class ReadingState
-        {
-            public ReadingState(IUserInputTextHandler inputTextHandler, IUserInputCursorHandler cursorHandler, TextWriter outputStream)
-            {
-                ReadingFinished = false;
-                InputTextHandler = inputTextHandler;
-                CursorHandler = cursorHandler;
-                OutputStream = outputStream;
-            }
-
-            public bool ReadingFinished { get; set; }
-            public int Position => CursorHandler.Position;
-            public ConsoleKeyInfo Key { get; set; }
-            public TextWriter OutputStream { get; }
-            public IUserInputCursorHandler CursorHandler { get; }
-            public IUserInputTextHandler InputTextHandler { get; }
-        }
-
-        private delegate void KeyActionDelegate(ReadingState readingState);
     }
 }

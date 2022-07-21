@@ -7,6 +7,7 @@
         public ConsoleCursorHandler(IUserInputCursorContext context)
         {
             _context = context;
+            Position = 0;
         }
 
         public int Position { get; private set; }
