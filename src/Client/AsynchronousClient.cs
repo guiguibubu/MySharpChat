@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Text;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 using MySharpChat.Core.Command;
 using MySharpChat.Core.SocketModule;
