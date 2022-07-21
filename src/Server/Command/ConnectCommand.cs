@@ -53,7 +53,12 @@ namespace MySharpChat.Server.Command
 
         public string GetHelp()
         {
-            throw new NotImplementedException();
+            return "usage: connect <ip>";
+        }
+
+        public string GetSummary()
+        {
+            return "Command to make server listen at a specific ip adress";
         }
     }
 }

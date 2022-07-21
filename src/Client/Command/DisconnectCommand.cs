@@ -27,7 +27,12 @@ namespace MySharpChat.Client.Command
 
         public string GetHelp()
         {
-            throw new NotImplementedException();
+            return "usage: disconnect";
+        }
+
+        public string GetSummary()
+        {
+            return "Command to disconnect from server.";
         }
     }
 }

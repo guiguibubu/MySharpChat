@@ -40,7 +40,12 @@ namespace MySharpChat.Core.Command
 
         public string GetHelp()
         {
-            throw new NotImplementedException();
+            return "usage: quit";
+        }
+
+        public string GetSummary()
+        {
+            return "Command to exit the program";
         }
     }
 }

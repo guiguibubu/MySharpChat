@@ -15,19 +15,51 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
         {
-            foreach(ICommand command in CommandManager.Instance!.GetCommands())
+            string? commandName = args.Length > 0 ? args[0] : null;
+
+            if (string.IsNullOrEmpty(commandName))
             {
-                Console.WriteLine("{0} :", command.Name);
-                string helpMsg;
-                try
+                foreach (ICommand command in CommandManager.Instance!.GetCommands())
                 {
-                    helpMsg = command.GetHelp();
+                    Console.Write("{0} : ", command.Name);
+                    string helpMsg;
+                    try
+                    {
+                        helpMsg = command.GetSummary();
+                    }
+                    catch (NotImplementedException)
+                    {
+                        helpMsg = "No help for this command";
+                    }
+                    Console.WriteLine(helpMsg);
                 }
-                catch(NotImplementedException)
+                Console.WriteLine();
+                Console.WriteLine("To have help on a specific command : help <command>");
+            }
+            else
+            {
+                ICommand? command = CommandManager.Instance!.GetCommands().FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.InvariantCultureIgnoreCase));
+
+                if (command == null)
                 {
-                    helpMsg = "No help for this command";
+                    Console.Write("Unknown command \"{0}\"", commandName);
                 }
-                Console.WriteLine(helpMsg);
+                else
+                {
+                    Console.WriteLine("{0} :", command.Name);
+                    string helpMsg;
+                    try
+                    {
+                        helpMsg = command.GetSummary();
+                        helpMsg += Environment.NewLine;
+                        helpMsg += command.GetHelp();
+                    }
+                    catch (NotImplementedException)
+                    {
+                        helpMsg = "No help for this command";
+                    }
+                    Console.WriteLine(helpMsg);
+                }
             }
             return true;
         }
@@ -39,7 +71,12 @@ namespace MySharpChat.Core.Command
 
         public string GetHelp()
         {
-            throw new NotImplementedException();
+            return string.Join(Environment.NewLine,"usage:", "\"help\" to list all available commands", "\"help <command>\" to have help for specific command");
+        }
+
+        public string GetSummary()
+        {
+            return "Command to have help";
         }
     }
 }

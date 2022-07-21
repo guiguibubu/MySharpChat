@@ -12,6 +12,7 @@ namespace MySharpChat.Core.Command
     {
         string Name { get; }
         bool Execute(IAsyncMachine? asyncMachine, params string[] args);
+        string GetSummary();
         string GetHelp();
     }
 }

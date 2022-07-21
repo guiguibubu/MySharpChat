@@ -79,7 +79,7 @@ namespace MySharpChat.Client
 
                 while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                Console.WriteLine("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
+                Console.WriteLine("Client started (in {0} ms) !" + Environment.NewLine, sw.ElapsedMilliseconds);
 
                 clientStarted = true;
 
@@ -118,7 +118,11 @@ namespace MySharpChat.Client
                 else
                 {
                     Console.WriteLine("Fail to parse \"{0}\"", text);
+                    Console.WriteLine();
+                    Console.WriteLine("Available commands");
+                    HelpCommand.Instance?.Execute();
                 }
+                Console.WriteLine();
             }
 
             Console.WriteLine("Client stopped !");

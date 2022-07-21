@@ -27,7 +27,12 @@ namespace MySharpChat.Core.Command
 
         public string GetHelp()
         {
-            throw new NotImplementedException();
+            return "usage: send <text>";
+        }
+
+        public string GetSummary()
+        {
+            return "Command to send messages";
         }
     }
 }
