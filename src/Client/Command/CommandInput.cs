@@ -83,7 +83,6 @@ namespace MySharpChat.Client.Command
             }
         }
 
-        // TODO Manage key modifiers (ex : ctrl + right arrow jump to end of text)
         private static void InitializeKeyActions()
         {
             KeyActions.Add(ConsoleKey.Enter,
@@ -102,6 +101,7 @@ namespace MySharpChat.Client.Command
             KeyActions.Add(ConsoleKey.Tab,
                 (ReadingState readingState) =>
                 {
+                    // TODO Add support for auto completion
                     Trace.WriteLine("TABULATION");
                 }
             );
