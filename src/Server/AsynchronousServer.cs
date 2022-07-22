@@ -90,7 +90,7 @@ namespace MySharpChat.Server
             return m_serverRun;
         }
 
-        public bool IsConnected(ConnexionInfos? connexionInfos)
+        public bool IsConnected(ConnexionInfos? connexionInfos = null)
         {
             return m_socketHandler != null && m_socketHandler.Connected;
         }
@@ -188,7 +188,7 @@ namespace MySharpChat.Server
 
         private void RunSession()
         {
-            while (IsConnected(null))
+            while (IsConnected())
             {
                 string content = "";
                 do
