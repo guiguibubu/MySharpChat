@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySharpChat.Core.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -14,15 +15,20 @@ namespace MySharpChat.Core.SocketModule
         public static Socket OpenListener(ConnexionInfos.Data data)
         {
             if (data.Ip == null)
-                throw new ArgumentNullException("data.Ip");
+#pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
+                throw new ArgumentNullException(nameof(data.Ip));
+#pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
 
             // Create a TCP/IP socket.  
             Socket listener = new Socket(data.Ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             return listener;
         }
 
-        public static void ShutdownListener(Socket socket)
+        public static void ShutdownListener(Socket? socket)
         {
+            if (socket == null)
+                throw new ArgumentNullException(nameof(socket));
+
             try
             {
                 socket.Shutdown(SocketShutdown.Both);
@@ -37,22 +43,30 @@ namespace MySharpChat.Core.SocketModule
             }
         }
 
-        public static bool IsConnected(Socket socket)
+        public static bool IsConnected(Socket? socket)
         {
+            if (socket == null)
+                throw new ArgumentNullException(nameof(socket));
+
             return socket.Connected;
         }
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
         {
             if (data.Ip == null)
-                throw new ArgumentNullException("data.Ip");
+#pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
+                throw new ArgumentNullException(nameof(data.Ip));
+#pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
 
             IPEndPoint endPoint = new IPEndPoint(data.Ip, data.Port);
             return endPoint;
         }
 
-        public static string Read(Socket handler, AsyncCallback callback, object? caller = null, ManualResetEvent? receiveDone = null)
+        public static string Read(Socket? handler, AsyncCallback callback, object? caller = null, ManualResetEvent? receiveDone = null)
         {
+            if (handler == null)
+                throw new ArgumentNullException(nameof(handler));
+
             string content = string.Empty;
 
             // Create the state object.  
@@ -112,8 +126,11 @@ namespace MySharpChat.Core.SocketModule
             }
         }
 
-        public static bool Send(Socket handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
+        public static bool Send(Socket? handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
         {
+            if (handler == null)
+                throw new ArgumentNullException(nameof(handler));
+
             // Convert the string data to byte data using ASCII encoding.  
             byte[] byteData = Encoding.ASCII.GetBytes(data);
 
@@ -125,7 +142,7 @@ namespace MySharpChat.Core.SocketModule
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 
-            if (handler != null && handler.Connected)
+            if (handler.Connected)
             {
                 // Begin sending the data to the remote device.  
                 handler.BeginSend(byteData, 0, byteData.Length, 0, callback, state);
@@ -163,7 +180,7 @@ namespace MySharpChat.Core.SocketModule
             {
                 bytesSent = 0;
                 text = "";
-                throw new ApplicationException("Fail to send datas", e);
+                throw new MySharpChatException("Fail to send datas", e);
             }
 
             return bytesSent;

@@ -152,32 +152,8 @@ namespace MySharpChat.Client
             m_socketHandler = SocketUtils.OpenListener(connexionData);
 
             const int TIMEOUT_MS = 5000;
-            bool timeout = false;
-            bool isConnected = IsConnected();
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            int attempt = 0;
 
-            while (!isConnected && stopwatch.ElapsedMilliseconds < TIMEOUT_MS)
-            {
-                attempt++;
-                const string prefix = "Connecting";
-                const int nbDotsMax = 3;
-                string loadingText = prefix;
-                int nbDots = attempt % (nbDotsMax + 1);
-                for (int i = 0; i < nbDots; i++)
-                    loadingText += ".";
-                for(int i = 0; i < nbDotsMax - nbDots; i++)
-                    loadingText += " ";
-
-                int oldCursorPosition = Console.CursorLeft;
-                Console.Write(loadingText);
-                Console.CursorLeft = oldCursorPosition;
-
-                // Connect to the remote endpoint.  
-                IAsyncResult result = m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
-                timeout = !result.AsyncWaitHandle.WaitOne(Math.Max(TIMEOUT_MS - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0), true);
-                isConnected = IsConnected();
-            }
+            bool timeout = ConnectImpl(this, remoteEP, out bool isConnected, TIMEOUT_MS);
 
             if (isConnected)
             {
@@ -194,6 +170,45 @@ namespace MySharpChat.Client
                 
 
             return isConnected;
+        }
+
+        private static bool ConnectImpl(Client client, IPEndPoint remoteEP, out bool isConnected, int timeoutMs = 0)
+        {
+            bool timeout = false;
+            isConnected = false;
+
+            Socket? socket = client.m_socketHandler;
+
+            if (socket != null)
+            {
+                isConnected = SocketUtils.IsConnected(socket);
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                int attempt = 0;
+
+                while (!isConnected && stopwatch.ElapsedMilliseconds < timeoutMs)
+                {
+                    attempt++;
+                    const string prefix = "Connecting";
+                    const int nbDotsMax = 3;
+                    string loadingText = prefix;
+                    int nbDots = attempt % (nbDotsMax + 1);
+                    for (int i = 0; i < nbDots; i++)
+                        loadingText += ".";
+                    for (int i = 0; i < nbDotsMax - nbDots; i++)
+                        loadingText += " ";
+
+                    int oldCursorPosition = Console.CursorLeft;
+                    Console.Write(loadingText);
+                    Console.CursorLeft = oldCursorPosition;
+
+                    // Connect to the remote endpoint.  
+                    IAsyncResult result = socket!.BeginConnect(remoteEP, ConnectCallback, client);
+                    timeout = !result.AsyncWaitHandle.WaitOne(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0), true);
+                    isConnected = SocketUtils.IsConnected(socket);
+                }
+            }
+
+            return timeout;
         }
 
         public void Send(string? text)
