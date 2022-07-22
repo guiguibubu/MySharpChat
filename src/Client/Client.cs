@@ -116,7 +116,7 @@ namespace MySharpChat.Client
             return m_clientRun;
         }
 
-        public bool IsConnected(ConnexionInfos? connexionInfos)
+        public bool IsConnected(ConnexionInfos? connexionInfos = null)
         {
             return m_socketHandler != null && m_socketHandler.Connected;
         }
@@ -152,15 +152,19 @@ namespace MySharpChat.Client
             m_socketHandler = SocketUtils.OpenListener(connexionData);
 
             // Connect to the remote endpoint.  
-            m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
-            connectDone.WaitOne();
-            connectDone.Reset();
-            m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            IAsyncResult result = m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
 
-            bool isConnected = m_socketHandler.Connected;
-            if (IsConnected(null))
+            const int TIMEOUT_MS = 5000;
+            bool timeout = result.AsyncWaitHandle.WaitOne(TIMEOUT_MS, true);
+
+            if (timeout)
+                Console.WriteLine("Connection timeout ! Fail connection in {0} ms", TIMEOUT_MS);
+
+            bool isConnected = IsConnected();
+            if (isConnected)
             {
                 Console.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                 currentLogic = new ChatClientLogic(m_socketHandler!.LocalEndPoint!);
             }
             else
