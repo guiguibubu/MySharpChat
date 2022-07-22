@@ -6,7 +6,7 @@
         public void InitCommands();
         public bool Start(object? startObject = null);
         public bool IsRunning();
-        public bool IsConnected(ConnexionInfos? connexionInfos);
+        public bool IsConnected(ConnexionInfos? connexionInfos = null);
         public void Stop(int exitCode = 0);
         public void Wait();
         public bool Wait(int millisecondsTimeout);

@@ -92,7 +92,7 @@ namespace MySharpChat.Server
 
         public bool IsConnected(ConnexionInfos? connexionInfos = null)
         {
-            return m_socketHandler != null && m_socketHandler.Connected;
+            return m_socketHandler != null && SocketUtils.IsConnected(m_socketHandler);
         }
 
         public void Stop(int exitCode = 0)

@@ -23,8 +23,23 @@ namespace MySharpChat.Core.SocketModule
 
         public static void ShutdownListener(Socket socket)
         {
-            socket.Shutdown(SocketShutdown.Both);
-            socket.Close();
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+            }
+            catch (SocketException)
+            {
+                //If socket is not connected can't be shutdown
+            }
+            finally
+            {
+                socket.Close();
+            }
+        }
+
+        public static bool IsConnected(Socket socket)
+        {
+            return socket.Connected;
         }
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
@@ -154,7 +169,7 @@ namespace MySharpChat.Core.SocketModule
             return bytesSent;
         }
 
-        public static Tuple<IEnumerable<IPAddress>,IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
+        public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
         {
 #if DEBUG
             string actualHostName = hostname ?? "localhost";
@@ -188,7 +203,7 @@ namespace MySharpChat.Core.SocketModule
                 Console.WriteLine("{0}", ipAddress);
             }
 #endif
-            return Tuple.Create((IEnumerable<IPAddress>) ipAddressesHost, (IEnumerable<IPAddress>)ipAddressesNonVirtual);
+            return Tuple.Create((IEnumerable<IPAddress>)ipAddressesHost, (IEnumerable<IPAddress>)ipAddressesNonVirtual);
         }
     }
 }
