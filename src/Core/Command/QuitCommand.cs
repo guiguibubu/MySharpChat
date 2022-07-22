@@ -1,5 +1,6 @@
 ﻿
 using MySharpChat.Core.Utils;
+using System;
 
 namespace MySharpChat.Core.Command
 {
@@ -25,9 +26,9 @@ namespace MySharpChat.Core.Command
                     asyncMachine.Stop();
                 }
             }
-            catch
+            catch(Exception e)
             {
-                throw new CommandException("Fail to stop {0}", asyncMachine.ToString());
+                throw new CommandException(string.Format("Fail to stop {0}", asyncMachine.ToString()), e);
             }
             return true;
         }

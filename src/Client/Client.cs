@@ -118,7 +118,7 @@ namespace MySharpChat.Client
 
         public bool IsConnected(ConnexionInfos? connexionInfos = null)
         {
-            return m_socketHandler != null && m_socketHandler.Connected;
+            return m_socketHandler != null && SocketUtils.IsConnected(m_socketHandler);
         }
 
         public void Stop(int exitCode = 0)
@@ -151,16 +151,34 @@ namespace MySharpChat.Client
             // Create a TCP/IP socket.  
             m_socketHandler = SocketUtils.OpenListener(connexionData);
 
-            // Connect to the remote endpoint.  
-            IAsyncResult result = m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
-
             const int TIMEOUT_MS = 5000;
-            bool timeout = result.AsyncWaitHandle.WaitOne(TIMEOUT_MS, true);
-
-            if (timeout)
-                Console.WriteLine("Connection timeout ! Fail connection in {0} ms", TIMEOUT_MS);
-
+            bool timeout = false;
             bool isConnected = IsConnected();
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int attempt = 0;
+
+            while (!isConnected && stopwatch.ElapsedMilliseconds < TIMEOUT_MS)
+            {
+                attempt++;
+                const string prefix = "Connecting";
+                const int nbDotsMax = 3;
+                string loadingText = prefix;
+                int nbDots = attempt % (nbDotsMax + 1);
+                for (int i = 0; i < nbDots; i++)
+                    loadingText += ".";
+                for(int i = 0; i < nbDotsMax - nbDots; i++)
+                    loadingText += " ";
+
+                int oldCursorPosition = Console.CursorLeft;
+                Console.Write(loadingText);
+                Console.CursorLeft = oldCursorPosition;
+
+                // Connect to the remote endpoint.  
+                IAsyncResult result = m_socketHandler.BeginConnect(remoteEP, ConnectCallback, this);
+                timeout = !result.AsyncWaitHandle.WaitOne(Math.Max(TIMEOUT_MS - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0), true);
+                isConnected = IsConnected();
+            }
+
             if (isConnected)
             {
                 Console.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
@@ -168,7 +186,12 @@ namespace MySharpChat.Client
                 currentLogic = new ChatClientLogic(m_socketHandler!.LocalEndPoint!);
             }
             else
+            {
+                if (timeout)
+                    Console.WriteLine("Connection timeout ! Fail connection in {0} ms", TIMEOUT_MS);
                 Console.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+            }
+                
 
             return isConnected;
         }
