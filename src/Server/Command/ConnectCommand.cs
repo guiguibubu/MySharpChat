@@ -13,7 +13,7 @@ namespace MySharpChat.Server.Command
 
         public string Name { get => "Connect"; }
 
-        public bool Execute(AsynchronousServer server, params string[] args)
+        public bool Execute(Server server, params string[] args)
         {
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
