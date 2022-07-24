@@ -1,4 +1,5 @@
 ﻿using MySharpChat.Core.Utils;
+using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,12 @@ using System.Threading;
 
 namespace MySharpChat.Core.SocketModule
 {
-    public static class SocketUtils
+    public class SocketUtils
     {
+        private static Logger logger = Logger.Factory.GetLogger<SocketUtils>();
+
+        private SocketUtils() { }
+
         public static Socket OpenListener(ConnexionInfos.Data data)
         {
             if (data.Ip == null)
@@ -36,6 +41,10 @@ namespace MySharpChat.Core.SocketModule
             catch (SocketException)
             {
                 //If socket is not connected can't be shutdown
+            }
+            catch (ObjectDisposedException)
+            {
+                //Object disposed
             }
             finally
             {
@@ -208,18 +217,19 @@ namespace MySharpChat.Core.SocketModule
             List<IPAddress> ipAddressesNonVirtual = networkInterfaces!.Select(ni => ni.GetIPProperties()).SelectMany(ipprop => ipprop.UnicastAddresses).Select(uniAddr => uniAddr.Address).ToList();
 #endif
 
-#if DEBUG
-            Console.WriteLine("Available ip adresses");
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Available ip adresses");
             foreach (IPAddress ipAddress in ipAddressesHost)
             {
-                Console.WriteLine("{0}", ipAddress);
+                sb.AppendLine(ipAddress.ToString());
             }
-            Console.WriteLine("Available ip adresses non virtual");
+            sb.AppendLine("Available ip adresses non virtual");
             foreach (IPAddress ipAddress in ipAddressesNonVirtual)
             {
-                Console.WriteLine("{0}", ipAddress);
+                sb.AppendLine(ipAddress.ToString());
             }
-#endif
+            logger.LogDebug(sb.ToString());
+
             return Tuple.Create((IEnumerable<IPAddress>)ipAddressesHost, (IEnumerable<IPAddress>)ipAddressesNonVirtual);
         }
     }
