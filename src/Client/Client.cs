@@ -8,7 +8,7 @@ using MySharpChat.Core.Command;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Client.Command;
-
+using MySharpChat.Core.Utils.Logger;
 
 namespace MySharpChat.Client
 {
@@ -26,6 +26,8 @@ namespace MySharpChat.Client
         private readonly LoaderClientLogic loaderLogic = new LoaderClientLogic();
 
         private IClientLogic currentLogic;
+
+        private static readonly Logger logger = Logger.Factory.GetLogger<Client>();
 
         public Client()
         {
@@ -65,7 +67,7 @@ namespace MySharpChat.Client
 
                 while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                Console.WriteLine("Client started (in {0} ms) !" + Environment.NewLine, sw.ElapsedMilliseconds);
+                logger.LogInfo(string.Format("Client started (in {0} ms) !", sw.ElapsedMilliseconds));
 
                 clientStarted = true;
 
@@ -83,7 +85,7 @@ namespace MySharpChat.Client
             if (Thread.CurrentThread.Name == null)
             {
                 Thread.CurrentThread.Name = "RunningClientThread";
-                Console.WriteLine("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId);
+                logger.LogDebug(string.Format("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId));
             }
 
             m_clientRun = true;
@@ -188,21 +190,23 @@ namespace MySharpChat.Client
                 while (!isConnected && stopwatch.ElapsedMilliseconds < timeoutMs)
                 {
                     attempt++;
+
+                    // Connect to the remote endpoint.  
+                    IAsyncResult result = socket!.BeginConnect(remoteEP, ConnectCallback, client);
+
                     const string prefix = "Connecting";
                     const int nbDotsMax = 3;
-                    string loadingText = prefix;
+                    System.Text.StringBuilder loadingText = new System.Text.StringBuilder(prefix);
                     int nbDots = attempt % (nbDotsMax + 1);
                     for (int i = 0; i < nbDots; i++)
-                        loadingText += ".";
+                        loadingText.Append(".");
                     for (int i = 0; i < nbDotsMax - nbDots; i++)
-                        loadingText += " ";
+                        loadingText.Append(" ");
 
                     int oldCursorPosition = Console.CursorLeft;
                     Console.Write(loadingText);
                     Console.CursorLeft = oldCursorPosition;
-
-                    // Connect to the remote endpoint.  
-                    IAsyncResult result = socket!.BeginConnect(remoteEP, ConnectCallback, client);
+                    
                     timeout = !result.AsyncWaitHandle.WaitOne(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0), true);
                     isConnected = SocketUtils.IsConnected(socket);
                 }
@@ -288,7 +292,7 @@ namespace MySharpChat.Client
                     && context.owner is Client client)
                 {
                     int bytesSent = SocketUtils.SendCallback(ar, out string text);
-                    Console.WriteLine("Send {0} bytes to Server. {2}Data :{2}{1}", bytesSent, text, Environment.NewLine);
+                    logger.LogDebug(string.Format("Send {0} bytes to Server. Data :{1}", bytesSent, text));
 
                     // Signal that all bytes have been sent.  
                     client.sendDone.Set();

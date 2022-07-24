@@ -203,7 +203,7 @@ namespace MySharpChat.Server
                 // All the data has been read from the
                 // client. Display it on the console.  
                 
-                logger.LogDebug(string.Format("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine));
+                logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
 
                 //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
                 // Echo the data back to the client.
@@ -268,7 +268,7 @@ namespace MySharpChat.Server
                     && state.workSocket != null)
                 {
                     Socket handler = state.workSocket;
-                    logger.LogDebug(string.Format("Send {0} bytes to client {2}. {3}Data :{3}{1}", bytesSent, text, handler.RemoteEndPoint, Environment.NewLine));
+                    logger.LogDebug(string.Format("Send {0} bytes to client {2}. Data :{1}", bytesSent, text, handler.RemoteEndPoint));
                 }
             }
             catch (Exception e)
