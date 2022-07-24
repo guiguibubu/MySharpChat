@@ -190,6 +190,7 @@ namespace MySharpChat.Server
         {
             while (IsConnected())
             {
+                // TODO Fix the read server side !!!!!!!!!!!!!
                 string content = "";
                 do
                 {
@@ -198,9 +199,9 @@ namespace MySharpChat.Server
 
                 // All the data has been read from the
                 // client. Display it on the console.  
-#if DEBUG
+//#if DEBUG
                 Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
-#endif
+//#endif
 
                 //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
                 // Echo the data back to the client.
@@ -233,16 +234,21 @@ namespace MySharpChat.Server
                 // Get the socket that handles the client request.  
                 server.m_socketHandler = server.m_socketHandler.EndAccept(ar);
 
-                Console.WriteLine("Connection accepted from {0}", server.m_socketHandler.RemoteEndPoint);
+                // TODO Better handle session life circle
+
+                EndPoint remoteEP = server.m_socketHandler.RemoteEndPoint!;
+                Console.WriteLine("Connection accepted. Begin session with {0}", remoteEP);
 
                 server.m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
                 if (Thread.CurrentThread.Name == null)
                 {
-                    Thread.CurrentThread.Name = $"WorkingThread{server.m_socketHandler.RemoteEndPoint}";
+                    Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
                 }
 
                 server.RunSession();
+                
+                Console.WriteLine("Session with {0} finished", remoteEP);
             }
         }
 
