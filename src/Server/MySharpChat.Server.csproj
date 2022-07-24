@@ -28,7 +28,6 @@
         <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
@@ -52,14 +51,5 @@
             <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
         </ProjectReference>
     </ItemGroup>
-
-    <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
-        <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
-    </Target>
-    <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
-        <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
-    </Target>
 
 </Project>

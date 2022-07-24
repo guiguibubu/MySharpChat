@@ -28,9 +28,7 @@
         <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
         <Nullable>enable</Nullable>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -58,13 +56,9 @@
       <Folder Include="Utils\Windows\" />
     </ItemGroup>
 
-    <Target Name="PostBuildWindows" AfterTargets="PostBuildEvent" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : xcopy /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
-        <Exec Command="xcopy /q /y &quot;$(BaseOutputPath)\MySharpChat.Core\*.*&quot; &quot;$(TargetDir)&quot;" />
-    </Target>
-    <Target Name="PostBuildUnix" AfterTargets="PostBuildEvent" Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
-        <Message Text="Copy of MySharpChat dependency : cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
-        <Exec Command="cp $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/$(BaseOutputPath)'))MySharpChat.Core/*.* $(TargetDir)" />
-    </Target>
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+    </ItemGroup>
 
 </Project>
