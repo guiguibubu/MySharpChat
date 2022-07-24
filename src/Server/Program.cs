@@ -1,12 +1,25 @@
-﻿using System;
+﻿using MySharpChat.Core.Utils.Logger;
+using System;
 
 namespace MySharpChat.Server
 {
-    static class Program
+    class Program
     {
+        static Program()
+        {
+            Logger.Factory.SetLoggingType(LoggerType.Both);
+        }
+
+        protected Program()
+        {
+
+        }
+
+        Logger logger = Logger.Factory.GetLogger<Program>();
+
         static int Main(string[] args)
         {
-            AsynchronousServer server = new AsynchronousServer(new ConnexionInfos());
+            Server server = new Server(new ConnexionInfos());
             if (server.Start())
             {
                 server.Wait();

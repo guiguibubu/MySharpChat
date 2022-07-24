@@ -1,9 +1,23 @@
-﻿using System;
+﻿using MySharpChat.Core.Utils.Logger;
+using System;
+using System.Diagnostics;
 
 namespace MySharpChat.Client
 {
-    static class Program
+    class Program
     {
+        static Program()
+        {
+            Logger.Factory.SetLoggingType(LoggerType.File);
+        }
+
+        protected Program()
+        {
+
+        }
+
+        Logger logger = Logger.Factory.GetLogger<Program>();
+
         // TODO Add CLI option for client
         static int Main(string[] args)
         {

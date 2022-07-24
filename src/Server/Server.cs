@@ -11,10 +11,11 @@ using MySharpChat.Core.Http;
 using MySharpChat.Core.Utils;
 
 using MySharpChat.Server.Command;
+using MySharpChat.Core.Utils.Logger;
 
 namespace MySharpChat.Server
 {
-    public class AsynchronousServer : IAsyncMachine
+    public class Server : IAsyncMachine
     {
         // Thread signal.  
         private readonly ManualResetEvent newConnectionAvailableEvent = new ManualResetEvent(false);
@@ -29,13 +30,15 @@ namespace MySharpChat.Server
 
         private readonly CommandManager commandManager = new CommandManager();
 
-        public AsynchronousServer(ConnexionInfos connexionInfos)
+        private static readonly Logger logger = Logger.Factory.GetLogger<Server>();
+
+        public Server(ConnexionInfos connexionInfos)
         {
             m_connexionInfos = connexionInfos;
             Initialize();
         }
 
-        ~AsynchronousServer()
+        ~Server()
         {
             Stop();
         }
@@ -71,15 +74,15 @@ namespace MySharpChat.Server
 
                 while (!m_serverRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                Console.WriteLine("Server started (in {0} ms) !", sw.ElapsedMilliseconds);
+                logger.LogInfo(string.Format("Server started (in {0} ms) !", sw.ElapsedMilliseconds));
 
                 serverStarted = true;
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("Fail to start server");
-                Console.WriteLine(e.ToString());
+                logger.LogError("Fail to start server");
+                logger.LogError(e.ToString());
             }
 
             return serverStarted;
@@ -119,7 +122,7 @@ namespace MySharpChat.Server
             if (Thread.CurrentThread.Name == null)
             {
                 Thread.CurrentThread.Name = "RunningServerThread";
-                Console.WriteLine("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId);
+                logger.LogDebug(string.Format("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId));
             }
 
             ConnectCommand command = commandManager.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
@@ -132,7 +135,7 @@ namespace MySharpChat.Server
                 newConnectionAvailableEvent.Reset();
 
                 // Start an asynchronous socket to listen for connections.  
-                Console.WriteLine("Waiting for a connection...");
+                logger.LogDebug("Waiting for a connection...");
                 m_socketHandler?.BeginAccept(AcceptCallback, this);
 
                 // Wait until a connection is made before continuing.  
@@ -142,7 +145,7 @@ namespace MySharpChat.Server
                 }
             }
 
-            Console.WriteLine("Server stopped !");
+            logger.LogInfo("Server stopped !");
         }
 
         public bool Connect(ConnexionInfos connexionInfos)
@@ -160,7 +163,7 @@ namespace MySharpChat.Server
             m_socketHandler.Bind(localEndPoint);
             m_socketHandler.Listen(100);
 
-            Console.WriteLine("Listenning at {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+            logger.LogInfo(string.Format("Listenning at {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port));
 
             return true;
         }
@@ -199,9 +202,8 @@ namespace MySharpChat.Server
 
                 // All the data has been read from the
                 // client. Display it on the console.  
-//#if DEBUG
-                Console.WriteLine("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine);
-//#endif
+                
+                logger.LogDebug(string.Format("Read {0} bytes from socket. {2}Data :{2}{1}", content.Length, content, Environment.NewLine));
 
                 //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
                 // Echo the data back to the client.
@@ -225,7 +227,7 @@ namespace MySharpChat.Server
 
         public static void AcceptCallback(IAsyncResult ar)
         {
-            if (ar.AsyncState is AsynchronousServer server
+            if (ar.AsyncState is Server server
                 && server.m_socketHandler != null)
             {
                 // Signal the main thread to continue.  
@@ -237,7 +239,7 @@ namespace MySharpChat.Server
                 // TODO Better handle session life circle
 
                 EndPoint remoteEP = server.m_socketHandler.RemoteEndPoint!;
-                Console.WriteLine("Connection accepted. Begin session with {0}", remoteEP);
+                logger.LogInfo(string.Format("Connection accepted. Begin session with {0}", remoteEP));
 
                 server.m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
@@ -247,8 +249,8 @@ namespace MySharpChat.Server
                 }
 
                 server.RunSession();
-                
-                Console.WriteLine("Session with {0} finished", remoteEP);
+
+                logger.LogInfo(string.Format("Session with {0} finished", remoteEP));
             }
         }
 
@@ -266,9 +268,7 @@ namespace MySharpChat.Server
                     && state.workSocket != null)
                 {
                     Socket handler = state.workSocket;
-#if DEBUG
-                    Console.WriteLine("Send {0} bytes to client {2}. {3}Data :{3}{1}", bytesSent, text, handler.RemoteEndPoint, Environment.NewLine);
-#endif
+                    logger.LogDebug(string.Format("Send {0} bytes to client {2}. {3}Data :{3}{1}", bytesSent, text, handler.RemoteEndPoint, Environment.NewLine));
                 }
             }
             catch (Exception e)

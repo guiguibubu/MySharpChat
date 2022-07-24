@@ -12,16 +12,16 @@ namespace MySharpChat.Server.Command
             if (asyncMachine == null)
                 throw new ArgumentNullException(nameof(asyncMachine));
 
-            if (asyncMachine is AsynchronousServer server)
+            if (asyncMachine is Server server)
             {
                 return Execute(server, args);
             }
             else
             {
-                throw new ArgumentException(string.Format("{0} must be a {1}", nameof(asyncMachine), typeof(AsynchronousServer)));
+                throw new ArgumentException(string.Format("{0} must be a {1}", nameof(asyncMachine), typeof(Server)));
             }
         }
 
-        bool Execute(AsynchronousServer server, params string[] args);
+        bool Execute(Server server, params string[] args);
     }
 }
