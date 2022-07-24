@@ -28,7 +28,6 @@
         <OutputPath>$(BaseOutputPath)$(AssemblyName)</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
