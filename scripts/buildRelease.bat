@@ -2,5 +2,5 @@
 
 setlocal
 SET THIS_FILE_FOLDER=%~dp0
-dotnet build %THIS_FILE_FOLDER%\MySharpChat.sln -c Release %*
+call %THIS_FILE_FOLDER%\build.bat -c Release %*
 endlocal
