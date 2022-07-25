@@ -181,8 +181,9 @@ namespace MySharpChat.Client
                 isConnected = SocketUtils.IsConnected(socket);
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 int attempt = 0;
-                timeout = stopwatch.ElapsedMilliseconds < timeoutMs;
-                while (!isConnected && !timeout)
+                timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
+                bool attemptConnection = !isConnected && !timeout;
+                while (attemptConnection)
                 {
                     attempt++;
 
@@ -201,9 +202,19 @@ namespace MySharpChat.Client
                     int oldCursorPosition = Console.CursorLeft;
                     Console.Write(loadingText);
                     Console.CursorLeft = oldCursorPosition;
-                    
-                    timeout = !result.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
-                    isConnected = SocketUtils.IsConnected(socket);
+
+                    try
+                    {
+                        timeout = !result.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
+                        isConnected = SocketUtils.IsConnected(socket);
+                        attemptConnection = !isConnected && !timeout;
+                    }
+                    catch (AggregateException)
+                    {
+                        timeout = false;
+                        isConnected = false;
+                        attemptConnection = false;
+                    }
                 }
             }
 
