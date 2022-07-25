@@ -14,7 +14,7 @@ namespace MySharpChat.Core.SocketModule
 {
     public class SocketUtils
     {
-        private static Logger logger = Logger.Factory.GetLogger<SocketUtils>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<SocketUtils>();
 
         private SocketUtils() { }
 
@@ -71,77 +71,58 @@ namespace MySharpChat.Core.SocketModule
 
         public static string Read(Socket? handler, object? caller = null)
         {
-            return ReadAsync(handler, caller).GetAwaiter().GetResult();
-        }
-
-        public static Task<string> ReadAsync(Socket? handler, object? caller = null)
-        {
             if (handler == null)
                 throw new ArgumentNullException(nameof(handler));
-
-            string content = string.Empty;
 
             // Create the state object.  
             SocketContext state = new SocketContext();
             state.workSocket = handler;
             state.owner = caller;
-            var tcs = new TaskCompletionSource<string>();
-            Task<int> bytesRead = handler.ReceiveAsync(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
-            bytesRead.GetAwaiter().OnCompleted(() =>
-                {
-                    try
-                    {
-                        ReadCallback(state, bytesRead.Result);
 
-                        content = state.dataStringBuilder.ToString();
+            ReadImpl(state);
 
-                        tcs.TrySetResult(content);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        tcs.TrySetCanceled();
-                    }
-                    catch (Exception e)
-                    {
-                        tcs.TrySetException(e);
-                    }
-                }
-            );
-            return tcs.Task;
+            string content = state.dataStringBuilder.ToString();
+            return content;
         }
 
-        private static void ReadCallback(SocketContext state, int bytesRead)
+        public static Task<string> ReadAsync(Socket? handler, object? caller = null)
+        {
+            return Task.Factory.StartNew(() => Read(handler, caller));
+        }
+
+        private static void ReadImpl(SocketContext state, int bytesRead = -1)
         {
             if (state.workSocket == null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
                 throw new ArgumentNullException(nameof(state.workSocket));
 #pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
 
-            Socket handler = state.workSocket;
+            Socket handler = state.workSocket!;
+
+            bool firstRead = bytesRead < 0;
+            bool dataToRead = bytesRead > 0;
 
             if (handler.Connected
-                && bytesRead > 0)
+                && (firstRead || dataToRead))
             {
-                // There  might be more data, so store the data received so far.
-                string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
-                state.dataStringBuilder.Append(dataStr);
+                if (dataToRead)
+                {
+                    // There  might be more data, so store the data received so far.
+                    string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
+                    state.dataStringBuilder.Append(dataStr);
+                }
 
-                bool continueReceive = bytesRead == SocketContext.BUFFER_SIZE;
+                bool continueReceive = firstRead || bytesRead == SocketContext.BUFFER_SIZE;
                 if (continueReceive)
                 {
                     // Not all data received. Get more.
-                    Task<int> bytesReadAsyns = handler.ReceiveAsync(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
-                    ReadCallback(state, bytesReadAsyns.GetAwaiter().GetResult());
+                    bytesRead = handler.Receive(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
+                    ReadImpl(state, bytesRead);
                 }
             }
         }
 
         public static bool Send(Socket? handler, string data, object? caller = null)
-        {
-            return SendAsync(handler, data, caller).GetAwaiter().GetResult();
-        }
-
-        public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null)
         {
             if (handler == null)
                 throw new ArgumentNullException(nameof(handler));
@@ -156,39 +137,28 @@ namespace MySharpChat.Core.SocketModule
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 
-            var tcs = new TaskCompletionSource<bool>();
+            bool success;
 
             if (handler.Connected)
             {
                 // Begin sending the data to the remote device.  
-                Task<int> bytesSent = handler.SendAsync(new ArraySegment<byte>(byteData, 0, byteData.Length), 0);
-                bytesSent.GetAwaiter().OnCompleted(() =>
-                    {
-                        try
-                        {
-                            tcs.TrySetResult(true);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            tcs.TrySetCanceled();
-                        }
-                        catch (Exception e)
-                        {
-                            tcs.TrySetException(e);
-                        }
-                        EndPoint remoteEP = handler.RemoteEndPoint!;
-                        logger.LogDebug("Send {0} bytes to {1}. Data :{2}", bytesSent.Result, remoteEP, data);
-                    }
-                );
-
+                int bytesSent = handler.Send(new ArraySegment<byte>(byteData, 0, byteData.Length), 0);
+                EndPoint remoteEP = handler.RemoteEndPoint!;
+                logger.LogDebug("Send {0} bytes to {1}. Data :{2}", bytesSent, remoteEP, data);
+                success = true;
             }
             else
             {
                 logger.LogError("Can not send data. Socket is disconnect.");
-                tcs.TrySetResult(false);
+                success = false;
             }
 
-            return tcs.Task;
+            return success;
+        }
+
+        public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null)
+        {
+            return Task.Factory.StartNew(() => Send (handler, data, caller));
         }
 
         public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
