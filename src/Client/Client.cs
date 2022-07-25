@@ -63,7 +63,7 @@ namespace MySharpChat.Client
 
                 while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                logger.LogInfo(string.Format("Client started (in {0} ms) !", sw.ElapsedMilliseconds));
+                logger.LogInfo("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
 
                 clientStarted = true;
 

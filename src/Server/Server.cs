@@ -69,7 +69,7 @@ namespace MySharpChat.Server
 
                 while (!m_serverRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                logger.LogInfo(string.Format("Server started (in {0} ms) !", sw.ElapsedMilliseconds));
+                logger.LogInfo("Server started (in {0} ms) !", sw.ElapsedMilliseconds);
 
                 serverStarted = true;
 
@@ -131,8 +131,8 @@ namespace MySharpChat.Server
 
                 Socket connectedSocket = m_listeningSocketHandler!.Accept();
 
-                EndPoint remoteEP = connectedSocket.RemoteEndPoint;
-                logger.LogInfo(string.Format("Connection accepted. Begin session with {0}", remoteEP));
+                EndPoint remoteEP = connectedSocket.RemoteEndPoint!;
+                logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
 
                 if (Thread.CurrentThread.Name == null)
                 {
@@ -141,7 +141,7 @@ namespace MySharpChat.Server
 
                 RunSession(connectedSocket);
 
-                logger.LogInfo(string.Format("Connection lost. Session with {0} finished", remoteEP));
+                logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
 
                 Disconnect(connectedSocket);
             }

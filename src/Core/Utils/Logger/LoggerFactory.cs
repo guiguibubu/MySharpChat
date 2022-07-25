@@ -32,7 +32,11 @@ namespace MySharpChat.Core.Utils.Logger
                 var config = new NLog.Config.LoggingConfiguration();
 
                 if (type.HasFlag(LoggerType.Console))
+#if DEBUG
+                    config.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, logConsoleTarget);
+#else
                     config.AddRule(NLog.LogLevel.Info, NLog.LogLevel.Fatal, logConsoleTarget);
+#endif
                 if (type.HasFlag(LoggerType.File))
                     config.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, logFileTarget);
 
