@@ -178,7 +178,7 @@ namespace MySharpChat.Server
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
 
-            SocketUtils.Send(socket, text, SocketUtils.SendCallback, this);
+            SocketUtils.Send(socket, text, this);
         }
 
         public string Read(Socket? socket, int timeoutMs = 0)
@@ -186,7 +186,7 @@ namespace MySharpChat.Server
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
 
-            Task<string> content = SocketUtils.ReadAsync(socket, SocketUtils.ReadCallback, this);
+            Task<string> content = SocketUtils.ReadAsync(socket, this);
             content.Wait(timeoutMs);
             return content.Result;
         }

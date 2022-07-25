@@ -181,13 +181,13 @@ namespace MySharpChat.Client
                 isConnected = SocketUtils.IsConnected(socket);
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 int attempt = 0;
-
-                while (!isConnected && stopwatch.ElapsedMilliseconds < timeoutMs)
+                timeout = stopwatch.ElapsedMilliseconds < timeoutMs;
+                while (!isConnected && !timeout)
                 {
                     attempt++;
 
                     // Connect to the remote endpoint.  
-                    IAsyncResult result = socket!.BeginConnect(remoteEP, ConnectCallback, client);
+                    Task result = socket!.ConnectAsync(remoteEP);
 
                     const string prefix = "Connecting";
                     const int nbDotsMax = 3;
@@ -202,7 +202,7 @@ namespace MySharpChat.Client
                     Console.Write(loadingText);
                     Console.CursorLeft = oldCursorPosition;
                     
-                    timeout = !result.AsyncWaitHandle.WaitOne(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0), true);
+                    timeout = !result.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
                     isConnected = SocketUtils.IsConnected(socket);
                 }
             }
@@ -215,12 +215,12 @@ namespace MySharpChat.Client
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
 
-            SocketUtils.Send(m_socketHandler, text, SocketUtils.SendCallback, this);
+            SocketUtils.Send(m_socketHandler, text, this);
         }
 
         public string Read(int timeoutMs = 0)
         {
-            Task<string> result = SocketUtils.ReadAsync(m_socketHandler, SocketUtils.ReadCallback, this);
+            Task<string> result = SocketUtils.ReadAsync(m_socketHandler, this);
             if(result.Wait(timeoutMs))
                 Console.WriteLine("Response received : {0}", result);
             return result.Result;
@@ -233,29 +233,6 @@ namespace MySharpChat.Client
                 socket = m_socketHandler;
                 SocketUtils.ShutdownListener(socket);
                 currentLogic = loaderLogic;
-            }
-        }
-
-        private static void ConnectCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.
-                if (ar.AsyncState is Client client
-                    && client.m_socketHandler != null
-                    && client.m_socketHandler.RemoteEndPoint != null)
-                {
-                    Socket handler = client.m_socketHandler;
-
-                    // Complete the connection.  
-                    handler.EndConnect(ar);
-
-                    Console.WriteLine("Socket connected to {0}", handler.RemoteEndPoint.ToString());
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
             }
         }
     }
