@@ -202,11 +202,11 @@ namespace MySharpChat.Core.SocketModule
                     // Complete sending the data to the remote device.  
                     int bytesSent = handler.EndSend(ar);
 
-                    EndPoint remoteEP = handler.RemoteEndPoint;
+                    EndPoint remoteEP = handler.RemoteEndPoint!;
 
                     string text = state.dataStringBuilder.ToString();
 
-                    logger.LogDebug(string.Format("Send {0} bytes to {1}. Data :{2}", bytesSent, remoteEP, text));
+                    logger.LogDebug("Send {0} bytes to {1}. Data :{2}", bytesSent, remoteEP, text);
                 }
             }
             catch (Exception e)
