@@ -89,12 +89,12 @@ namespace MySharpChat.Core.SocketModule
             Task<int> bytesRead = handler.ReceiveAsync(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
             bytesRead.GetAwaiter().OnCompleted(() =>
                 {
-                    ReadCallback(state, bytesRead.Result);
-
-                    content = state.dataStringBuilder.ToString();
-
                     try
                     {
+                        ReadCallback(state, bytesRead.Result);
+
+                        content = state.dataStringBuilder.ToString();
+
                         tcs.TrySetResult(content);
                     }
                     catch (OperationCanceledException)

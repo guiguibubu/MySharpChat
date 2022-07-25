@@ -188,7 +188,15 @@ namespace MySharpChat.Server
 
             Task<string> content = SocketUtils.ReadAsync(socket, this);
             content.Wait(timeoutMs);
-            return content.Result;
+            try
+            {
+                return content.Result;
+            }
+            catch(AggregateException e)
+            {
+                logger.LogError(e, "Fail to read from {0}", socket.RemoteEndPoint);
+                return string.Empty;
+            }
         }
 
         public void Disconnect(Socket? socket)
