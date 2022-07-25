@@ -1,21 +1,19 @@
 ﻿using System;
+using MySharpChat.Core.Command;
 using MySharpChat.Core.Utils;
 
-namespace MySharpChat.Core.Command
+namespace MySharpChat.Client.Command
 {
-    public class SendCommand : Singleton<SendCommand>, ICommand
+    public class SendCommand : Singleton<SendCommand>, IClientCommand
     {
         protected SendCommand() { }
 
         public string Name => "Send";
 
-        public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
+        public bool Execute(Client client, params string[] args)
         {
-            if (asyncMachine == null)
-                throw new ArgumentNullException(nameof(asyncMachine));
-
             string? text = args.Length > 0 ? args[0] : null;
-            asyncMachine.Send(text);
+            client.Send(text);
 
             return true;
         }

@@ -9,16 +9,12 @@ using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Client.Command;
 using MySharpChat.Core.Utils.Logger;
+using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
     public class Client : IAsyncMachine
     {
-        // ManualResetEvent instances signal completion.  
-        private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
-        private readonly ManualResetEvent sendDone = new ManualResetEvent(false);
-        private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
-
         private bool m_clientRun = false;
         private Thread? m_clientThread = null;
         private Socket? m_socketHandler = null;
@@ -118,14 +114,14 @@ namespace MySharpChat.Client
             return m_clientRun;
         }
 
-        public bool IsConnected(ConnexionInfos? connexionInfos = null)
+        public bool IsConnected(Socket? socket)
         {
-            return m_socketHandler != null && SocketUtils.IsConnected(m_socketHandler);
+            return socket != null && SocketUtils.IsConnected(socket);
         }
 
         public void Stop(int exitCode = 0)
         {
-            Disconnect(null);
+            Disconnect(m_socketHandler);
             m_clientRun = false;
             ExitCode = exitCode;
         }
@@ -160,8 +156,7 @@ namespace MySharpChat.Client
             if (isConnected)
             {
                 Console.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
-                m_socketHandler.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                currentLogic = new ChatClientLogic(m_socketHandler!.LocalEndPoint!);
+                currentLogic = new ChatClientLogic(m_socketHandler.LocalEndPoint!);
             }
             else
             {
@@ -220,29 +215,23 @@ namespace MySharpChat.Client
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
 
-            // Send test data to the remote device.  
-            if (SocketUtils.Send(m_socketHandler!, $"{text}", SendCallback, this))
-            {
-                sendDone.WaitOne();
-                // Set the event to nonsignaled state.  
-                sendDone.Reset();
-            }
+            SocketUtils.Send(m_socketHandler, text, SocketUtils.SendCallback, this);
         }
 
-        public string Read()
+        public string Read(int timeoutMs = 0)
         {
-            string result;
-            // Receive the response from the remote device.  
-            result = SocketUtils.Read(m_socketHandler!, ReadCallback, this, receiveDone);
-            Console.WriteLine("Response received : {0}", result);
-            return result;
+            Task<string> result = SocketUtils.ReadAsync(m_socketHandler, SocketUtils.ReadCallback, this);
+            if(result.Wait(timeoutMs))
+                Console.WriteLine("Response received : {0}", result);
+            return result.Result;
         }
 
-        public void Disconnect(ConnexionInfos? connexionInfos)
+        public void Disconnect(Socket? socket)
         {
-            if (m_socketHandler != null)
+            if (socket == null)
             {
-                SocketUtils.ShutdownListener(m_socketHandler);
+                socket = m_socketHandler;
+                SocketUtils.ShutdownListener(socket);
                 currentLogic = loaderLogic;
             }
         }
@@ -262,40 +251,6 @@ namespace MySharpChat.Client
                     handler.EndConnect(ar);
 
                     Console.WriteLine("Socket connected to {0}", handler.RemoteEndPoint.ToString());
-
-                    // Signal that the connection has been made.  
-                    client.connectDone.Set();
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        private static void ReadCallback(IAsyncResult ar)
-        {
-            if (ar.AsyncState is SocketContext context
-                && context.owner is Client client)
-            {
-                SocketUtils.ReadCallback(ar);
-
-                client.receiveDone.Set();
-            }
-        }
-
-        private static void SendCallback(IAsyncResult ar)
-        {
-            try
-            {
-                if (ar.AsyncState is SocketContext context
-                    && context.owner is Client client)
-                {
-                    int bytesSent = SocketUtils.SendCallback(ar, out string text);
-                    logger.LogDebug(string.Format("Send {0} bytes to Server. Data :{1}", bytesSent, text));
-
-                    // Signal that all bytes have been sent.  
-                    client.sendDone.Set();
                 }
             }
             catch (Exception e)
