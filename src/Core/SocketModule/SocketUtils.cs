@@ -8,6 +8,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MySharpChat.Core.SocketModule
 {
@@ -42,12 +43,9 @@ namespace MySharpChat.Core.SocketModule
             {
                 //If socket is not connected can't be shutdown
             }
-            catch (ObjectDisposedException)
-            {
-                //Object disposed
-            }
             finally
             {
+                socket.Disconnect(false);
                 socket.Close();
             }
         }
@@ -71,7 +69,12 @@ namespace MySharpChat.Core.SocketModule
             return endPoint;
         }
 
-        public static string Read(Socket? handler, AsyncCallback callback, object? caller = null, ManualResetEvent? receiveDone = null)
+        public static string Read(Socket? handler, AsyncCallback callback, object? caller = null)
+        {
+            return ReadAsync(handler, callback, caller).GetAwaiter().GetResult();
+        }
+
+        public static Task<string> ReadAsync(Socket? handler, AsyncCallback callback, object? caller = null)
         {
             if (handler == null)
                 throw new ArgumentNullException(nameof(handler));
@@ -82,15 +85,25 @@ namespace MySharpChat.Core.SocketModule
             SocketContext state = new SocketContext();
             state.workSocket = handler;
             state.owner = caller;
-            state.receiveDone = receiveDone;
-            handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, callback, state);
-
-            receiveDone?.WaitOne();
-            // Set the event to nonsignaled state.  
-            receiveDone?.Reset();
-            content = state.dataStringBuilder.ToString();
-
-            return content;
+            var tcs = new TaskCompletionSource<string>();
+            IAsyncResult result = handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, 0, iar =>
+            {
+                callback.Invoke(iar);
+                content = state.dataStringBuilder.ToString();
+                try
+                {
+                    tcs.TrySetResult(content);
+                }
+                catch (OperationCanceledException)
+                {
+                    tcs.TrySetCanceled();
+                }
+                catch (Exception e)
+                {
+                    tcs.TrySetException(e);
+                }
+            }, state);
+            return tcs.Task;
         }
 
         public static void ReadCallback(IAsyncResult ar)
@@ -107,7 +120,6 @@ namespace MySharpChat.Core.SocketModule
                     // Read data from the client socket.
                     int bytesRead = handler.EndReceive(ar);
 
-                    bool readFinished = false;
                     if (bytesRead > 0)
                     {
                         // There  might be more data, so store the data received so far.
@@ -118,24 +130,20 @@ namespace MySharpChat.Core.SocketModule
                         if (continueReceive)
                         {
                             // Not all data received. Get more.  
-                            handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, SocketFlags.None, ReadCallback, state);
+                            IAsyncResult result = handler.BeginReceive(state.buffer, 0, SocketContext.BUFFER_SIZE, SocketFlags.None, ReadCallback, state);
+                            result.AsyncWaitHandle.WaitOne();
                         }
-                        readFinished = !continueReceive;
-                    }
-                    else
-                    {
-                        readFinished = true;
-                    }
-
-                    if (readFinished)
-                    {
-                        state.receiveDone?.Set();
                     }
                 }
             }
         }
 
-        public static bool Send(Socket? handler, string data, AsyncCallback callback, object? caller = null, ManualResetEvent? sendDone = null)
+        public static bool Send(Socket? handler, string data, AsyncCallback callback, object? caller = null)
+        {
+            return SendAsync(handler, data, callback, caller).GetAwaiter().GetResult();
+        }
+
+        public static Task<bool> SendAsync(Socket? handler, string data, AsyncCallback callback, object? caller = null)
         {
             if (handler == null)
                 throw new ArgumentNullException(nameof(handler));
@@ -147,28 +155,42 @@ namespace MySharpChat.Core.SocketModule
             SocketContext state = new SocketContext();
             state.workSocket = handler;
             state.owner = caller;
-            state.sendDone = sendDone;
             state.dataStringBuilder.Clear();
             state.dataStringBuilder.Append(data);
 
+            var tcs = new TaskCompletionSource<bool>();
+            
             if (handler.Connected)
             {
                 // Begin sending the data to the remote device.  
-                handler.BeginSend(byteData, 0, byteData.Length, 0, callback, state);
-                return true;
+                handler.BeginSend(byteData, 0, byteData.Length, 0, iar =>
+                {
+                    callback.Invoke(iar);
+                    try
+                    {
+                        tcs.TrySetResult(true);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        tcs.TrySetCanceled();
+                    }
+                    catch (Exception e)
+                    {
+                        tcs.TrySetException(e);
+                    }
+                }, state);
             }
             else
             {
-                Console.WriteLine("Can not send data. Socket is disconnect.");
-                return false;
+                logger.LogError("Can not send data. Socket is disconnect.");
+                tcs.TrySetResult(false);
             }
+
+            return tcs.Task;
         }
 
-        public static int SendCallback(IAsyncResult ar, out string text)
+        public static void SendCallback(IAsyncResult ar)
         {
-            int bytesSent = 0;
-            text = "";
-
             try
             {
                 if (ar.AsyncState is SocketContext state
@@ -178,21 +200,19 @@ namespace MySharpChat.Core.SocketModule
                     Socket handler = state.workSocket;
 
                     // Complete sending the data to the remote device.  
-                    bytesSent = handler.EndSend(ar);
+                    int bytesSent = handler.EndSend(ar);
 
-                    text = state.dataStringBuilder.ToString();
+                    EndPoint remoteEP = handler.RemoteEndPoint;
 
-                    state.sendDone?.Set();
+                    string text = state.dataStringBuilder.ToString();
+
+                    logger.LogDebug(string.Format("Send {0} bytes to {1}. Data :{2}", bytesSent, remoteEP, text));
                 }
             }
             catch (Exception e)
             {
-                bytesSent = 0;
-                text = "";
                 throw new MySharpChatException("Fail to send datas", e);
             }
-
-            return bytesSent;
         }
 
         public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
