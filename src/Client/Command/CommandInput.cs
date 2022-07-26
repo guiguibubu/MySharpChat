@@ -3,10 +3,12 @@ using System.Diagnostics;
 
 using MySharpChat.Client.Input;
 using System.IO;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace MySharpChat.Client.Command
 {
-    public static class CommandInput
+    internal static class CommandInput
     {
 
         private static readonly KeyActionsCollection KeyActions = new KeyActionsCollection();
@@ -26,9 +28,9 @@ namespace MySharpChat.Client.Command
         /// value is null if the end of the input stream has been reached.
         /// </summary>
         /// <returns></returns>
-        public static string? ReadLine()
+        public static string ReadLine(ReadingState? reading = null)
         {
-            ReadingState readingState = new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), Console.Out);
+            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), Console.Out);
 
             while (!readingState.ReadingFinished)
             {
@@ -44,7 +46,7 @@ namespace MySharpChat.Client.Command
                 }
             }
 
-            string? text = null;
+            string text = string.Empty;
 
             if (readingState.InputTextHandler.Length > 0)
             {
@@ -55,6 +57,13 @@ namespace MySharpChat.Client.Command
             }
 
             return text;
+        }
+
+        public static Task<string> ReadLineAsync(ReadingState? reading = null, CancellationToken cancelToken = default)
+        {
+            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), Console.Out);
+
+            return Task.Factory.StartNew(() => { return ReadLine(readingState); }, cancelToken);
         }
 
         private static void DefaultKeyActionImpl(ReadingState readingState)
@@ -244,7 +253,7 @@ namespace MySharpChat.Client.Command
             IUserInputCursorHandler cursorHandler = readingState.CursorHandler;
             TextWriter outputStream = readingState.OutputStream;
             outputStream.Write(c);
-            cursorHandler.MovePositionPositive(1, CursorUpdateModeEnum.NoGraphic);
+            cursorHandler.MovePositionPositive(1, CursorUpdateMode.NoGraphic);
         }
 
         private static void WriteStr(ReadingState readingState, string s)

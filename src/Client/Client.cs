@@ -40,10 +40,6 @@ namespace MySharpChat.Client
             currentLogic = loaderLogic;
         }
 
-        public void InitCommands()
-        {
-        }
-
         public bool Start(object? startObject = null)
         {
             return Start(startObject as string);
@@ -87,11 +83,27 @@ namespace MySharpChat.Client
             m_clientRun = true;
             while (m_clientRun)
             {
+                // TODO reorganise to support read/write from network while reading inputs
                 Console.Write(currentLogic.Prefix);
 
-                string? text = CommandInput.ReadLine();
+                Task<string> userInputTask = CommandInput.ReadLineAsync();
+
+                if (IsConnected(m_socketHandler))
+                {
+                    while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
+                    {
+                        string readText = Read(TimeSpan.FromSeconds(1));
+                        if (!string.IsNullOrEmpty(readText))
+                            Console.WriteLine(readText);
+                    }
+                }
+                else
+                {
+                    userInputTask.Wait();
+                }
 
                 CommandParser parser = currentLogic.CommandParser;
+                string text = userInputTask.Result;
                 if (parser.TryParse(text, out string[] args, out ICommand? command))
                 {
                     command?.Execute(this, args);
@@ -149,9 +161,9 @@ namespace MySharpChat.Client
             // Create a TCP/IP socket.  
             m_socketHandler = SocketUtils.OpenListener(connexionData);
 
-            const int TIMEOUT_MS = 5000;
+            const int CONNECTION_TIMEOUT_MS = 5000;
 
-            bool timeout = ConnectImpl(this, remoteEP, out bool isConnected, TIMEOUT_MS);
+            bool timeout = ConnectImpl(this, remoteEP, out bool isConnected, CONNECTION_TIMEOUT_MS);
 
             if (isConnected)
             {
@@ -161,15 +173,15 @@ namespace MySharpChat.Client
             else
             {
                 if (timeout)
-                    Console.WriteLine("Connection timeout ! Fail connection in {0} ms", TIMEOUT_MS);
+                    Console.WriteLine("Connection timeout ! Fail connection in {0} ms", CONNECTION_TIMEOUT_MS);
                 Console.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             }
-                
+
 
             return isConnected;
         }
 
-        private static bool ConnectImpl(Client client, IPEndPoint remoteEP, out bool isConnected, int timeoutMs = 0)
+        private static bool ConnectImpl(Client client, IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite)
         {
             bool timeout = false;
             isConnected = false;
@@ -188,7 +200,7 @@ namespace MySharpChat.Client
                     attempt++;
 
                     // Connect to the remote endpoint.  
-                    Task result = socket!.ConnectAsync(remoteEP);
+                    Task connectTask = socket!.ConnectAsync(remoteEP);
 
                     const string prefix = "Connecting";
                     const int nbDotsMax = 3;
@@ -205,7 +217,7 @@ namespace MySharpChat.Client
 
                     try
                     {
-                        timeout = !result.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
+                        timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
                         isConnected = SocketUtils.IsConnected(socket);
                         attemptConnection = !isConnected && !timeout;
                     }
@@ -229,12 +241,38 @@ namespace MySharpChat.Client
             SocketUtils.Send(m_socketHandler, text, this);
         }
 
-        public string Read(int timeoutMs = 0)
+        public string Read(TimeSpan timeoutSpan)
         {
-            Task<string> result = SocketUtils.ReadAsync(m_socketHandler, this);
-            if(result.Wait(timeoutMs))
-                Console.WriteLine("Response received : {0}", result);
-            return result.Result;
+            using (CancellationTokenSource cancelSource = new CancellationTokenSource())
+            {
+                CancellationToken cancelToken = cancelSource.Token;
+                Task<string> readTask = ReadAsync(cancelToken);
+
+                bool timeout = !readTask.Wait(timeoutSpan);
+
+                if (!timeout)
+                {
+                    string text = readTask.Result;
+                    Console.WriteLine("Response received : {0}", text);
+                    return text;
+                }
+                else
+                {
+                    cancelSource.Cancel();
+                    logger.LogDebug("Reading timeout reached. Nothing received from server after {0}", timeoutSpan);
+                    return string.Empty;
+                }
+            }
+        }
+
+        public string Read()
+        {
+            return Read(Timeout.InfiniteTimeSpan);
+        }
+
+        private Task<string> ReadAsync(CancellationToken cancelToken = default)
+        {
+            return SocketUtils.ReadAsync(m_socketHandler, this, cancelToken);
         }
 
         public void Disconnect(Socket? socket)
