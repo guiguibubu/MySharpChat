@@ -4,13 +4,13 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {
-    public class SendCommand : Singleton<SendCommand>, IClientCommand
+    internal class SendCommand : Singleton<SendCommand>, IClientCommand
     {
         protected SendCommand() { }
 
         public string Name => "Send";
 
-        public bool Execute(Client client, params string[] args)
+        public bool Execute(IClientImpl client, params string[] args)
         {
             string? text = args.Length > 0 ? args[0] : null;
             client.Send(text);

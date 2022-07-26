@@ -2,15 +2,15 @@
 
 namespace MySharpChat.Client.Command
 {
-    public class DisconnectCommand : Singleton<DisconnectCommand>, IClientCommand
+    internal class DisconnectCommand : Singleton<DisconnectCommand>, IClientCommand
     {
         protected DisconnectCommand() { }
 
         public string Name { get => "Disconnect"; }
 
-        public bool Execute(Client client, params string[] args)
+        public bool Execute(IClientImpl client, params string[] args)
         {
-            client.Disconnect(null);
+            client.Disconnect();
             return true;
         }
 

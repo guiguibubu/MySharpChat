@@ -40,6 +40,16 @@ namespace MySharpChat.Core.Command
             return Parse(text, out _);
         }
 
+        public T? Parse<T>(string? text, out string[] args) where T : ICommand
+        {
+            return (T?)Parse(text, out args);
+        }
+
+        public T? Parse<T>(string? text) where T : ICommand
+        {
+            return Parse<T>(text, out _);
+        }
+
         public bool TryParse(string? text, out string[] args, out ICommand? command)
         {
             command = Parse(text, out args);
@@ -49,6 +59,25 @@ namespace MySharpChat.Core.Command
         public bool TryParse(string? text, out ICommand? parsedObject)
         {
             return TryParse(text, out _, out parsedObject);
+        }
+
+        public bool TryParse<T>(string? text, out string[] args, out T? command) where T : class, ICommand
+        {
+            try
+            {
+                command = (T?)Parse(text, out args);
+            }
+            catch (InvalidCastException)
+            {
+                args = new string[0];
+                command = null;
+            }
+            return command != null;
+        }
+
+        public bool TryParse<T>(string? text, out T? command) where T : class, ICommand
+        {
+            return TryParse(text, out _, out command);
         }
     }
 }
