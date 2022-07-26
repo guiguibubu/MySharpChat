@@ -16,7 +16,7 @@ namespace MySharpChat.Client
 
         }
 
-        Logger logger = Logger.Factory.GetLogger<Program>();
+        readonly Logger logger = Logger.Factory.GetLogger<Program>();
 
         // TODO Add CLI option for client
         static int Main(string[] args)

@@ -12,7 +12,7 @@
 
         public int Position { get; private set; }
 
-        public void MovePositionNegative(int move, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal)
+        public void MovePositionNegative(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
         {
             for (int i = 0; i < move; i++)
             {
@@ -20,7 +20,7 @@
             }
         }
 
-        public void MovePositionPositive(int move, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal)
+        public void MovePositionPositive(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
         {
             for (int i = 0; i < move; i++)
             {
@@ -28,9 +28,9 @@
             }
         }
 
-        private void MovePositionPositive(CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal)
+        private void MovePositionPositive(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
         {
-            if (cursorUpdateMode != CursorUpdateModeEnum.NoGraphic)
+            if (cursorUpdateMode != CursorUpdateMode.NoGraphic)
             {
                 int bufferWidth = _context.Width;
                 int left = _context.X;
@@ -48,13 +48,13 @@
                 _context.Y = top;
             }
 
-            if(cursorUpdateMode != CursorUpdateModeEnum.GraphicalOnly)
+            if(cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
                 Position++;
         }
 
-        private void MovePositionNegative(CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal)
+        private void MovePositionNegative(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
         {
-            if (cursorUpdateMode != CursorUpdateModeEnum.NoGraphic)
+            if (cursorUpdateMode != CursorUpdateMode.NoGraphic)
             {
                 int bufferWidth = _context.Width;
                 int left = _context.X;
@@ -72,11 +72,11 @@
                 _context.Y = top;
             }
 
-            if (cursorUpdateMode != CursorUpdateModeEnum.GraphicalOnly)
+            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
                 Position--;
         }
 
-        public void MovePositionToTail(int textLength, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal)
+        public void MovePositionToTail(int textLength, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
         {
             MovePositionPositive(textLength - Position, cursorUpdateMode);
         }

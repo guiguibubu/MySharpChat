@@ -170,7 +170,7 @@ namespace MySharpChat.Server
             return true;
         }
 
-        public void Send(Socket? socket, string? text)
+        public bool Send(Socket? socket, string? text)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
@@ -178,24 +178,47 @@ namespace MySharpChat.Server
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
 
-            SocketUtils.Send(socket, text, this);
+            return SocketUtils.Send(socket, text, this);
         }
 
-        public string Read(Socket? socket, int timeoutMs = 0)
+        public string Read(Socket? socket, TimeSpan timeoutSpan)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
 
-            Task<string> content = SocketUtils.ReadAsync(socket, this);
-            content.Wait(timeoutMs);
-            try
+            using (CancellationTokenSource cancelSource = new CancellationTokenSource())
             {
-                return content.Result;
-            }
-            catch(AggregateException e)
-            {
-                logger.LogError(e, "Fail to read from {0}", socket.RemoteEndPoint);
-                return string.Empty;
+                CancellationToken cancelToken = cancelSource.Token;
+                Task<string> readTask = SocketUtils.ReadAsync(socket, this, cancelToken);
+
+                bool timeout = true;
+                try
+                {
+                    timeout = !readTask.Wait(timeoutSpan);
+                }
+                catch (OperationCanceledException)
+                {
+                    timeout = true;
+                }
+
+                if (!timeout)
+                {
+                    try
+                    {
+                        return readTask.Result;
+                    }
+                    catch (AggregateException e)
+                    {
+                        logger.LogError(e, "Fail to read from {0}", socket.RemoteEndPoint);
+                        return string.Empty;
+                    }
+                }
+                else
+                {
+                    cancelSource.Cancel();
+                    logger.LogDebug("Reading timeout reached. Nothing received from {0} after {1} ms", socket.RemoteEndPoint, timeoutSpan);
+                    return string.Empty;
+                }
             }
         }
 
@@ -214,7 +237,7 @@ namespace MySharpChat.Server
 
             while (IsConnected(socket))
             {
-                string content = Read(socket, 1000);
+                string content = Read(socket, TimeSpan.FromSeconds(1));
 
                 if (!string.IsNullOrEmpty(content))
                 {

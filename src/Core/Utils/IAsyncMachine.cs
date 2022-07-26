@@ -5,7 +5,6 @@ namespace MySharpChat.Core.Utils
     public interface IAsyncMachine
     {
         public void Initialize(object? initObject = null);
-        public void InitCommands();
         public bool Start(object? startObject = null);
         public bool IsRunning();
         public bool IsConnected(Socket? socket);

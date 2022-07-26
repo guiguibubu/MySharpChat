@@ -69,7 +69,7 @@ namespace MySharpChat.Core.SocketModule
             return endPoint;
         }
 
-        public static string Read(Socket? handler, object? caller = null)
+        public static string Read(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
             if (handler == null)
                 throw new ArgumentNullException(nameof(handler));
@@ -79,18 +79,32 @@ namespace MySharpChat.Core.SocketModule
             state.workSocket = handler;
             state.owner = caller;
 
-            ReadImpl(state);
+            while (handler.Available == 0)
+            {
+                Thread.SpinWait(100);
+                cancelToken.ThrowIfCancellationRequested();
+            }
+
+            ReadImpl(state, cancelToken);
 
             string content = state.dataStringBuilder.ToString();
             return content;
         }
 
-        public static Task<string> ReadAsync(Socket? handler, object? caller = null)
+        public static Task<string> ReadAsync(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
-            return Task.Factory.StartNew(() => Read(handler, caller));
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    string content = string.Empty;
+                    try { content = Read(handler, caller, cancelToken); }
+                    catch (OperationCanceledException) { }
+                    return content;
+                }
+            , cancelToken);
         }
 
-        private static void ReadImpl(SocketContext state, int bytesRead = -1)
+        private static void ReadImpl(SocketContext state, CancellationToken cancelToken = default)
         {
             if (state.workSocket == null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
@@ -99,25 +113,23 @@ namespace MySharpChat.Core.SocketModule
 
             Socket handler = state.workSocket!;
 
-            bool firstRead = bytesRead < 0;
-            bool dataToRead = bytesRead > 0;
-
-            if (handler.Connected
-                && (firstRead || dataToRead))
+            if (handler.Connected)
             {
-                if (dataToRead)
+
+                int bytesRead = handler.Receive(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
+
+                if(bytesRead > 0)
                 {
                     // There  might be more data, so store the data received so far.
                     string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
                     state.dataStringBuilder.Append(dataStr);
-                }
 
-                bool continueReceive = firstRead || bytesRead == SocketContext.BUFFER_SIZE;
-                if (continueReceive)
-                {
-                    // Not all data received. Get more.
-                    bytesRead = handler.Receive(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
-                    ReadImpl(state, bytesRead);
+                    bool continueReceive = bytesRead == SocketContext.BUFFER_SIZE;
+                    if (continueReceive && !cancelToken.IsCancellationRequested)
+                    {
+                        // Not all data received. Get more.
+                        ReadImpl(state, cancelToken);
+                    }
                 }
             }
         }
@@ -156,9 +168,17 @@ namespace MySharpChat.Core.SocketModule
             return success;
         }
 
-        public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null)
+        public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null, CancellationToken cancelToken = default)
         {
-            return Task.Factory.StartNew(() => Send (handler, data, caller));
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    bool success = false;
+                    try { success = Send(handler, data, caller); }
+                    catch (OperationCanceledException) { }
+                    return success;
+                }
+            , cancelToken);
         }
 
         public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)

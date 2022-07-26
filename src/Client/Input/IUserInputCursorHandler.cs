@@ -4,12 +4,12 @@
     {
         int Position { get; }
 
-        void MovePositionPositive(int move, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal);
+        void MovePositionPositive(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal);
 
-        void MovePositionNegative(int move, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal);
+        void MovePositionNegative(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal);
 
-        void MovePositionToOrigin(CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal) => MovePositionNegative(Position, cursorUpdateMode);
+        void MovePositionToOrigin(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal) => MovePositionNegative(Position, cursorUpdateMode);
 
-        void MovePositionToTail(int textLength, CursorUpdateModeEnum cursorUpdateMode = CursorUpdateModeEnum.Normal);
+        void MovePositionToTail(int textLength, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal);
     }
 }

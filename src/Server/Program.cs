@@ -15,7 +15,7 @@ namespace MySharpChat.Server
 
         }
 
-        Logger logger = Logger.Factory.GetLogger<Program>();
+        readonly Logger logger = Logger.Factory.GetLogger<Program>();
 
         static int Main(string[] args)
         {
