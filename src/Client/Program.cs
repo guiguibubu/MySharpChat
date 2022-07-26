@@ -21,7 +21,7 @@ namespace MySharpChat.Client
         // TODO Add CLI option for client
         static int Main(string[] args)
         {
-            Client client = new Client();
+            Client client = Client.Factory.Initialize();
 
             if (client.Start())
             {
