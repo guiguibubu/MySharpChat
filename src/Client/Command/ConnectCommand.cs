@@ -7,13 +7,13 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {
-    public class ConnectCommand : Singleton<ConnectCommand>, IClientCommand
+    internal class ConnectCommand : Singleton<ConnectCommand>, IClientCommand
     {
         protected ConnectCommand() { }
 
         public string Name { get => "Connect"; }
 
-        public bool Execute(Client client, params string[] args)
+        public bool Execute(IClientImpl client, params string[] args)
         {
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
@@ -23,18 +23,21 @@ namespace MySharpChat.Client.Command
             data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
             if (data.Ip == null)
             {
-                Console.WriteLine("No valid ip adress available");
-                Console.WriteLine("Available ip adresses Host");
-                foreach (IPAddress ipAddress in ipAddressesHost)
+                using (LockTextWriter writer = client.OutputWriter)
                 {
-                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+                    writer.WriteLine("No valid ip adress available");
+                    writer.WriteLine("Available ip adresses Host");
+                    foreach (IPAddress ipAddress in ipAddressesHost)
+                    {
+                        writer.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
 
-                }
-                Console.WriteLine("Available ip adresses non virtual");
-                foreach (IPAddress ipAddress in ipAddressesNonVirtual)
-                {
-                    Console.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
+                    }
+                    writer.WriteLine("Available ip adresses non virtual");
+                    foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+                    {
+                        writer.WriteLine("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily));
 
+                    }
                 }
                 throw new InvalidOperationException("No valid ip adress available");
             }
