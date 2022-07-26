@@ -10,6 +10,8 @@ using MySharpChat.Core.Utils;
 using MySharpChat.Client.Command;
 using MySharpChat.Core.Utils.Logger;
 using System.Threading.Tasks;
+using MySharpChat.Client.Input;
+using System.IO;
 
 namespace MySharpChat.Client
 {
@@ -84,9 +86,12 @@ namespace MySharpChat.Client
             while (m_clientRun)
             {
                 // TODO reorganise to support read/write from network while reading inputs
-                Console.Write(currentLogic.Prefix);
+                ConsoleOutputWriter consoleOutputWriter = new ConsoleOutputWriter();
+                consoleOutputWriter.Write(currentLogic.Prefix);
 
-                Task<string> userInputTask = CommandInput.ReadLineAsync();
+                IUserInputCursorHandler cursolHandler = new ConsoleCursorHandler(new ConsoleCursorContext());
+                ReadingState readingState = new ReadingState(new UserInputTextHandler(), cursolHandler, consoleOutputWriter);
+                Task<string> userInputTask = CommandInput.ReadLineAsync(readingState);
 
                 if (IsConnected(m_socketHandler))
                 {
@@ -94,7 +99,20 @@ namespace MySharpChat.Client
                     {
                         string readText = Read(TimeSpan.FromSeconds(1));
                         if (!string.IsNullOrEmpty(readText))
-                            Console.WriteLine(readText);
+                        {
+                            using (consoleOutputWriter.Lock())
+                            {
+                                cursolHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                                int prefixLength = currentLogic.Prefix.Length;
+                                cursolHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                                int inputTextLength = cursolHandler.Position;
+                                for (int i = 0; i < prefixLength + inputTextLength; i++)
+                                    consoleOutputWriter.Write(" ");
+                                cursolHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                                consoleOutputWriter.WriteLine(readText);
+                                consoleOutputWriter.Write(currentLogic.Prefix);
+                            }
+                        }
                     }
                 }
                 else
@@ -253,7 +271,7 @@ namespace MySharpChat.Client
                 if (!timeout)
                 {
                     string text = readTask.Result;
-                    Console.WriteLine("Response received : {0}", text);
+                    logger.LogInfo("Response received : {0}", text);
                     return text;
                 }
                 else

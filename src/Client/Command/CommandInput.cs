@@ -30,7 +30,7 @@ namespace MySharpChat.Client.Command
         /// <returns></returns>
         public static string ReadLine(ReadingState? reading = null)
         {
-            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), Console.Out);
+            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), new ConsoleOutputWriter());
 
             while (!readingState.ReadingFinished)
             {
@@ -61,7 +61,7 @@ namespace MySharpChat.Client.Command
 
         public static Task<string> ReadLineAsync(ReadingState? reading = null, CancellationToken cancelToken = default)
         {
-            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), Console.Out);
+            ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), new ConsoleCursorHandler(new ConsoleCursorContext()), new ConsoleOutputWriter());
 
             return Task.Factory.StartNew(() => { return ReadLine(readingState); }, cancelToken);
         }
@@ -98,7 +98,8 @@ namespace MySharpChat.Client.Command
                 (ReadingState readingState) =>
                 {
                     readingState.ReadingFinished = true;
-                    Console.WriteLine();
+                    TextWriter outputStream = readingState.OutputStream;
+                    outputStream.WriteLine();
                 }
             );
             KeyActions.Add(ConsoleKey.Escape,

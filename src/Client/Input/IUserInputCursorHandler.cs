@@ -8,7 +8,7 @@
 
         void MovePositionNegative(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal);
 
-        void MovePositionToOrigin(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal) => MovePositionNegative(Position, cursorUpdateMode);
+        public virtual void MovePositionToOrigin(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal) => MovePositionNegative(Position, cursorUpdateMode);
 
         void MovePositionToTail(int textLength, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal);
     }
