@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client.Input
 {
-    internal class ConsoleOutputWriter : LockTextWriter
+    public class ConsoleOutputWriter : LockTextWriter
     {
         private readonly TextWriter _output;
 
