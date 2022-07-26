@@ -109,7 +109,7 @@ namespace MySharpChat.Client
                                 for (int i = 0; i < prefixLength + inputTextLength; i++)
                                     consoleOutputWriter.Write(" ");
                                 cursolHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                                consoleOutputWriter.WriteLine(readText);
+                                consoleOutputWriter.WriteLine("server> {0}", readText);
                                 consoleOutputWriter.Write(currentLogic.Prefix);
                             }
                         }
