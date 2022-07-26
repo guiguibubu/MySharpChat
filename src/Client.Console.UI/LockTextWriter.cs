@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client.Input
 {
-    internal abstract class LockTextWriter : TextWriter
+    public abstract class LockTextWriter : TextWriter
     {
         public abstract IDisposable Lock();
         public abstract bool IsLocked { get; }
