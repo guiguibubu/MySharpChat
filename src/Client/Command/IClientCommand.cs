@@ -12,7 +12,7 @@ namespace MySharpChat.Client.Command
             if (asyncMachine == null)
                 throw new ArgumentNullException(nameof(asyncMachine));
 
-            if (asyncMachine is Client client)
+            if (asyncMachine is IClientImpl client)
             {
                 return Execute(client, args);
             }
@@ -22,6 +22,6 @@ namespace MySharpChat.Client.Command
             }
         }
 
-        bool Execute(Client client, params string[] args);
+        bool Execute(IClientImpl client, params string[] args);
     }
 }
