@@ -5,11 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Core.Utils
 {
-    public abstract class LockTextWriter : TextWriter
+    public abstract class LockTextWriter : TextWriter, ILockable
     {
-        public abstract IDisposable Lock();
         public abstract bool IsLocked { get; }
+
+        public abstract IDisposable Lock();
     }
 }
