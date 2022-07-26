@@ -2,7 +2,7 @@
 
 namespace MySharpChat.Client.Input
 {
-    internal class UserInputTextHandler : IUserInputTextHandler
+    public class UserInputTextHandler : IUserInputTextHandler
     {
         private readonly List<char> _chars = new List<char>();
 

@@ -1,6 +1,6 @@
 ﻿namespace MySharpChat.Client.Input
 {
-    internal class ConsoleCursorHandler : IUserInputCursorHandler
+    public class ConsoleCursorHandler : IUserInputCursorHandler
     {
         private IUserInputCursorContext _context { get; set; }
 

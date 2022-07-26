@@ -3,7 +3,7 @@ using System.IO;
 
 namespace MySharpChat.Client.Input
 {
-    internal sealed class ReadingState
+    public sealed class ReadingState
     {
         public ReadingState(IUserInputTextHandler inputTextHandler, IUserInputCursorHandler cursorHandler, TextWriter outputStream)
         {

@@ -2,7 +2,7 @@
 
 namespace MySharpChat.Client.Input
 {
-    internal interface IUserInputTextHandler
+    public interface IUserInputTextHandler
     {
         /// <summary>
         /// Gets the number of elements contained in the <see cref="MySharpChat.Client.Input.IUserInputTextHandler"/>

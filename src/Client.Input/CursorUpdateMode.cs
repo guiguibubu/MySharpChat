@@ -1,6 +1,6 @@
 ﻿namespace MySharpChat.Client.Input
 {
-    internal enum CursorUpdateMode
+    public enum CursorUpdateMode
     {
         Normal,
         GraphicalOnly,

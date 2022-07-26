@@ -2,7 +2,7 @@
 
 namespace MySharpChat.Client.Input
 {
-    internal class ConsoleCursorContext : IUserInputCursorContext
+    public class ConsoleCursorContext : IUserInputCursorContext
     {
         public int Width => Console.BufferWidth;
         public int X { get => Console.CursorLeft; set => Console.CursorLeft = value; }

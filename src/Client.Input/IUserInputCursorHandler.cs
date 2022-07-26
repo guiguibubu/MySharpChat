@@ -1,6 +1,6 @@
 ﻿namespace MySharpChat.Client.Input
 {
-    internal interface IUserInputCursorHandler
+    public interface IUserInputCursorHandler
     {
         int Position { get; }
 
