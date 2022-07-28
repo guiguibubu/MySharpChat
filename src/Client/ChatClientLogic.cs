@@ -17,9 +17,9 @@ namespace MySharpChat.Client
 
         public string Prefix => string.Format("{0}@{1}> ", Environment.UserName, _endPoint);
 
-        private readonly EndPoint _endPoint;
+        private readonly string _endPoint;
 
-        public ChatClientLogic(EndPoint endPoint)
+        public ChatClientLogic(string endPoint)
         {
             _endPoint = endPoint;
 

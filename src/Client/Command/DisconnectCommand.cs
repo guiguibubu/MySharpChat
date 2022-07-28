@@ -1,4 +1,5 @@
 ﻿using MySharpChat.Core.Utils;
+using System;
 
 namespace MySharpChat.Client.Command
 {
@@ -8,10 +9,19 @@ namespace MySharpChat.Client.Command
 
         public string Name { get => "Disconnect"; }
 
-        public bool Execute(IClientImpl client, params string[] args)
+        public bool Execute(IClientImpl? client, params string[] args)
         {
-            client.Disconnect();
+            if (client == null)
+                throw new ArgumentNullException(nameof(client));
+
+            client.NetworkModule.Disconnect();
+            client.CurrentLogic = new LoaderClientLogic();
             return true;
+        }
+
+        public bool Execute(object? data, params string[] args)
+        {
+            return (this as IClientCommand).Execute(data, args);
         }
 
         public string GetHelp()

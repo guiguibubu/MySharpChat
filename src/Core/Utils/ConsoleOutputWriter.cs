@@ -1,11 +1,10 @@
-﻿using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
 
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Core.Utils
 {
     public class ConsoleOutputWriter : LockTextWriter
     {
@@ -27,7 +26,7 @@ namespace MySharpChat.Client.Input
         public override void Write(char value)
         {
             int threadId = Thread.CurrentThread.ManagedThreadId;
-            bool hasToWrite = !IsLocked || (IsLocked && _scope!.ThreadId == threadId);
+            bool hasToWrite = !IsLocked || IsLocked && _scope!.ThreadId == threadId;
             if (hasToWrite)
                 _output.Write(value);
             else
