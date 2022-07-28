@@ -1,23 +1,21 @@
-﻿using System;
-using System.IO;
+﻿using MySharpChat.Core.UI;
+using MySharpChat.Core.Utils;
+using System;
 
 namespace MySharpChat.Client.Input
 {
     public sealed class ReadingState
     {
-        public ReadingState(IUserInputTextHandler inputTextHandler, IUserInputCursorHandler cursorHandler, TextWriter outputStream)
+        public ReadingState(IUserInputTextHandler inputTextHandler, IUserInterfaceModule userInterfaceModule)
         {
             ReadingFinished = false;
             InputTextHandler = inputTextHandler;
-            CursorHandler = cursorHandler;
-            OutputStream = outputStream;
+            UserInterfaceModule = userInterfaceModule;
         }
 
         public bool ReadingFinished { get; set; }
-        public int Position => CursorHandler.Position;
         public ConsoleKeyInfo Key { get; set; }
-        public TextWriter OutputStream { get; }
-        public IUserInputCursorHandler CursorHandler { get; }
+        public IUserInterfaceModule UserInterfaceModule { get; }
         public IUserInputTextHandler InputTextHandler { get; }
     }
 }

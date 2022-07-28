@@ -1,4 +1,4 @@
-﻿using MySharpChat.Client.Input;
+﻿using MySharpChat.Core.UI;
 
 namespace MySharpChat.Client.Console
 {

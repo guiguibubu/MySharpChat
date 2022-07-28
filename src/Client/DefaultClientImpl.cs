@@ -4,6 +4,7 @@ using MySharpChat.Client.Input;
 using MySharpChat.Client.UI;
 using MySharpChat.Core.Command;
 using MySharpChat.Core.Console;
+using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Threading.Tasks;
@@ -40,8 +41,9 @@ namespace MySharpChat.Client
             // TODO reorganise to support read/write from network while reading inputs
             OutputWriter.Write(CurrentLogic.Prefix);
 
-            IUserInputCursorHandler cursolHandler = new ConsoleCursorHandler(new ConsoleCursorContext());
-            ReadingState readingState = new ReadingState(new UserInputTextHandler(), cursolHandler, OutputWriter);
+            IUserInterfaceModule userInterfaceModule = new ConsoleUserInterfaceModule();
+            IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
+            ReadingState readingState = new ReadingState(new UserInputTextHandler(), userInterfaceModule);
             Task<string> userInputTask = CommandInput.ReadLineAsync(readingState);
 
             if (_networkModule.IsConnected())
@@ -53,13 +55,13 @@ namespace MySharpChat.Client
                     {
                         using (OutputWriter.Lock())
                         {
-                            cursolHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                            cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
                             int prefixLength = CurrentLogic.Prefix.Length;
-                            cursolHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                            int inputTextLength = cursolHandler.Position;
+                            cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                            int inputTextLength = cursorHandler.Position;
                             for (int i = 0; i < prefixLength + inputTextLength; i++)
                                 OutputWriter.Write(" ");
-                            cursolHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                            cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
                             OutputWriter.WriteLine("server> {0}", readText);
                             OutputWriter.Write(CurrentLogic.Prefix);
                         }
