@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MySharpChat.Core.UI;
 
 namespace MySharpChat.Core.Console
 {
-    public static class ConsoleInputReader
+    public class ConsoleInputReader : IInputReader
     {
-        public static ConsoleKeyInfo ReadKey(bool intercept)
+        public ConsoleKeyInfo ReadKey(bool intercept)
         {
             return System.Console.ReadKey(intercept);
         }

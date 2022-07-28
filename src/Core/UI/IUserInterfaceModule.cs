@@ -10,6 +10,7 @@ namespace MySharpChat.Core.UI
     public interface IUserInterfaceModule
     {
         IUserInputCursorHandler CursorHandler { get; }
-        LockTextWriter OutputStream { get; }
+        IInputReader InputReader { get; }
+        LockTextWriter OutputWriter { get; }
     }
 }

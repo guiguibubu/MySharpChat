@@ -1,11 +1,12 @@
-﻿using MySharpChat.Client.UI;
+﻿using MySharpChat.Core.UI;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client
 {
-    internal interface IClientImpl
+    public interface IClientImpl
     {
-        ClientOutputWriter OutputWriter { get; }
-        ClientNetworkModule NetworkModule { get; }
+        IUserInterfaceModule UserInterfaceModule { get; }
+        INetworkModule NetworkModule { get; }
         
         IClientLogic CurrentLogic { get; set; }
 
