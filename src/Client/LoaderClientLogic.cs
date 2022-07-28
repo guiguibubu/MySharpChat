@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
-    internal class LoaderClientLogic : IClientLogic
+    public class LoaderClientLogic : IClientLogic
     {
         private readonly CommandManager commandManager = new CommandManager();
         private readonly CommandParser commandParser;

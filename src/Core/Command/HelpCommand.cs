@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace MySharpChat.Core.Command
 {
-    public class HelpCommand : IAsyncMachineCommand
+    public class HelpCommand : ICommand<LockTextWriter>
     {
         private readonly CommandManager _commandManager;
 
@@ -15,14 +15,12 @@ namespace MySharpChat.Core.Command
 
         public string Name { get => "Help"; }
 
-        public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
+        public bool Execute(LockTextWriter? writer, params string[] args)
         {
-            if(asyncMachine == null)
-                throw new ArgumentNullException(nameof(asyncMachine));
+            if(writer == null)
+                throw new ArgumentNullException(nameof(writer));
 
             string? commandName = args.Length > 0 ? args[0] : null;
-
-            LockTextWriter writer = asyncMachine.OutputWriter;
 
             if (string.IsNullOrEmpty(commandName))
             {
@@ -73,12 +71,7 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(object? data, params string[] args)
         {
-            return (this as IAsyncMachineCommand).Execute(data, args);
-        }
-
-        public bool Execute()
-        {
-            return Execute(null);
+            return (this as ICommand<LockTextWriter>).Execute(data, args);
         }
 
         public string GetHelp()

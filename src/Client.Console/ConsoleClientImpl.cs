@@ -1,69 +1,71 @@
 ﻿using MySharpChat.Client.Command;
 using MySharpChat.Client.Console;
 using MySharpChat.Client.Input;
-using MySharpChat.Client.UI;
 using MySharpChat.Core.Command;
-using MySharpChat.Core.Console;
 using MySharpChat.Core.UI;
+using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
-    internal class DefaultClientImpl : IClientImpl
+    internal class ConsoleClientImpl : IClientImpl
     {
-        private static readonly Logger logger = Logger.Factory.GetLogger<DefaultClientImpl>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleClientImpl>();
 
-        private readonly ClientNetworkModule _networkModule;
-        public ClientNetworkModule NetworkModule => _networkModule;
+        private readonly INetworkModule networkModule;
+        public INetworkModule NetworkModule => networkModule;
 
-        private readonly ClientOutputWriter _outputWriter;
-        public ClientOutputWriter OutputWriter => _outputWriter;
+        private readonly IUserInterfaceModule userInterfaceModule;
+        public IUserInterfaceModule UserInterfaceModule => userInterfaceModule;
 
-        public string LocalEndPoint => throw new NotImplementedException();
+        public string LocalEndPoint => networkModule.LocalEndPoint;
 
-        public string RemoteEndPoint => throw new NotImplementedException();
+        public string RemoteEndPoint => networkModule.RemoteEndPoint;
 
         public IClientLogic CurrentLogic { get; set; }
 
         private readonly LoaderClientLogic loaderLogic = new LoaderClientLogic();
 
-        public DefaultClientImpl()
+        private readonly CommandInput commandInput;
+
+        public ConsoleClientImpl()
         {
             CurrentLogic = loaderLogic;
-            _outputWriter = new ClientOutputWriter(new ConsoleOutputWriter());
-            _networkModule = new ClientNetworkModule(_outputWriter);
+            userInterfaceModule = new ConsoleUserInterfaceModule();
+            networkModule = new ClientNetworkModule(this);
+            commandInput = new CommandInput(userInterfaceModule);
         }
 
         public void Run(Client client)
         {
             // TODO reorganise to support read/write from network while reading inputs
-            OutputWriter.Write(CurrentLogic.Prefix);
-
-            IUserInterfaceModule userInterfaceModule = new ConsoleUserInterfaceModule();
             IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
-            ReadingState readingState = new ReadingState(new UserInputTextHandler(), userInterfaceModule);
-            Task<string> userInputTask = CommandInput.ReadLineAsync(readingState);
+            LockTextWriter writer = userInterfaceModule.OutputWriter;
+            writer.Write(CurrentLogic.Prefix);
 
-            if (_networkModule.IsConnected())
+            ReadingState readingState = new ReadingState(new UserInputTextHandler(), userInterfaceModule);
+            Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
+
+            if (networkModule.IsConnected())
             {
                 while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
                 {
-                    string readText = _networkModule.Read(TimeSpan.FromSeconds(1));
+                    string readText = networkModule.Read(TimeSpan.FromSeconds(1));
                     if (!string.IsNullOrEmpty(readText))
                     {
-                        using (OutputWriter.Lock())
+                        using (writer.Lock())
                         {
                             cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
                             int prefixLength = CurrentLogic.Prefix.Length;
                             cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
                             int inputTextLength = cursorHandler.Position;
                             for (int i = 0; i < prefixLength + inputTextLength; i++)
-                                OutputWriter.Write(" ");
+                                writer.Write(" ");
                             cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                            OutputWriter.WriteLine("server> {0}", readText);
-                            OutputWriter.Write(CurrentLogic.Prefix);
+                            writer.WriteLine("server> {0}", readText);
+                            writer.Write(CurrentLogic.Prefix);
                         }
                     }
                 }
@@ -85,17 +87,17 @@ namespace MySharpChat.Client
             }
             else
             {
-                OutputWriter.WriteLine("Fail to parse \"{0}\"", text);
-                OutputWriter.WriteLine();
-                OutputWriter.WriteLine("Available commands");
-                parser.GetHelpCommand().Execute();
+                writer.WriteLine("Fail to parse \"{0}\"", text);
+                writer.WriteLine();
+                writer.WriteLine("Available commands");
+                parser.GetHelpCommand().Execute(writer);
             }
-            OutputWriter.WriteLine();
+            writer.WriteLine();
         }
 
         public void Stop()
         {
-            _networkModule.Disconnect();
+            networkModule.Disconnect();
             CurrentLogic = loaderLogic;
         }
     }

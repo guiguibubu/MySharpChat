@@ -7,12 +7,17 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Core.Utils
 {
-    public interface INetworkMachine : IConnectMachine
+    public interface INetworkModule : IConnectMachine
     {
         string LocalEndPoint { get; }
         string RemoteEndPoint { get; }
 
         void Send(string? text);
         Task<string> ReadAsync(CancellationToken cancelToken = default);
+        string Read(TimeSpan timeoutSpan);
+        string Read()
+        {
+            return Read(Timeout.InfiniteTimeSpan);
+        }
     }
 }

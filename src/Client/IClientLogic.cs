@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
-    internal interface IClientLogic
+    public interface IClientLogic
     {
         CommandParser CommandParser { get; }
         string Prefix { get; }

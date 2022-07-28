@@ -26,7 +26,8 @@ namespace MySharpChat.Client.Command
             data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
             if (data.Ip == null)
             {
-                using (LockTextWriter writer = client.OutputWriter)
+                LockTextWriter writer = client.UserInterfaceModule.OutputWriter;
+                using (writer.Lock())
                 {
                     writer.WriteLine("No valid ip adress available");
                     writer.WriteLine("Available ip adresses Host");
