@@ -45,7 +45,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Client.Console.UI\MySharpChat.Client.Console.UI.csproj" />
+        <ProjectReference Include="..\Client.Console\MySharpChat.Client.Console.csproj" />
         <ProjectReference Include="..\Client.Input\MySharpChat.Client.Input.csproj" />
         <ProjectReference Include="..\Core.Console\MySharpChat.Core.Console.csproj" />
         <ProjectReference Include="..\Core\MySharpChat.Core.csproj">

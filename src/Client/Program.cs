@@ -28,8 +28,8 @@ namespace MySharpChat.Client
                 client.Wait();
             }
 
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
+            System.Console.WriteLine("\nPress ENTER to continue...");
+            System.Console.Read();
 
             return client.ExitCode;
         }
