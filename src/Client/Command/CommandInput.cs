@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Console;
+using MySharpChat.Client.Console;
 
 namespace MySharpChat.Client.Command
 {
@@ -36,7 +37,7 @@ namespace MySharpChat.Client.Command
 
             while (!readingState.ReadingFinished)
             {
-                ConsoleKeyInfo key = Console.ReadKey(true);
+                ConsoleKeyInfo key = ConsoleInputReader.ReadKey(true);
                 readingState.Key = key;
                 if (KeyActions.TryGetValue(key, out KeyActionDelegate? keyAction))
                 {
