@@ -2,7 +2,7 @@
 
 namespace MySharpChat.Core.Utils
 {
-    public interface IAsyncNetworkMachine : IAsyncMachine, INetworkMachine
+    public interface IAsyncNetworkMachine : IAsyncMachine, INetworkModule
     {
     }
 }

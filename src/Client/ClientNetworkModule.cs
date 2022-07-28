@@ -1,13 +1,9 @@
-﻿using MySharpChat.Client.Console;
-using MySharpChat.Client.Input;
-using MySharpChat.Client.UI;
-using MySharpChat.Core.SocketModule;
+﻿using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -16,20 +12,20 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
-    internal class ClientNetworkModule : INetworkMachine
+    public class ClientNetworkModule : INetworkModule
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ClientNetworkModule>();
 
-        private readonly ClientOutputWriter _outputWriter;
+        private readonly IClientImpl _client;
 
         private Socket? m_socket = null;
 
-        public ClientNetworkModule(ClientOutputWriter outputWriter)
+        public ClientNetworkModule(IClientImpl client)
         {
-            if(outputWriter == null)
-                throw new ArgumentNullException(nameof(outputWriter));
+            if(client == null)
+                throw new ArgumentNullException(nameof(client));
 
-            _outputWriter = outputWriter;
+            _client = client;
         }
 
         public string LocalEndPoint
@@ -84,12 +80,10 @@ namespace MySharpChat.Client
                     for (int i = 0; i < nbDotsMax - nbDots; i++)
                         loadingText.Append(" ");
 
-                    ConsoleCursorContext cursorContext = new ConsoleCursorContext();
-                    int oldCursorPositionX = cursorContext.X;
-                    int oldCursorPositionY = cursorContext.Y;
-                    _outputWriter.Write(loadingText);
-                    cursorContext.X = oldCursorPositionX;
-                    cursorContext.Y = oldCursorPositionY;
+                    IUserInputCursorHandler cursorHandler = _client.UserInterfaceModule.CursorHandler;
+                    LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
+                    writer.Write(loadingText);
+                    cursorHandler.MovePositionNegative(loadingText.Length, CursorUpdateMode.GraphicalOnly);
 
                     try
                     {
@@ -124,15 +118,17 @@ namespace MySharpChat.Client
 
             bool timeout = Connect(remoteEP, out bool isConnected, CONNECTION_TIMEOUT_MS);
 
+            LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
+
             if (isConnected)
             {
-                _outputWriter.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                writer.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             }
             else
             {
                 if (timeout)
-                    _outputWriter.WriteLine("Connection timeout ! Fail connection in {0} ms", CONNECTION_TIMEOUT_MS);
-                _outputWriter.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                    writer.WriteLine("Connection timeout ! Fail connection in {0} ms", CONNECTION_TIMEOUT_MS);
+                writer.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             }
 
             return isConnected;
@@ -181,11 +177,6 @@ namespace MySharpChat.Client
                     return string.Empty;
                 }
             }
-        }
-
-        public string Read()
-        {
-            return Read(Timeout.InfiniteTimeSpan);
         }
 
         public Task<string> ReadAsync(CancellationToken cancelToken = default)
