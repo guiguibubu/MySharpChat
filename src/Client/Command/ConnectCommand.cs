@@ -13,8 +13,11 @@ namespace MySharpChat.Client.Command
 
         public string Name { get => "Connect"; }
 
-        public bool Execute(IClientImpl client, params string[] args)
+        public bool Execute(IClientImpl? client, params string[] args)
         {
+            if(client == null)
+                throw new ArgumentNullException(nameof(client));
+
             ConnexionInfos connexionInfos = new ConnexionInfos();
             string? serverAdress = args.Length > 0 ? args[0] : null;
             ConnexionInfos.Data data = connexionInfos.Remote!;
@@ -44,7 +47,14 @@ namespace MySharpChat.Client.Command
 
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
-            return client.Connect(connexionInfos);
+            bool isConnected = client.NetworkModule.Connect(connexionInfos);
+            client.CurrentLogic = new ChatClientLogic(client.NetworkModule.LocalEndPoint);
+            return isConnected;
+        }
+
+        public bool Execute(object? data, params string[] args)
+        {
+            return (this as IClientCommand).Execute(data, args);
         }
 
         public string GetHelp()

@@ -4,7 +4,7 @@ using System;
 
 namespace MySharpChat.Core.Command
 {
-    public class QuitCommand : Singleton<QuitCommand>, ICommand
+    public class QuitCommand : Singleton<QuitCommand>, IAsyncMachineCommand
     {
         protected QuitCommand() { }
 
@@ -31,6 +31,11 @@ namespace MySharpChat.Core.Command
                 throw new CommandException(string.Format("Fail to stop {0}", asyncMachine.ToString()), e);
             }
             return true;
+        }
+
+        public bool Execute(object? data, params string[] args)
+        {
+            return (this as IAsyncMachineCommand).Execute(data, args);
         }
 
         public string GetHelp()
