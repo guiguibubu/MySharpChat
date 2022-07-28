@@ -2,6 +2,8 @@
 {
     public interface IAsyncMachine
     {
+        LockTextWriter OutputWriter { get; }
+
         public void Initialize(object? initObject = null);
         public bool Start(object? startObject = null);
         public bool IsRunning();

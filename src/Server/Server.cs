@@ -30,6 +30,7 @@ namespace MySharpChat.Server
         public Server(ConnexionInfos connexionInfos)
         {
             m_connexionInfos = connexionInfos;
+            OutputWriter = new ServerOutputWriter(new ConsoleOutputWriter());
             Initialize();
         }
 
@@ -111,6 +112,8 @@ namespace MySharpChat.Server
         }
 
         public int ExitCode { get; private set; }
+
+        public LockTextWriter OutputWriter { get; private set; }
 
         private void Run()
         {

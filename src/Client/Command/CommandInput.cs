@@ -5,6 +5,7 @@ using MySharpChat.Client.Input;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {

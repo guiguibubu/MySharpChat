@@ -21,7 +21,7 @@ namespace MySharpChat.Client
         // TODO Refactor with modules (network, input, ui ...)
         private IClientImpl clientImp = new DefaultClientImpl();
 
-        private static Client instance;
+        private static Client? instance = null;
         public static Client Instance
         {
             get
@@ -41,7 +41,7 @@ namespace MySharpChat.Client
 
         private static readonly Logger logger = Logger.Factory.GetLogger<Client>();
 
-        internal ClientOutputWriter OutputWriter => clientImp.OutputWriter;
+        public LockTextWriter OutputWriter => clientImp.OutputWriter;
 
         public virtual void Initialize(object? initObject = null)
         {
@@ -103,7 +103,7 @@ namespace MySharpChat.Client
 
         public virtual void Stop(int exitCode = 0)
         {
-            clientImp.Disconnect();
+            clientImp.Stop();
             m_clientRun = false;
             ExitCode = exitCode;
         }
