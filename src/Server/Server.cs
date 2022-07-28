@@ -13,6 +13,7 @@ using MySharpChat.Core.Utils;
 using MySharpChat.Server.Command;
 using MySharpChat.Core.Utils.Logger;
 using System.Threading.Tasks;
+using MySharpChat.Core.Console;
 
 namespace MySharpChat.Server
 {

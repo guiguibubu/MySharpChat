@@ -2,6 +2,7 @@
 using MySharpChat.Client.Input;
 using MySharpChat.Client.UI;
 using MySharpChat.Core.Command;
+using MySharpChat.Core.Console;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
