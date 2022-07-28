@@ -1,37 +1,19 @@
 ﻿using System;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
 
-using MySharpChat.Core.Command;
-using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
-using MySharpChat.Client.Command;
 using MySharpChat.Core.Utils.Logger;
-using System.Threading.Tasks;
-using MySharpChat.Client.Input;
-using System.IO;
-using MySharpChat.Client.UI;
 
 namespace MySharpChat.Client
 {
     public partial class Client : IAsyncMachine
     {
-        // TODO Refactor with modules (network, input, ui ...)
-        private IClientImpl clientImp = new DefaultClientImpl();
+        private readonly IClientImpl _clientImpl;
 
-        private static Client? instance = null;
-        public static Client Instance
+        public Client(IClientImpl clientImpl)
         {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new Client();
-                }
-                return instance;
-            }
+            _clientImpl = clientImpl;
         }
 
         public int ExitCode { get; private set; }
@@ -41,7 +23,7 @@ namespace MySharpChat.Client
 
         private static readonly Logger logger = Logger.Factory.GetLogger<Client>();
 
-        public LockTextWriter OutputWriter => clientImp.OutputWriter;
+        public LockTextWriter OutputWriter => _clientImpl.UserInterfaceModule.OutputWriter;
 
         public virtual void Initialize(object? initObject = null)
         {
@@ -90,7 +72,7 @@ namespace MySharpChat.Client
             m_clientRun = true;
             while (m_clientRun)
             {
-                clientImp.Run(this);
+                _clientImpl.Run(this);
             }
 
             OutputWriter.WriteLine("Client stopped !");
@@ -103,7 +85,7 @@ namespace MySharpChat.Client
 
         public virtual void Stop(int exitCode = 0)
         {
-            clientImp.Stop();
+            _clientImpl.Stop();
             m_clientRun = false;
             ExitCode = exitCode;
         }

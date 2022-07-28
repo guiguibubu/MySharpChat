@@ -2,6 +2,6 @@
 
 namespace MySharpChat.Client.Command
 {
-    internal interface IClientCommand : ICommand<IClientImpl>
+    public interface IClientCommand : ICommand<IClientImpl>
     { }
 }
