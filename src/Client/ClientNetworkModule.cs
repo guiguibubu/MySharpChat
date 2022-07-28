@@ -1,4 +1,5 @@
-﻿using MySharpChat.Client.Input;
+﻿using MySharpChat.Client.Console;
+using MySharpChat.Client.Input;
 using MySharpChat.Client.UI;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
@@ -83,9 +84,12 @@ namespace MySharpChat.Client
                     for (int i = 0; i < nbDotsMax - nbDots; i++)
                         loadingText.Append(" ");
 
-                    int oldCursorPosition = Console.CursorLeft;
+                    ConsoleCursorContext cursorContext = new ConsoleCursorContext();
+                    int oldCursorPositionX = cursorContext.X;
+                    int oldCursorPositionY = cursorContext.Y;
                     _outputWriter.Write(loadingText);
-                    Console.CursorLeft = oldCursorPosition;
+                    cursorContext.X = oldCursorPositionX;
+                    cursorContext.Y = oldCursorPositionY;
 
                     try
                     {
