@@ -38,14 +38,18 @@ namespace MySharpChat.Core.SocketModule
             try
             {
                 socket.Shutdown(SocketShutdown.Both);
+                socket.Disconnect(false);
             }
             catch (SocketException)
             {
                 //If socket is not connected can't be shutdown
             }
+            catch (ObjectDisposedException)
+            {
+                //If socket is already disposed
+            }
             finally
             {
-                socket.Disconnect(false);
                 socket.Close();
             }
         }

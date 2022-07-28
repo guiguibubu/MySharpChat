@@ -9,6 +9,9 @@ namespace MySharpChat.Core.Utils
 {
     public interface INetworkMachine : IConnectMachine
     {
+        string LocalEndPoint { get; }
+        string RemoteEndPoint { get; }
+
         void Send(string? text);
         Task<string> ReadAsync(CancellationToken cancelToken = default);
     }
