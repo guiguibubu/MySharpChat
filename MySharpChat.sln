@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Test", "src\Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Client.Input", "src\Client.Input\MySharpChat.Client.Input.csproj", "{F7AE8876-E3C9-4FB9-A5E6-88FD3507FC41}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Client.Console.UI", "src\Client.Console.UI\MySharpChat.Client.Console.UI.csproj", "{E48E5158-9F7F-419F-B0B3-60C058030777}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Client.Console", "src\Client.Console\MySharpChat.Client.Console.csproj", "{E48E5158-9F7F-419F-B0B3-60C058030777}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Core.Console", "src\Core.Console\MySharpChat.Core.Console.csproj", "{4B369D98-5D9B-4C0F-B894-ED0FEEF7FDB8}"
 EndProject
