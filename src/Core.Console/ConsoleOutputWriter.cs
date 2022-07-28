@@ -1,10 +1,11 @@
-﻿using System;
+﻿using MySharpChat.Core.Utils;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
 
-namespace MySharpChat.Core.Utils
+namespace MySharpChat.Core.Console
 {
     public class ConsoleOutputWriter : LockTextWriter
     {
@@ -19,7 +20,7 @@ namespace MySharpChat.Core.Utils
         {
             _output = output;
         }
-        public ConsoleOutputWriter() : this(Console.Out) { }
+        public ConsoleOutputWriter() : this(System.Console.Out) { }
 
         public override Encoding Encoding => _output.Encoding;
 
