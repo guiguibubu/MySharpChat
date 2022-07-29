@@ -54,12 +54,23 @@ namespace MySharpChat.Core.SocketModule
             }
         }
 
+        //https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
         public static bool IsConnected(Socket? socket)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
 
-            return socket.Connected;
+            try
+            {
+                bool canReadOrDisconnected = socket.Poll(5000, SelectMode.SelectRead);
+                bool noDataToRead = socket.Available == 0;
+                bool isDisconnected = canReadOrDisconnected && noDataToRead;
+                return !isDisconnected;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
         }
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
