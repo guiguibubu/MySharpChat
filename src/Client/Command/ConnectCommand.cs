@@ -49,7 +49,8 @@ namespace MySharpChat.Client.Command
             data.Port = ConnexionInfos.DEFAULT_PORT;
 
             bool isConnected = client.NetworkModule.Connect(connexionInfos);
-            client.CurrentLogic = new ChatClientLogic(client.NetworkModule.LocalEndPoint);
+            if(isConnected)
+                client.CurrentLogic = new ChatClientLogic(client.NetworkModule.LocalEndPoint);
             return isConnected;
         }
 
