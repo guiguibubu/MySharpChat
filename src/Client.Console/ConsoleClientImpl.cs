@@ -28,6 +28,8 @@ namespace MySharpChat.Client
 
         public IClientLogic CurrentLogic { get; set; }
 
+        public Guid ClientId { get; private set; } = Guid.Empty;
+
         private readonly LoaderClientLogic loaderLogic = new LoaderClientLogic();
 
         private readonly CommandInput commandInput;
@@ -59,9 +61,13 @@ namespace MySharpChat.Client
                         List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
                         foreach (PacketWrapper packet in packets)
                         {
-                            if (packet.Package is ChatPacket package)
+                            if (packet.Package is ConnectionInitialisationPacket connectInitPackage)
                             {
-                                string readText = package.Message;
+                                ClientId = connectInitPackage.SessionId;
+                            }
+                            else if (packet.Package is ChatPacket chatPackage)
+                            {
+                                string readText = chatPackage.Message;
                                 if (!string.IsNullOrEmpty(readText))
                                 {
                                     using (writer.Lock())
