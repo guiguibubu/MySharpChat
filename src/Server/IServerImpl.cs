@@ -8,6 +8,7 @@ namespace MySharpChat.Server
         INetworkModule NetworkModule { get; }
 
         Guid ServerId { get; }
+        ChatRoom ChatRoom { get; }
 
         void Run(Server server);
         void Stop();
