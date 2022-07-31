@@ -15,13 +15,13 @@ namespace MySharpChat.Client
         private readonly CommandParser commandParser;
         public CommandParser CommandParser => commandParser;
 
-        public string Prefix => string.Format("{0}@{1}> ", Environment.UserName, _endPoint);
+        public string Prefix => string.Format("{0}@{1}> ", _client.Username, _client.NetworkModule.LocalEndPoint);
 
-        private readonly string _endPoint;
+        private readonly IClientImpl _client;
 
-        public ChatClientLogic(string endPoint)
+        public ChatClientLogic(IClientImpl client)
         {
-            _endPoint = endPoint;
+            _client = client;
 
             commandManager.AddCommand(SendCommand.Instance);
             commandManager.AddCommand(DisconnectCommand.Instance);

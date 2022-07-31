@@ -50,7 +50,7 @@ namespace MySharpChat.Client.Command
 
             bool isConnected = client.NetworkModule.Connect(connexionInfos);
             if(isConnected)
-                client.CurrentLogic = new ChatClientLogic(client.NetworkModule.LocalEndPoint);
+                client.CurrentLogic = new ChatClientLogic(client);
             return isConnected;
         }
 

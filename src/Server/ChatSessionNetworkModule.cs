@@ -14,14 +14,14 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Server
 {
-    public class ChatRoomNetworkModule : INetworkModule
+    public class ChatSessionNetworkModule : INetworkModule
     {
-        private static readonly Logger logger = Logger.Factory.GetLogger<ChatRoomNetworkModule>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<ChatSessionNetworkModule>();
 
         private readonly Socket? m_socket = null;
         public Socket Socket { get { return m_socket!; } }
 
-        public ChatRoomNetworkModule(Socket? socket)
+        public ChatSessionNetworkModule(Socket? socket)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));

@@ -68,6 +68,7 @@ namespace MySharpChat.Server
                     session.OnSessionInitializedCallback += OnSessionInitialized;
                     session.OnSessionFinishedCallback += OnSessionFinished;
                     session.OnBroadcastCallback += Broadcast;
+                    session.OnUsernameChangeCallback += OnUsernameChange;
                     session.Start(ServerId);
                 }
             );
@@ -75,7 +76,19 @@ namespace MySharpChat.Server
 
         private void OnSessionInitialized(ChatSession session)
         {
-            string message = $"New user joined : {session.NetworkModule.RemoteEndPoint}";
+            bool usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
+            int usernameSuffix = 1;
+            string oldUsername = session.ClientUsername;
+            while (usernameAlreadyUsed)
+            {
+                session.ClientUsername = oldUsername + "_" + usernameSuffix;
+                usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
+            }
+
+            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(session.ClientId, session.ClientUsername);
+            session.NetworkModule.Send(new PacketWrapper(ServerId, connectInitPacket));
+
+            string message = $"New user joined : {session.ClientUsername}";
             ChatPacket package = new ChatPacket(message);
             PacketWrapper packet = new PacketWrapper(ServerId, package);
 
@@ -92,7 +105,7 @@ namespace MySharpChat.Server
         {
             m_connectedSessions.Remove(session);
 
-            string message = $"User leave the session : {session.NetworkModule.RemoteEndPoint}";
+            string message = $"User leave the session : {session.ClientUsername}";
             ChatPacket package = new ChatPacket(message);
             PacketWrapper packet = new PacketWrapper(ServerId, package);
 
@@ -106,13 +119,43 @@ namespace MySharpChat.Server
         {
             IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != origin);
 
-            string message = origin.NetworkModule.RemoteEndPoint + ": " + text;
+            string message = origin.ClientUsername + ": " + text;
             ChatPacket package = new ChatPacket(message);
             PacketWrapper packet = new PacketWrapper(origin.ClientId, package);
 
             foreach (ChatSession session in sessionToBroadcast)
             {
                 session.NetworkModule.Send(packet);
+            }
+        }
+
+        private void OnUsernameChange(ChatSession session, string oldUsername)
+        {
+            bool usernameChanged = string.Equals(session.ClientUsername, oldUsername, StringComparison.InvariantCulture);
+            if(!usernameChanged)
+                return;
+
+            string currentUsername = session.ClientUsername;
+
+            bool usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(currentUsername);
+            int usernameSuffix = 1;
+            while (usernameAlreadyUsed)
+            {
+                session.ClientUsername = currentUsername + "_" + usernameSuffix;
+                usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
+            }
+
+            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(session.ClientId, session.ClientUsername);
+            session.NetworkModule.Send(new PacketWrapper(ServerId, connectInitPacket));
+
+            string message = $"User name changed for \"{oldUsername}\" to \"{session.ClientUsername}\"";
+            ChatPacket package = new ChatPacket(message);
+            PacketWrapper packet = new PacketWrapper(ServerId, package);
+
+            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != session);
+            foreach (ChatSession s in sessionToBroadcast)
+            {
+                s.NetworkModule.Send(packet);
             }
         }
     }

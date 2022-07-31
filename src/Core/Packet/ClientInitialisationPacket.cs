@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 namespace MySharpChat.Core.Packet
 {
     [Serializable]
-    public class ConnectionInitialisationPacket
+    public class ClientInitialisationPacket
     {
-        public ConnectionInitialisationPacket(Guid sessionId)
+        public ClientInitialisationPacket(Guid sessionId, string username = "")
         {
             SessionId = sessionId;
+            Username = username;
         }
 
         public Guid SessionId { get; set; }
+        public string Username { get; set; }
     }
 }
