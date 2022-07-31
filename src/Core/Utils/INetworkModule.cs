@@ -11,6 +11,7 @@ namespace MySharpChat.Core.Utils
     {
         string LocalEndPoint { get; }
         string RemoteEndPoint { get; }
+        bool HasDataAvailable { get; }
 
         void Send(string? text);
         Task<string> ReadAsync(CancellationToken cancelToken = default);
