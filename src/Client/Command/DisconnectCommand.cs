@@ -15,7 +15,7 @@ namespace MySharpChat.Client.Command
                 throw new ArgumentNullException(nameof(client));
 
             client.NetworkModule.Disconnect();
-            client.CurrentLogic = new LoaderClientLogic();
+            client.CurrentLogic = new LoaderClientLogic(client);
             return true;
         }
 

@@ -11,7 +11,8 @@ namespace MySharpChat.Client
 
         IClientLogic CurrentLogic { get; set; }
 
-        public Guid ClientId { get; }
+        Guid ClientId { get; }
+        string Username { get; }
 
         void Run(Client client);
         void Stop();
