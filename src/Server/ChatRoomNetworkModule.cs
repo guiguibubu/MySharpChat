@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.SocketModule;
+﻿using MySharpChat.Core.Packet;
+using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -18,9 +19,9 @@ namespace MySharpChat.Server
         private static readonly Logger logger = Logger.Factory.GetLogger<ChatRoomNetworkModule>();
 
         private readonly Socket? m_socket = null;
-        public Socket Socket { get { return m_socket; } }
+        public Socket Socket { get { return m_socket!; } }
 
-        public ChatRoomNetworkModule(Socket socket)
+        public ChatRoomNetworkModule(Socket? socket)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
@@ -75,7 +76,26 @@ namespace MySharpChat.Server
             return m_socket != null && SocketUtils.IsConnected(m_socket);
         }
 
-        public void Send(string? text)
+        public void Send(PacketWrapper? packet)
+        {
+            if (packet == null)
+                throw new ArgumentNullException(nameof(packet));
+
+            string content = PacketSerializer.Serialize(packet);
+            SendImpl(content);
+        }
+
+        public PacketWrapper Read(TimeSpan timeoutSpan)
+        {
+            if (m_socket == null)
+                throw new ArgumentException("NetworkModule not initialized");
+
+            string content = ReadImpl(timeoutSpan);
+
+            return PacketSerializer.Deserialize(content);
+        }
+
+        private void SendImpl(string? text)
         {
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
@@ -83,7 +103,7 @@ namespace MySharpChat.Server
             SocketUtils.Send(m_socket, text, this);
         }
 
-        public string Read(TimeSpan timeoutSpan)
+        private string ReadImpl(TimeSpan timeoutSpan)
         {
             if(m_socket == null)
                 return string.Empty;
@@ -91,7 +111,7 @@ namespace MySharpChat.Server
             using (CancellationTokenSource cancelSource = new CancellationTokenSource())
             {
                 CancellationToken cancelToken = cancelSource.Token;
-                Task<string> readTask = SocketUtils.ReadAsync(m_socket, this, cancelToken);
+                Task<string> readTask = ReadAsyncImpl(cancelToken);
 
                 bool timeout = true;
                 try
@@ -124,7 +144,7 @@ namespace MySharpChat.Server
             }
         }
 
-        public Task<string> ReadAsync(CancellationToken cancelToken = default)
+        private Task<string> ReadAsyncImpl(CancellationToken cancelToken = default)
         {
             return SocketUtils.ReadAsync(m_socket, this, cancelToken);
         }
