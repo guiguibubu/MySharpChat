@@ -19,17 +19,18 @@ namespace MySharpChat.Server
         private readonly ServerNetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        private readonly List<ChatSession> m_connectedSessions = new List<ChatSession>();
-
         public string LocalEndPoint => networkModule.LocalEndPoint;
 
         public string RemoteEndPoint => networkModule.RemoteEndPoint;
 
         public Guid ServerId { get; private set; } = Guid.NewGuid();
 
+        public ChatRoom ChatRoom { get; private set; }
+
         public ConsoleServerImpl()
         {
             networkModule = new ServerNetworkModule();
+            ChatRoom = new ChatRoom(ServerId);
         }
 
         public void Run(Server server)
@@ -59,104 +60,7 @@ namespace MySharpChat.Server
 
         private void LaunchSession(Socket? socket)
         {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
-
-            Task.Run(() =>
-                {
-                    ChatSession session = new ChatSession(socket);
-                    session.OnSessionInitializedCallback += OnSessionInitialized;
-                    session.OnSessionFinishedCallback += OnSessionFinished;
-                    session.OnBroadcastCallback += Broadcast;
-                    session.OnUsernameChangeCallback += OnUsernameChange;
-                    session.Start(ServerId);
-                }
-            );
-        }
-
-        private void OnSessionInitialized(ChatSession session)
-        {
-            bool usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
-            int usernameSuffix = 1;
-            string oldUsername = session.ClientUsername;
-            while (usernameAlreadyUsed)
-            {
-                session.ClientUsername = oldUsername + "_" + usernameSuffix;
-                usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
-            }
-
-            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(session.ClientId, session.ClientUsername);
-            session.NetworkModule.Send(new PacketWrapper(ServerId, connectInitPacket));
-
-            string message = $"New user joined : {session.ClientUsername}";
-            ChatPacket package = new ChatPacket(message);
-            PacketWrapper packet = new PacketWrapper(ServerId, package);
-
-            foreach (ChatSession s in m_connectedSessions)
-            {
-                s.NetworkModule.Send(packet);
-            }
-
-            m_connectedSessions.Add(session);
-
-        }
-
-        private void OnSessionFinished(ChatSession session)
-        {
-            m_connectedSessions.Remove(session);
-
-            string message = $"User leave the session : {session.ClientUsername}";
-            ChatPacket package = new ChatPacket(message);
-            PacketWrapper packet = new PacketWrapper(ServerId, package);
-
-            foreach (ChatSession s in m_connectedSessions)
-            {
-                s.NetworkModule.Send(packet);
-            }
-        }
-
-        private void Broadcast(ChatSession origin, string text)
-        {
-            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != origin);
-
-            string message = origin.ClientUsername + ": " + text;
-            ChatPacket package = new ChatPacket(message);
-            PacketWrapper packet = new PacketWrapper(origin.ClientId, package);
-
-            foreach (ChatSession session in sessionToBroadcast)
-            {
-                session.NetworkModule.Send(packet);
-            }
-        }
-
-        private void OnUsernameChange(ChatSession session, string oldUsername)
-        {
-            bool usernameChanged = string.Equals(session.ClientUsername, oldUsername, StringComparison.InvariantCulture);
-            if(!usernameChanged)
-                return;
-
-            string currentUsername = session.ClientUsername;
-
-            bool usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(currentUsername);
-            int usernameSuffix = 1;
-            while (usernameAlreadyUsed)
-            {
-                session.ClientUsername = currentUsername + "_" + usernameSuffix;
-                usernameAlreadyUsed = m_connectedSessions.Select(s => s.ClientUsername).Contains(session.ClientUsername);
-            }
-
-            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(session.ClientId, session.ClientUsername);
-            session.NetworkModule.Send(new PacketWrapper(ServerId, connectInitPacket));
-
-            string message = $"User name changed for \"{oldUsername}\" to \"{session.ClientUsername}\"";
-            ChatPacket package = new ChatPacket(message);
-            PacketWrapper packet = new PacketWrapper(ServerId, package);
-
-            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != session);
-            foreach (ChatSession s in sessionToBroadcast)
-            {
-                s.NetworkModule.Send(packet);
-            }
+            ChatRoom.LaunchSession(socket);
         }
     }
 }

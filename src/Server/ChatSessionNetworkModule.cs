@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.Packet;
+﻿using MySharpChat.Core.Http;
+using MySharpChat.Core.Packet;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
@@ -82,7 +83,7 @@ namespace MySharpChat.Server
                 throw new ArgumentNullException(nameof(packet));
 
             string content = PacketSerializer.Serialize(packet);
-            SendImpl(content);
+            SendRaw(content);
         }
 
         public List<PacketWrapper> Read(TimeSpan timeoutSpan)
@@ -90,12 +91,12 @@ namespace MySharpChat.Server
             if (m_socket == null)
                 throw new ArgumentException("NetworkModule not initialized");
 
-            string content = ReadImpl(timeoutSpan);
+            string content = ReadRaw(timeoutSpan);
 
             return PacketSerializer.Deserialize(content);
         }
 
-        private void SendImpl(string? text)
+        public void SendRaw(string? text)
         {
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
@@ -103,7 +104,7 @@ namespace MySharpChat.Server
             SocketUtils.Send(m_socket, text, this);
         }
 
-        private string ReadImpl(TimeSpan timeoutSpan)
+        public string ReadRaw(TimeSpan timeoutSpan)
         {
             if(m_socket == null)
                 return string.Empty;
@@ -127,7 +128,9 @@ namespace MySharpChat.Server
                 {
                     try
                     {
-                        return readTask.Result;
+                        string content = readTask.Result;
+                        logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
+                        return content;
                     }
                     catch (AggregateException e)
                     {

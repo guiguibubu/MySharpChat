@@ -23,12 +23,12 @@ namespace MySharpChat.Server
 
         public event Action<ChatSession> OnSessionInitializedCallback = (ChatSession session) => { };
         public event Action<ChatSession> OnSessionFinishedCallback = (ChatSession session) => { };
-        public event Action<ChatSession, string> OnBroadcastCallback = (ChatSession session, string text) => { };
+        public event Action<ChatSession, PacketWrapper> OnBroadcastCallback = (ChatSession session, PacketWrapper packet) => { };
         public event Action<ChatSession, string> OnUsernameChangeCallback = (ChatSession session, string oldUsername) => { };
 
         public Guid ClientId { get; private set; } = Guid.NewGuid();
         public string ClientUsername { get; set; } = "";
-        
+
         public ChatSession(Socket? socket)
         {
             networkModule = new ChatSessionNetworkModule(socket);
@@ -65,30 +65,42 @@ namespace MySharpChat.Server
             {
                 if (networkModule.HasDataAvailable)
                 {
-                    List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
-                    foreach (PacketWrapper packet in packets)
+                    string content = networkModule.ReadRaw(TimeSpan.FromSeconds(1));
+
+                    if (HttpParser.TryParseHttpRequest(content, out _))
+                        HandleHttpRequest(content);
+                    else
                     {
-                        if(packet.Package is ClientInitialisationPacket initPackage)
+                        List<PacketWrapper> packets = PacketSerializer.Deserialize(content);
+                        foreach (PacketWrapper packet in packets)
                         {
-                            bool isClientInitialized = !string.IsNullOrEmpty(ClientUsername);
-                            if (isClientInitialized)
+                            if (packet.Package is ClientInitialisationPacket initPackage)
                             {
-                                string oldUsername = ClientUsername;
-                                ClientUsername = initPackage.Username;
-                                OnUsernameChangeCallback(this, oldUsername);
+                                HandleInitPacket(initPackage);
                             }
-                            else
+                            else if (packet.Package is ChatPacket package)
                             {
-                                ClientUsername = initPackage.Username;
-                                OnSessionInitializedCallback(this);
+                                HandleChatPacket(package);
                             }
-                        }
-                        else if (packet.Package is ChatPacket package)
-                        {
-                            HandleChatPacket(package);
                         }
                     }
                 }
+            }
+        }
+
+        private void HandleInitPacket(ClientInitialisationPacket initPackage)
+        {
+            bool isClientInitialized = !string.IsNullOrEmpty(ClientUsername);
+            if (isClientInitialized)
+            {
+                string oldUsername = ClientUsername;
+                ClientUsername = initPackage.Username;
+                OnUsernameChangeCallback(this, oldUsername);
+            }
+            else
+            {
+                ClientUsername = initPackage.Username;
+                OnSessionInitializedCallback(this);
             }
         }
 
@@ -98,28 +110,27 @@ namespace MySharpChat.Server
 
             if (!string.IsNullOrEmpty(content))
             {
-                // All the data has been read from the
-                // client. Display it on the console.  
+                ChatPacket newChatPacket = new ChatPacket(ClientUsername + ": " + content);
+                PacketWrapper packet = new PacketWrapper(ClientId, newChatPacket);
+                OnBroadcastCallback(this, packet);
+            }
+        }
 
-                logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
-
-                //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
-                // Echo the data back to the client.
-                if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
+        private void HandleHttpRequest(string httpContent)
+        {
+            //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
+            if (HttpParser.TryParseHttpRequest(httpContent, out HttpRequestMessage? httpRequestMessage))
+            {
+                string text = "Welcome on MySharpChat server.";
+                if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
                 {
-                    string text = "Welcome on MySharpChat server.";
-                    if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
-                    {
-                        text += Environment.NewLine;
-                        text += $"No data at {httpRequestMessage.RequestUri}";
-                    }
-                    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-                    response.Content = new StringContent(text);
-                    content = HttpParser.ToString(response).Result;
+                    text += Environment.NewLine;
+                    text += $"No data at {httpRequestMessage.RequestUri}";
                 }
-
-                //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
-                OnBroadcastCallback(this, content);
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                response.Content = new StringContent(text);
+                string httpResponse = HttpParser.ToString(response).Result;
+                networkModule.SendRaw(httpResponse);
             }
         }
     }
