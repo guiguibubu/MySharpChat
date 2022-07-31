@@ -4,6 +4,7 @@ using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -161,7 +162,7 @@ namespace MySharpChat.Client
             SendImpl(content);
         }
 
-        public PacketWrapper Read(TimeSpan timeoutSpan)
+        public List<PacketWrapper> Read(TimeSpan timeoutSpan)
         {
             if (m_socket == null)
                 throw new ArgumentException("NetworkModule not initialized");
@@ -191,6 +192,7 @@ namespace MySharpChat.Client
                 if (!timeout)
                 {
                     string text = readTask.Result;
+                    
                     logger.LogInfo("Response received : {0}", text);
                     return text;
                 }
