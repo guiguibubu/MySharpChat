@@ -7,7 +7,7 @@ namespace MySharpChat.Client.Command
     {
         protected DisconnectCommand() { }
 
-        public string Name { get => "Disconnect"; }
+        public string Name => "Disconnect";
 
         public bool Execute(IClientImpl? client, params string[] args)
         {

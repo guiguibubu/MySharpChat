@@ -24,6 +24,7 @@ namespace MySharpChat.Client
             _client = client;
 
             commandManager.AddCommand(SendCommand.Instance);
+            commandManager.AddCommand(UsernameCommand.Instance);
             commandManager.AddCommand(DisconnectCommand.Instance);
             commandManager.AddCommand(QuitCommand.Instance);
             commandManager.AddCommand(ExitCommand.Instance);

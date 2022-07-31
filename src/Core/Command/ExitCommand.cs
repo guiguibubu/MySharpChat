@@ -4,6 +4,6 @@
     {
         protected ExitCommand() { }
 
-        public override string Name { get => "Exit"; }
+        public override string Name => "Exit";
     }
 }

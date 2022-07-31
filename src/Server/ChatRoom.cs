@@ -63,7 +63,7 @@ namespace MySharpChat.Server
 
         private void OnUsernameChange(ChatSession session, string oldUsername)
         {
-            bool usernameChanged = string.Equals(session.ClientUsername, oldUsername, StringComparison.InvariantCulture);
+            bool usernameChanged = !string.Equals(session.ClientUsername, oldUsername, StringComparison.InvariantCulture);
             if (!usernameChanged)
                 return;
 

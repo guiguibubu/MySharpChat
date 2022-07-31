@@ -11,7 +11,7 @@ namespace MySharpChat.Client.Command
     {
         protected ConnectCommand() { }
 
-        public string Name { get => "Connect"; }
+        public string Name => "Connect";
 
         public bool Execute(IClientImpl? client, params string[] args)
         {
