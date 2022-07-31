@@ -13,7 +13,7 @@ namespace MySharpChat.Core.Command
             _commandManager = commandManager;
         }
 
-        public string Name { get => "Help"; }
+        public string Name => "Help";
 
         public bool Execute(LockTextWriter? writer, params string[] args)
         {

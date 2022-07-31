@@ -10,11 +10,11 @@ namespace MySharpChat.Server.Command
 {
     public class ConnectCommand : Singleton<ConnectCommand>, IServerCommand
     {
-        private static readonly Logger logger = Logger.Factory.GetLogger<Server>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<ConnectCommand>();
 
         protected ConnectCommand() { }
 
-        public string Name { get => "Connect"; }
+        public string Name => "Connect";
 
         public bool Execute(IServerImpl? server, params string[] args)
         {
