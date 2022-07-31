@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.SocketModule;
+﻿using MySharpChat.Core.Packet;
+using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -92,58 +93,14 @@ namespace MySharpChat.Server
             return m_socket != null && SocketUtils.IsConnected(m_socket);
         }
 
-        public void Send(string? text)
+        public void Send(PacketWrapper? packet)
         {
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException(nameof(text));
-
-            SocketUtils.Send(m_socket, text, this);
+            throw new NotImplementedException("Server should not be able to send data");
         }
 
-        public string Read(TimeSpan timeoutSpan)
+        public PacketWrapper Read(TimeSpan timeoutSpan)
         {
-            if (m_socket == null)
-                return string.Empty;
-
-            using (CancellationTokenSource cancelSource = new CancellationTokenSource())
-            {
-                CancellationToken cancelToken = cancelSource.Token;
-                Task<string> readTask = SocketUtils.ReadAsync(m_socket, this, cancelToken);
-
-                bool timeout = true;
-                try
-                {
-                    timeout = !readTask.Wait(timeoutSpan);
-                }
-                catch (OperationCanceledException)
-                {
-                    timeout = true;
-                }
-
-                if (!timeout)
-                {
-                    try
-                    {
-                        return readTask.Result;
-                    }
-                    catch (AggregateException e)
-                    {
-                        logger.LogError(e, "Fail to read from {0}", m_socket.RemoteEndPoint);
-                        return string.Empty;
-                    }
-                }
-                else
-                {
-                    cancelSource.Cancel();
-                    logger.LogDebug("Reading timeout reached. Nothing received from {0} after {1} ms", m_socket.RemoteEndPoint, timeoutSpan);
-                    return string.Empty;
-                }
-            }
-        }
-
-        public Task<string> ReadAsync(CancellationToken cancelToken = default)
-        {
-            return SocketUtils.ReadAsync(m_socket, this, cancelToken);
+            throw new NotImplementedException("Server should not be able to read data");
         }
     }
 }

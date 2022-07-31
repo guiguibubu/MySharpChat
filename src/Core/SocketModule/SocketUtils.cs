@@ -15,6 +15,7 @@ namespace MySharpChat.Core.SocketModule
     public class SocketUtils
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<SocketUtils>();
+        public static readonly Encoding Encoding = Encoding.ASCII;
 
         private SocketUtils() { }
 
@@ -151,7 +152,7 @@ namespace MySharpChat.Core.SocketModule
                 if(bytesRead > 0)
                 {
                     // There  might be more data, so store the data received so far.
-                    string dataStr = Encoding.ASCII.GetString(state.buffer, 0, bytesRead);
+                    string dataStr = Encoding.GetString(state.buffer, 0, bytesRead);
                     state.dataStringBuilder.Append(dataStr);
 
                     bool continueReceive = bytesRead == SocketContext.BUFFER_SIZE;
@@ -170,7 +171,7 @@ namespace MySharpChat.Core.SocketModule
                 throw new ArgumentNullException(nameof(handler));
 
             // Convert the string data to byte data using ASCII encoding.  
-            byte[] byteData = Encoding.ASCII.GetBytes(data);
+            byte[] byteData = Encoding.GetBytes(data);
 
             // Create the state object.  
             SocketContext state = new SocketContext();

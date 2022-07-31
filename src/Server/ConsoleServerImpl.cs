@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.SocketModule;
+﻿using MySharpChat.Core.Packet;
+using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -18,7 +19,7 @@ namespace MySharpChat.Server
         private readonly ServerNetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        private readonly List<Socket> m_connectedSockets = new List<Socket>();
+        private readonly List<ChatSession> m_connectedSessions = new List<ChatSession>();
 
         public string LocalEndPoint => networkModule.LocalEndPoint;
 
@@ -41,8 +42,6 @@ namespace MySharpChat.Server
 
             Socket connectedSocket = networkModule.Accept();
 
-            m_connectedSockets.Add(connectedSocket);
-
             LaunchSession(connectedSocket);
         }
 
@@ -64,6 +63,7 @@ namespace MySharpChat.Server
             Task.Run(() =>
                 {
                     ChatSession session = new ChatSession(socket);
+                    m_connectedSessions.Add(session);
                     session.OnSessionFinishedCallback += OnSessionFinished;
                     session.OnBroadcastCallback += Broadcast;
                     session.Start();
@@ -73,14 +73,20 @@ namespace MySharpChat.Server
 
         private void OnSessionFinished(ChatSession session)
         {
-            m_connectedSockets.Remove(session.NetworkModule.Socket);
+            m_connectedSessions.Remove(session);
         }
 
         private void Broadcast(ChatSession origin, string text)
         {
-            IEnumerable<Socket> socketToBroadcast = m_connectedSockets.Where(s => s != origin.NetworkModule.Socket);
-            foreach (Socket s in socketToBroadcast)
-                SocketUtils.Send(s, origin.NetworkModule.RemoteEndPoint + ": " + text);
+            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != origin);
+            foreach (ChatSession session in sessionToBroadcast)
+            {
+                string message = origin.NetworkModule.RemoteEndPoint + ": " + text;
+                ChatPacket package = new ChatPacket(message);
+                string packetId = origin.NetworkModule.LocalEndPoint;
+                PacketWrapper packet = new PacketWrapper(packetId, package);
+                session.NetworkModule.Send(packet);
+            }
         }
     }
 }
