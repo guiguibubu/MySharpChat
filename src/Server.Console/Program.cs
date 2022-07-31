@@ -1,7 +1,7 @@
 ﻿using MySharpChat.Core.Utils.Logger;
 using System;
 
-namespace MySharpChat.Server
+namespace MySharpChat.Server.Console
 {
     class Program
     {
@@ -33,11 +33,11 @@ namespace MySharpChat.Server
             catch (Exception e)
             {
                 logger.LogCritical(e, "Program crash !");
-                Console.WriteLine("Program crash ! : {0}", e);
+                System.Console.WriteLine("Program crash ! : {0}", e);
                 exitCode = 1;
             }
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
+            System.Console.WriteLine("\nPress ENTER to continue...");
+            System.Console.Read();
             return exitCode;
         }
     }

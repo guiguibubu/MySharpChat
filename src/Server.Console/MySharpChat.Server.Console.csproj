@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Library</OutputType>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyVersion>0.0.0.1</AssemblyVersion>
         <FileVersion>0.0.0.1</FileVersion>
@@ -36,7 +36,7 @@
             <_Parameter1>MySharpChat.Test</_Parameter1>
         </AssemblyAttribute>
     </ItemGroup>
-    
+
     <ItemGroup>
         <None Include="..\..\LICENSE">
             <Pack>True</Pack>
@@ -46,7 +46,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Core.Console\MySharpChat.Core.Console.csproj" />
-        <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
+        <ProjectReference Include="..\Core\MySharpChat.Core.csproj"/>
+        <ProjectReference Include="..\Server\MySharpChat.Server.csproj"/>
     </ItemGroup>
 
 </Project>

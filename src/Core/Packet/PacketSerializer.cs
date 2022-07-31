@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Text.Json;
 
 namespace MySharpChat.Core.Packet
@@ -54,8 +53,6 @@ namespace MySharpChat.Core.Packet
                             case JsonTokenType.False:
                             case JsonTokenType.Null:
                                 break;
-                            default:
-                                throw new ArgumentException();
                         }
 
                         endOfObject = objectCount == 0;
@@ -68,7 +65,7 @@ namespace MySharpChat.Core.Packet
                     string stringObject = Encoding.UTF8.GetString(objectBytes.ToArray());
                     //DeserializeAsyncEnumerable
                     PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(stringObject) ?? throw new NotSupportedException();
-                    packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)) ?? throw new NotSupportedException();
+                    packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)!) ?? throw new NotSupportedException();
                     packets.Add(packet);
                 }
                 return packets;

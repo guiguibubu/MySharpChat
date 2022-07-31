@@ -16,8 +16,6 @@ namespace MySharpChat.Core.Packet
             Package = package;
         }
 
-        public PacketWrapper() { }
-
         public string Id { get; set; }
         public string Type { get; set; }
         public object Package { get; set; }
