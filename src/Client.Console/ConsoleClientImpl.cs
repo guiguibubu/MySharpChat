@@ -7,6 +7,7 @@ using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MySharpChat.Client
@@ -55,23 +56,26 @@ namespace MySharpChat.Client
                 {
                     if (networkModule.HasDataAvailable)
                     {
-                        PacketWrapper packet = networkModule.Read(TimeSpan.FromSeconds(1));
-                        if (packet.Package is ChatPacket package)
+                        List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
+                        foreach (PacketWrapper packet in packets)
                         {
-                            string readText = package.Message;
-                            if (!string.IsNullOrEmpty(readText))
+                            if (packet.Package is ChatPacket package)
                             {
-                                using (writer.Lock())
+                                string readText = package.Message;
+                                if (!string.IsNullOrEmpty(readText))
                                 {
-                                    cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
-                                    int prefixLength = CurrentLogic.Prefix.Length;
-                                    cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                                    int inputTextLength = cursorHandler.Position;
-                                    for (int i = 0; i < prefixLength + inputTextLength; i++)
-                                        writer.Write(" ");
-                                    cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                                    writer.WriteLine("server> {0}", readText);
-                                    writer.Write(CurrentLogic.Prefix);
+                                    using (writer.Lock())
+                                    {
+                                        cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                                        int prefixLength = CurrentLogic.Prefix.Length;
+                                        cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                                        int inputTextLength = cursorHandler.Position;
+                                        for (int i = 0; i < prefixLength + inputTextLength; i++)
+                                            writer.Write(" ");
+                                        cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                                        writer.WriteLine("server> {0}", readText);
+                                        writer.Write(CurrentLogic.Prefix);
+                                    }
                                 }
                             }
                         }

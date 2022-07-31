@@ -11,24 +11,69 @@ namespace MySharpChat.Core.Packet
     {
         public static string Serialize(PacketWrapper? packet)
         {
-            if(packet == null)
+            if (packet == null)
                 throw new ArgumentNullException(nameof(packet));
 
             return JsonSerializer.Serialize(packet);
         }
 
-        public static PacketWrapper Deserialize(string? data)
+        public static List<PacketWrapper> Deserialize(string? data)
         {
-            if(string.IsNullOrEmpty(data))
+            if (string.IsNullOrEmpty(data))
                 throw new ArgumentNullException(nameof(data));
 
+            List<PacketWrapper> packets = new List<PacketWrapper>();
             try
             {
-                PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(data) ?? throw new NotSupportedException();
-                packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)) ?? throw new NotSupportedException();
-                return packet;
+                List<byte> objectBytes;
+                List<byte> remainingBytes = Encoding.UTF8.GetBytes(data).ToList();
+                while (remainingBytes.Any())
+                {
+                    Utf8JsonReader reader = new Utf8JsonReader(new ReadOnlySpan<byte>(remainingBytes.ToArray()));
+                    bool endOfObject = false;
+                    int objectCount = 0;
+                    while (!endOfObject && reader.Read())
+                    {
+                        JsonTokenType tokenType = reader.TokenType;
+                        switch (tokenType)
+                        {
+                            case JsonTokenType.StartObject:
+                                objectCount++;
+                                break;
+                            case JsonTokenType.EndObject:
+                                objectCount--;
+                                break;
+                            case JsonTokenType.None:
+                            case JsonTokenType.StartArray:
+                            case JsonTokenType.EndArray:
+                            case JsonTokenType.PropertyName:
+                            case JsonTokenType.Comment:
+                            case JsonTokenType.String:
+                            case JsonTokenType.Number:
+                            case JsonTokenType.True:
+                            case JsonTokenType.False:
+                            case JsonTokenType.Null:
+                                break;
+                            default:
+                                throw new ArgumentException();
+                        }
+
+                        endOfObject = objectCount == 0;
+                    }
+
+                    int nbBytes = (int)reader.BytesConsumed;
+                    objectBytes = remainingBytes.GetRange(0, nbBytes);
+                    remainingBytes = remainingBytes.GetRange(nbBytes, remainingBytes.Count - nbBytes);
+
+                    string stringObject = Encoding.UTF8.GetString(objectBytes.ToArray());
+                    //DeserializeAsyncEnumerable
+                    PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(stringObject) ?? throw new NotSupportedException();
+                    packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)) ?? throw new NotSupportedException();
+                    packets.Add(packet);
+                }
+                return packets;
             }
-            catch(JsonException e)
+            catch (JsonException e)
             {
                 throw new ArgumentException("Fail deserialize this : " + data, e);
             }
