@@ -16,8 +16,8 @@ namespace MySharpChat.Core.Utils
 
         void Send(PacketWrapper? packet);
 
-        PacketWrapper Read(TimeSpan timeoutSpan);
-        PacketWrapper Read()
+        List<PacketWrapper> Read(TimeSpan timeoutSpan);
+        List<PacketWrapper> Read()
         {
             return Read(Timeout.InfiniteTimeSpan);
         }

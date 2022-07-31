@@ -85,7 +85,7 @@ namespace MySharpChat.Server
             SendImpl(content);
         }
 
-        public PacketWrapper Read(TimeSpan timeoutSpan)
+        public List<PacketWrapper> Read(TimeSpan timeoutSpan)
         {
             if (m_socket == null)
                 throw new ArgumentException("NetworkModule not initialized");

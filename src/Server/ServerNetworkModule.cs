@@ -98,7 +98,7 @@ namespace MySharpChat.Server
             throw new NotImplementedException("Server should not be able to send data");
         }
 
-        public PacketWrapper Read(TimeSpan timeoutSpan)
+        public List<PacketWrapper> Read(TimeSpan timeoutSpan)
         {
             throw new NotImplementedException("Server should not be able to read data");
         }
