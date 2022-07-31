@@ -35,11 +35,6 @@ namespace MySharpChat.Client.Command
             return true;
         }
 
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IClientCommand).Execute(data, args);
-        }
-
         public string GetHelp()
         {
             return "usage: send <text>";
