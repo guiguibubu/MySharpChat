@@ -5,21 +5,21 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
-    public abstract class CommandAlias<U, V> : Singleton<U>, IAsyncMachineCommand
+    public abstract class CommandAlias<U, V> : Singleton<U>, ICommand
         where U : class 
-        where V : Singleton<V>, IAsyncMachineCommand
+        where V : Singleton<V>, ICommand
     {
         public abstract string Name { get; }
         private static V parentCommandInstance = GetInstance<V>()!;
 
-        public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
+        protected bool Execute<T>(T? data, params string[] args) where T : class
         {
-            return parentCommandInstance.Execute(asyncMachine, args);
+            return parentCommandInstance.Execute(data, args);
         }
 
         public bool Execute(object? data, params string[] args)
         {
-            return (this as IAsyncMachineCommand).Execute(data, args);
+            return parentCommandInstance.Execute(data, args);
         }
 
         public string GetHelp()

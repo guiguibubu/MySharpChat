@@ -69,11 +69,6 @@ namespace MySharpChat.Core.Command
             return true;
         }
 
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as ICommand<LockTextWriter>).Execute(data, args);
-        }
-
         public string GetHelp()
         {
             return string.Join(Environment.NewLine,"usage:", "\"help\" to list all available commands", "\"help <command>\" to have help for specific command");

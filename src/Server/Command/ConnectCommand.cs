@@ -50,11 +50,6 @@ namespace MySharpChat.Server.Command
             return server.NetworkModule.Connect(connexionInfos);
         }
 
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IServerCommand).Execute(data, args);
-        }
-
         public string GetHelp()
         {
             return "usage: connect <ip>";

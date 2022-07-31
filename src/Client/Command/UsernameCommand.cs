@@ -2,14 +2,10 @@
 using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MySharpChat.Client.Command
 {
-    internal class UsernameCommand : Singleton<UsernameCommand>, IClientCommand
+    public class UsernameCommand : Singleton<UsernameCommand>, IClientCommand
     {
         public string Name => "Username";
 
@@ -33,11 +29,6 @@ namespace MySharpChat.Client.Command
                 helpCommand.Execute(client.UserInterfaceModule.OutputWriter, Name);
             }
             return true;
-        }
-
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IClientCommand).Execute(data, args);
         }
 
         public string GetHelp()
