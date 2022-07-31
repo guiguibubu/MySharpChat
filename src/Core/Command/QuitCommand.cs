@@ -33,11 +33,6 @@ namespace MySharpChat.Core.Command
             return true;
         }
 
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IAsyncMachineCommand).Execute(data, args);
-        }
-
         public string GetHelp()
         {
             return "usage: quit";

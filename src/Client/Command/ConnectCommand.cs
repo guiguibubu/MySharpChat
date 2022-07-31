@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using MySharpChat.Core.Command;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils;
 
@@ -52,11 +53,6 @@ namespace MySharpChat.Client.Command
             if(isConnected)
                 client.CurrentLogic = new ChatClientLogic(client);
             return isConnected;
-        }
-
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IClientCommand).Execute(data, args);
         }
 
         public string GetHelp()
