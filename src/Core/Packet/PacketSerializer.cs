@@ -22,9 +22,16 @@ namespace MySharpChat.Core.Packet
             if(string.IsNullOrEmpty(data))
                 throw new ArgumentNullException(nameof(data));
 
-            PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(data) ?? throw new NotSupportedException();
-            packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)) ?? throw new NotSupportedException();
-            return packet;
+            try
+            {
+                PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(data) ?? throw new NotSupportedException();
+                packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)) ?? throw new NotSupportedException();
+                return packet;
+            }
+            catch(JsonException e)
+            {
+                throw new ArgumentException("Fail deserialize this : " + data, e);
+            }
         }
     }
 }

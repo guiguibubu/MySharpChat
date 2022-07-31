@@ -15,20 +15,29 @@ namespace MySharpChat.Server
 
         }
 
-        readonly Logger logger = Logger.Factory.GetLogger<Program>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<Program>();
 
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
-            Server server = new Server(new ConsoleServerImpl());
-            if (server.Start())
+            try
             {
-                server.Wait();
+                Server server = new Server(new ConsoleServerImpl());
+                if (server.Start())
+                {
+                    server.Wait();
+                }
+
+                Console.WriteLine("\nPress ENTER to continue...");
+                Console.Read();
+
+                return server.ExitCode;
             }
-
-            Console.WriteLine("\nPress ENTER to continue...");
-            Console.Read();
-
-            return server.ExitCode;
+            catch (Exception e)
+            {
+                logger.LogCritical(e, "Program crash !");
+                Console.WriteLine("Program crash ! : {0}", e);
+                return 1;
+            }
         }
     }
 }

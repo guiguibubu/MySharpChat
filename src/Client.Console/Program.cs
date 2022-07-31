@@ -16,22 +16,31 @@ namespace MySharpChat.Client
 
         }
 
-        readonly Logger logger = Logger.Factory.GetLogger<Program>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<Program>();
 
         // TODO Add CLI option for client
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
-            Client client = new Client(new ConsoleClientImpl());
-
-            if (client.Start())
+            try
             {
-                client.Wait();
+                Client client = new Client(new ConsoleClientImpl());
+
+                if (client.Start())
+                {
+                    client.Wait();
+                }
+
+                System.Console.WriteLine("\nPress ENTER to continue...");
+                System.Console.Read();
+
+                return client.ExitCode;
             }
-
-            System.Console.WriteLine("\nPress ENTER to continue...");
-            System.Console.Read();
-
-            return client.ExitCode;
+            catch(Exception e)
+            {
+                logger.LogCritical(e, "Program crash !");
+                System.Console.WriteLine("Program crash ! : {0}", e);
+                return 1;
+            }
         }
     }
 }
