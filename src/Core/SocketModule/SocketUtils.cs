@@ -18,7 +18,7 @@ namespace MySharpChat.Core.SocketModule
 
         private SocketUtils() { }
 
-        public static Socket OpenListener(ConnexionInfos.Data data)
+        public static Socket CreateSocket(ConnexionInfos.Data data)
         {
             if (data.Ip == null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
@@ -30,7 +30,7 @@ namespace MySharpChat.Core.SocketModule
             return listener;
         }
 
-        public static void ShutdownListener(Socket? socket)
+        public static void ShutdownSocket(Socket? socket)
         {
             if (socket == null)
                 throw new ArgumentNullException(nameof(socket));
@@ -65,7 +65,22 @@ namespace MySharpChat.Core.SocketModule
                 bool canReadOrDisconnected = socket.Poll(5000, SelectMode.SelectRead);
                 bool noDataToRead = socket.Available == 0;
                 bool isDisconnected = canReadOrDisconnected && noDataToRead;
-                return !isDisconnected;
+                return socket.Connected && !isDisconnected;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+        }
+
+        public static bool IsConnectionPending(Socket? socket)
+        {
+            if (socket == null)
+                throw new ArgumentNullException(nameof(socket));
+
+            try
+            {
+                return socket.Poll(100000, SelectMode.SelectRead);
             }
             catch (ObjectDisposedException)
             {
