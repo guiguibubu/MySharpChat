@@ -9,14 +9,14 @@ namespace MySharpChat.Core.Packet
     [Serializable]
     public class PacketWrapper
     {
-        public PacketWrapper(string id, object package)
+        public PacketWrapper(Guid sourceId, object package)
         {
-            Id = id;
+            SourceId = sourceId;
             Type = package.GetType().AssemblyQualifiedName!;
             Package = package;
         }
 
-        public string Id { get; set; }
+        public Guid SourceId { get; set; }
         public string Type { get; set; }
         public object Package { get; set; }
     }
