@@ -19,6 +19,7 @@ namespace MySharpChat.Server
 
         private static int Main(string[] args)
         {
+            int exitCode;
             try
             {
                 Server server = new Server(new ConsoleServerImpl());
@@ -27,17 +28,17 @@ namespace MySharpChat.Server
                     server.Wait();
                 }
 
-                Console.WriteLine("\nPress ENTER to continue...");
-                Console.Read();
-
-                return server.ExitCode;
+                exitCode = server.ExitCode;
             }
             catch (Exception e)
             {
                 logger.LogCritical(e, "Program crash !");
                 Console.WriteLine("Program crash ! : {0}", e);
-                return 1;
+                exitCode = 1;
             }
+            Console.WriteLine("\nPress ENTER to continue...");
+            Console.Read();
+            return exitCode;
         }
     }
 }
