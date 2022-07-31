@@ -11,14 +11,14 @@ namespace MySharpChat.Client.GUI
     {
         private bool _isExecuting = false;
 
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             return !(_isExecuting);
         }
 
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged;
 
-        public async void Execute(object parameter)
+        public void Execute(object? parameter)
         {
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));

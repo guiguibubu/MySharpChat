@@ -28,7 +28,7 @@ namespace MySharpChat.Client.GUI
             ConnectButton.CommandParameter = this;
         }
 
-        public event Action OnConnectionSuccessEvent;
+        public event Action OnConnectionSuccessEvent = () => { };
         public void OnConnectionSuccess()
         {
             IsEnabled = !IsEnabled;
