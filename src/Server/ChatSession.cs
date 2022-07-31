@@ -21,15 +21,18 @@ namespace MySharpChat.Server
         private readonly ChatRoomNetworkModule networkModule;
         public ChatRoomNetworkModule NetworkModule => networkModule;
 
+        public event Action<ChatSession> OnSessionInitializedCallback = (ChatSession session) => { };
         public event Action<ChatSession> OnSessionFinishedCallback = (ChatSession session) => { };
-        public event Action<ChatSession, string> OnBroadcastCallback= (ChatSession session, string text) => { };
+        public event Action<ChatSession, string> OnBroadcastCallback = (ChatSession session, string text) => { };
 
+        public Guid ClientId { get; private set; }
+        
         public ChatSession(Socket? socket)
         {
             networkModule = new ChatRoomNetworkModule(socket);
         }
 
-        public void Start()
+        public void Start(Guid serverId)
         {
             string remoteEP = networkModule.RemoteEndPoint;
             logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
@@ -38,6 +41,14 @@ namespace MySharpChat.Server
             {
                 Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
             }
+
+            logger.LogDebug("Send sessionId to client");
+
+            ClientId = Guid.NewGuid();
+            ConnectionInitialisationPacket connectInitPacket = new ConnectionInitialisationPacket(ClientId);
+            networkModule.Send(new PacketWrapper(serverId, connectInitPacket));
+
+            OnSessionInitializedCallback(this);
 
             Run();
 
@@ -59,36 +70,41 @@ namespace MySharpChat.Server
                     {
                         if (packet.Package is ChatPacket package)
                         {
-                            string content = package.Message;
-
-                            if (!string.IsNullOrEmpty(content))
-                            {
-                                // All the data has been read from the
-                                // client. Display it on the console.  
-
-                                logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
-
-                                //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
-                                // Echo the data back to the client.
-                                if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
-                                {
-                                    string text = "Welcome on MySharpChat server.";
-                                    if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
-                                    {
-                                        text += Environment.NewLine;
-                                        text += $"No data at {httpRequestMessage.RequestUri}";
-                                    }
-                                    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-                                    response.Content = new StringContent(text);
-                                    content = HttpParser.ToString(response).Result;
-                                }
-
-                                //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
-                                OnBroadcastCallback(this, content);
-                            }
+                            HandleChatPacket(package);
                         }
                     }
                 }
+            }
+        }
+
+        private void HandleChatPacket(ChatPacket chatPacket)
+        {
+            string content = chatPacket.Message;
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                // All the data has been read from the
+                // client. Display it on the console.  
+
+                logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
+
+                //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
+                // Echo the data back to the client.
+                if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
+                {
+                    string text = "Welcome on MySharpChat server.";
+                    if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
+                    {
+                        text += Environment.NewLine;
+                        text += $"No data at {httpRequestMessage.RequestUri}";
+                    }
+                    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                    response.Content = new StringContent(text);
+                    content = HttpParser.ToString(response).Result;
+                }
+
+                //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
+                OnBroadcastCallback(this, content);
             }
         }
     }
