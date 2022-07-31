@@ -19,7 +19,7 @@ namespace MySharpChat.Server
 
         static int Main(string[] args)
         {
-            Server server = new Server(new ConnexionInfos());
+            Server server = new Server(new ConsoleServerImpl());
             if (server.Start())
             {
                 server.Wait();

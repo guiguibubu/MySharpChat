@@ -20,20 +20,22 @@ namespace MySharpChat.Server
 {
     public class Server : IAsyncMachine
     {
-        private readonly ConnexionInfos? m_connexionInfos = null;
+        private static readonly Logger logger = Logger.Factory.GetLogger<Server>();
+
         private bool m_serverRun = false;
         private Thread? m_serverThread = null;
-        private Socket? m_listeningSocketHandler = null;
-
-        private readonly List<Socket> m_connectedSockets = new List<Socket>();
 
         private readonly CommandManager commandManager = new CommandManager();
 
-        private static readonly Logger logger = Logger.Factory.GetLogger<Server>();
+        private readonly IServerImpl _serverImpl;
 
-        public Server(ConnexionInfos connexionInfos)
+        public int ExitCode { get; private set; }
+
+        public LockTextWriter OutputWriter { get; private set; }
+
+        public Server(IServerImpl serverImpl)
         {
-            m_connexionInfos = connexionInfos;
+            _serverImpl = serverImpl;
             OutputWriter = new ServerOutputWriter(new ConsoleOutputWriter());
             Initialize();
         }
@@ -60,11 +62,7 @@ namespace MySharpChat.Server
                 Thread.CurrentThread.Name = "MainServerThread";
             }
 
-            if (m_connexionInfos == null)
-                return false;
-
             Stopwatch sw = Stopwatch.StartNew();
-            sw.Start();
 
             bool serverStarted = false;
             try
@@ -100,7 +98,7 @@ namespace MySharpChat.Server
 
         public void Stop(int exitCode = 0)
         {
-            Disconnect(null);
+            _serverImpl.NetworkModule.Disconnect();
             m_serverRun = false;
             ExitCode = exitCode;
         }
@@ -115,10 +113,6 @@ namespace MySharpChat.Server
             return m_serverThread?.Join(millisecondsTimeout) ?? true;
         }
 
-        public int ExitCode { get; private set; }
-
-        public LockTextWriter OutputWriter { get; private set; }
-
         private void Run()
         {
             if (Thread.CurrentThread.Name == null)
@@ -128,169 +122,16 @@ namespace MySharpChat.Server
             }
 
             ConnectCommand command = commandManager.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
-            command.Execute(this);
-
-            m_serverRun = true;
-            while (m_serverRun)
+            if (command.Execute(_serverImpl))
             {
-                // Start an asynchronous socket to listen for connections.  
-                logger.LogDebug("Waiting for a connection...");
-
-                while (!SocketUtils.IsConnectionPending(m_listeningSocketHandler))
+                m_serverRun = true;
+                while (m_serverRun)
                 {
-                    Thread.Sleep(1000);
+                    _serverImpl.Run(this);
                 }
-
-                Socket connectedSocket = m_listeningSocketHandler!.Accept();
-
-                m_connectedSockets.Add(connectedSocket);
-
-                Task.Run(() =>
-                    {
-                        EndPoint remoteEP = connectedSocket.RemoteEndPoint!;
-                        logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
-
-                        if (Thread.CurrentThread.Name == null)
-                        {
-                            Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
-                        }
-
-                        RunSession(connectedSocket);
-
-                        logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
-
-                        m_connectedSockets.Remove(connectedSocket);
-
-                        Disconnect(connectedSocket);
-                    }
-                );
             }
 
             logger.LogInfo("Server stopped !");
-        }
-
-        public bool Connect(ConnexionInfos connexionInfos)
-        {
-            ConnexionInfos.Data? connexionData = connexionInfos.Local;
-            if (connexionData == null)
-                throw new ArgumentException(nameof(connexionInfos.Local));
-
-            IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(connexionData);
-
-            // Create a TCP/IP socket.  
-            m_listeningSocketHandler = SocketUtils.CreateSocket(connexionData);
-
-            // Bind the socket to the local endpoint and listen for incoming connections. 
-            m_listeningSocketHandler.Bind(localEndPoint);
-
-            m_listeningSocketHandler.Listen(100);
-
-            logger.LogInfo(string.Format("Listenning at {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port));
-
-            return true;
-        }
-
-        public bool Send(Socket? socket, string? text)
-        {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
-
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException(nameof(text));
-
-            return SocketUtils.Send(socket, text, this);
-        }
-
-        public string Read(Socket? socket, TimeSpan timeoutSpan)
-        {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
-
-            using (CancellationTokenSource cancelSource = new CancellationTokenSource())
-            {
-                CancellationToken cancelToken = cancelSource.Token;
-                Task<string> readTask = SocketUtils.ReadAsync(socket, this, cancelToken);
-
-                bool timeout = true;
-                try
-                {
-                    timeout = !readTask.Wait(timeoutSpan);
-                }
-                catch (OperationCanceledException)
-                {
-                    timeout = true;
-                }
-
-                if (!timeout)
-                {
-                    try
-                    {
-                        return readTask.Result;
-                    }
-                    catch (AggregateException e)
-                    {
-                        logger.LogError(e, "Fail to read from {0}", socket.RemoteEndPoint);
-                        return string.Empty;
-                    }
-                }
-                else
-                {
-                    cancelSource.Cancel();
-                    logger.LogDebug("Reading timeout reached. Nothing received from {0} after {1} ms", socket.RemoteEndPoint, timeoutSpan);
-                    return string.Empty;
-                }
-            }
-        }
-
-        public void Disconnect(Socket? socket)
-        {
-            if (socket != null)
-            {
-                SocketUtils.ShutdownSocket(socket);
-            }
-        }
-
-        private void RunSession(Socket? socket)
-        {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
-
-            while (IsConnected(socket))
-            {
-                bool dataAvailable = socket.Available > 0;
-                if (dataAvailable)
-                {
-                    string content = Read(socket, TimeSpan.FromSeconds(1));
-
-                    if (!string.IsNullOrEmpty(content))
-                    {
-                        // All the data has been read from the
-                        // client. Display it on the console.  
-
-                        logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
-
-                        //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
-                        // Echo the data back to the client.
-                        if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
-                        {
-                            string text = "Welcome on MySharpChat server.";
-                            if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
-                            {
-                                text += Environment.NewLine;
-                                text += $"No data at {httpRequestMessage.RequestUri}";
-                            }
-                            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-                            response.Content = new StringContent(text);
-                            content = HttpParser.ToString(response).Result;
-                        }
-
-                        //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
-                        IEnumerable<Socket> socketToBroadcast = m_connectedSockets.Where(s => s != socket);
-                        foreach (Socket s in socketToBroadcast)
-                            Send(s, socket.RemoteEndPoint + ": " + content);
-                    }
-                }
-            }
         }
     }
 }
