@@ -1,19 +1,20 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using MySharpChat.Core.Command;
 using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Utils;
-
-using MySharpChat.Server.Command;
 using MySharpChat.Core.Utils.Logger;
-using System.Threading.Tasks;
 using MySharpChat.Core.Console;
+using MySharpChat.Server.Command;
 
 namespace MySharpChat.Server
 {
@@ -23,6 +24,8 @@ namespace MySharpChat.Server
         private bool m_serverRun = false;
         private Thread? m_serverThread = null;
         private Socket? m_listeningSocketHandler = null;
+
+        private readonly List<Socket> m_connectedSockets = new List<Socket>();
 
         private readonly CommandManager commandManager = new CommandManager();
 
@@ -133,21 +136,34 @@ namespace MySharpChat.Server
                 // Start an asynchronous socket to listen for connections.  
                 logger.LogDebug("Waiting for a connection...");
 
-                Socket connectedSocket = m_listeningSocketHandler!.Accept();
-
-                EndPoint remoteEP = connectedSocket.RemoteEndPoint!;
-                logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
-
-                if (Thread.CurrentThread.Name == null)
+                while (!SocketUtils.IsConnectionPending(m_listeningSocketHandler))
                 {
-                    Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
+                    Thread.Sleep(1000);
                 }
 
-                RunSession(connectedSocket);
+                Socket connectedSocket = m_listeningSocketHandler!.Accept();
 
-                logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
+                m_connectedSockets.Add(connectedSocket);
 
-                Disconnect(connectedSocket);
+                Task.Run(() =>
+                    {
+                        EndPoint remoteEP = connectedSocket.RemoteEndPoint!;
+                        logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
+
+                        if (Thread.CurrentThread.Name == null)
+                        {
+                            Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
+                        }
+
+                        RunSession(connectedSocket);
+
+                        logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
+
+                        m_connectedSockets.Remove(connectedSocket);
+
+                        Disconnect(connectedSocket);
+                    }
+                );
             }
 
             logger.LogInfo("Server stopped !");
@@ -162,7 +178,7 @@ namespace MySharpChat.Server
             IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(connexionData);
 
             // Create a TCP/IP socket.  
-            m_listeningSocketHandler = SocketUtils.OpenListener(connexionData);
+            m_listeningSocketHandler = SocketUtils.CreateSocket(connexionData);
 
             // Bind the socket to the local endpoint and listen for incoming connections. 
             m_listeningSocketHandler.Bind(localEndPoint);
@@ -230,7 +246,7 @@ namespace MySharpChat.Server
         {
             if (socket != null)
             {
-                SocketUtils.ShutdownListener(socket);
+                SocketUtils.ShutdownSocket(socket);
             }
         }
 
@@ -241,32 +257,38 @@ namespace MySharpChat.Server
 
             while (IsConnected(socket))
             {
-                string content = Read(socket, TimeSpan.FromSeconds(1));
-
-                if (!string.IsNullOrEmpty(content))
+                bool dataAvailable = socket.Available > 0;
+                if (dataAvailable)
                 {
-                    // All the data has been read from the
-                    // client. Display it on the console.  
+                    string content = Read(socket, TimeSpan.FromSeconds(1));
 
-                    logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
-
-                    //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
-                    // Echo the data back to the client.
-                    if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
+                    if (!string.IsNullOrEmpty(content))
                     {
-                        string text = "Welcome on MySharpChat server.";
-                        if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
-                        {
-                            text += Environment.NewLine;
-                            text += $"No data at {httpRequestMessage.RequestUri}";
-                        }
-                        HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-                        response.Content = new StringContent(text);
-                        content = HttpParser.ToString(response).Result;
-                    }
+                        // All the data has been read from the
+                        // client. Display it on the console.  
 
-                    //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
-                    Send(socket, content);
+                        logger.LogDebug(string.Format("Read {0} bytes from socket. Data :{1}", content.Length, content));
+
+                        //TODO: Add a real ASP server to handle HTTP/WED requests. REST API ?
+                        // Echo the data back to the client.
+                        if (HttpParser.TryParseHttpRequest(content, out HttpRequestMessage? httpRequestMessage))
+                        {
+                            string text = "Welcome on MySharpChat server.";
+                            if (!string.Equals(httpRequestMessage!.RequestUri, "/"))
+                            {
+                                text += Environment.NewLine;
+                                text += $"No data at {httpRequestMessage.RequestUri}";
+                            }
+                            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                            response.Content = new StringContent(text);
+                            content = HttpParser.ToString(response).Result;
+                        }
+
+                        //TODO: Add a real logic instead of basic re-send. User Authentification ? Spawn dedicated chat servers ?
+                        IEnumerable<Socket> socketToBroadcast = m_connectedSockets.Where(s => s != socket);
+                        foreach (Socket s in socketToBroadcast)
+                            Send(s, socket.RemoteEndPoint + ": " + content);
+                    }
                 }
             }
         }
