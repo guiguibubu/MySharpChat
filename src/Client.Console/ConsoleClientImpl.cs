@@ -29,13 +29,15 @@ namespace MySharpChat.Client
         public IClientLogic CurrentLogic { get; set; }
 
         public Guid ClientId { get; private set; } = Guid.Empty;
+        public string Username { get; private set; } = Environment.UserName;
 
-        private readonly LoaderClientLogic loaderLogic = new LoaderClientLogic();
+        private readonly LoaderClientLogic loaderLogic;
 
         private readonly CommandInput commandInput;
 
         public ConsoleClientImpl()
         {
+            loaderLogic = new LoaderClientLogic(this);
             CurrentLogic = loaderLogic;
             userInterfaceModule = new ConsoleUserInterfaceModule();
             networkModule = new ClientNetworkModule(this);
@@ -61,28 +63,28 @@ namespace MySharpChat.Client
                         List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
                         foreach (PacketWrapper packet in packets)
                         {
-                            if (packet.Package is ConnectionInitialisationPacket connectInitPackage)
+                            if (packet.Package is ClientInitialisationPacket connectInitPackage)
                             {
-                                ClientId = connectInitPackage.SessionId;
+                                bool isInitialised = ClientId != Guid.Empty;
+                                if (isInitialised)
+                                {
+                                    string newUsername = connectInitPackage.Username;
+                                    if (!string.IsNullOrEmpty(newUsername))
+                                        Username = newUsername;
+                                }
+                                else
+                                {
+                                    ClientId = connectInitPackage.SessionId;
+                                    // Tell the server our username
+                                    ClientInitialisationPacket initPacket = new ClientInitialisationPacket(ClientId, Username);
+                                    PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
+                                    NetworkModule.Send(packetWrapper);
+                                }
+                                
                             }
                             else if (packet.Package is ChatPacket chatPackage)
                             {
-                                string readText = chatPackage.Message;
-                                if (!string.IsNullOrEmpty(readText))
-                                {
-                                    using (writer.Lock())
-                                    {
-                                        cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
-                                        int prefixLength = CurrentLogic.Prefix.Length;
-                                        cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                                        int inputTextLength = cursorHandler.Position;
-                                        for (int i = 0; i < prefixLength + inputTextLength; i++)
-                                            writer.Write(" ");
-                                        cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                                        writer.WriteLine("server> {0}", readText);
-                                        writer.Write(CurrentLogic.Prefix);
-                                    }
-                                }
+                                HandleChatPacket(chatPackage);
                             }
                         }
                     }
@@ -117,6 +119,29 @@ namespace MySharpChat.Client
         {
             networkModule.Disconnect();
             CurrentLogic = loaderLogic;
+        }
+
+        private void HandleChatPacket(ChatPacket chatPacket)
+        {
+            IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
+            LockTextWriter writer = userInterfaceModule.OutputWriter;
+
+            string readText = chatPacket.Message;
+            if (!string.IsNullOrEmpty(readText))
+            {
+                using (writer.Lock())
+                {
+                    cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                    int prefixLength = CurrentLogic.Prefix.Length;
+                    cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                    int inputTextLength = cursorHandler.Position;
+                    for (int i = 0; i < prefixLength + inputTextLength; i++)
+                        writer.Write(" ");
+                    cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                    writer.WriteLine("server> {0}", readText);
+                    writer.Write(CurrentLogic.Prefix);
+                }
+            }
         }
     }
 }

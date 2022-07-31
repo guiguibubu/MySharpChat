@@ -14,10 +14,13 @@ namespace MySharpChat.Client
         private readonly CommandParser commandParser;
         public CommandParser CommandParser => commandParser;
 
-        public string Prefix => string.Format("{0}> ", Environment.UserName);
+        private readonly IClientImpl _client;
+        public string Prefix => string.Format("{0}> ", _client.Username);
 
-        public LoaderClientLogic()
+        public LoaderClientLogic(IClientImpl client)
         {
+            _client = client;
+
             commandManager.AddCommand(QuitCommand.Instance);
             commandManager.AddCommand(ExitCommand.Instance);
             commandManager.AddCommand(ConnectCommand.Instance);

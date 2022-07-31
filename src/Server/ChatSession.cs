@@ -18,18 +18,20 @@ namespace MySharpChat.Server
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ChatSession>();
 
-        private readonly ChatRoomNetworkModule networkModule;
-        public ChatRoomNetworkModule NetworkModule => networkModule;
+        private readonly ChatSessionNetworkModule networkModule;
+        public ChatSessionNetworkModule NetworkModule => networkModule;
 
         public event Action<ChatSession> OnSessionInitializedCallback = (ChatSession session) => { };
         public event Action<ChatSession> OnSessionFinishedCallback = (ChatSession session) => { };
         public event Action<ChatSession, string> OnBroadcastCallback = (ChatSession session, string text) => { };
+        public event Action<ChatSession, string> OnUsernameChangeCallback = (ChatSession session, string oldUsername) => { };
 
-        public Guid ClientId { get; private set; }
+        public Guid ClientId { get; private set; } = Guid.NewGuid();
+        public string ClientUsername { get; set; } = "";
         
         public ChatSession(Socket? socket)
         {
-            networkModule = new ChatRoomNetworkModule(socket);
+            networkModule = new ChatSessionNetworkModule(socket);
         }
 
         public void Start(Guid serverId)
@@ -45,10 +47,8 @@ namespace MySharpChat.Server
             logger.LogDebug("Send sessionId to client");
 
             ClientId = Guid.NewGuid();
-            ConnectionInitialisationPacket connectInitPacket = new ConnectionInitialisationPacket(ClientId);
+            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(ClientId);
             networkModule.Send(new PacketWrapper(serverId, connectInitPacket));
-
-            OnSessionInitializedCallback(this);
 
             Run();
 
@@ -68,7 +68,22 @@ namespace MySharpChat.Server
                     List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
                     foreach (PacketWrapper packet in packets)
                     {
-                        if (packet.Package is ChatPacket package)
+                        if(packet.Package is ClientInitialisationPacket initPackage)
+                        {
+                            bool isClientInitialized = !string.IsNullOrEmpty(ClientUsername);
+                            if (isClientInitialized)
+                            {
+                                string oldUsername = ClientUsername;
+                                ClientUsername = initPackage.Username;
+                                OnUsernameChangeCallback(this, oldUsername);
+                            }
+                            else
+                            {
+                                ClientUsername = initPackage.Username;
+                                OnSessionInitializedCallback(this);
+                            }
+                        }
+                        else if (packet.Package is ChatPacket package)
                         {
                             HandleChatPacket(package);
                         }
