@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Command;
+using MySharpChat.Core.Utils;
 using System;
 
 namespace MySharpChat.Client.Command
@@ -17,11 +18,6 @@ namespace MySharpChat.Client.Command
             client.NetworkModule.Disconnect();
             client.CurrentLogic = new LoaderClientLogic(client);
             return true;
-        }
-
-        public bool Execute(object? data, params string[] args)
-        {
-            return (this as IClientCommand).Execute(data, args);
         }
 
         public string GetHelp()

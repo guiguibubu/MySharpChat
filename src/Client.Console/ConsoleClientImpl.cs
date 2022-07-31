@@ -101,9 +101,9 @@ namespace MySharpChat.Client
             {
                 clientCommand?.Execute(this, args);
             }
-            else if (parser.TryParse(text, out args, out IAsyncMachineCommand? command))
+            else if (parser.TryParse(text, out args, out IAsyncMachineCommand? asyncMachineCommand))
             {
-                command?.Execute(client, args);
+                asyncMachineCommand?.Execute(client, args);
             }
             else
             {

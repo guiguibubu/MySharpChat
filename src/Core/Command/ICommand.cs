@@ -13,7 +13,7 @@ namespace MySharpChat.Core.Command
     public interface ICommand<in T> : ICommand where T : class
     {
         bool Execute(T? data, params string[] args);
-        new bool Execute(object? data, params string[] args)
+        bool ICommand.Execute(object? data, params string[] args)
         {
             if(data is T dataCast)
             {
