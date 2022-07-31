@@ -8,6 +8,7 @@ using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace MySharpChat.Client
@@ -47,15 +48,18 @@ namespace MySharpChat.Client
         public void Run(Client client)
         {
             // TODO reorganise to support read/write from network while reading inputs
-            IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
             LockTextWriter writer = userInterfaceModule.OutputWriter;
-            writer.Write(CurrentLogic.Prefix);
+            string currentPrefix = CurrentLogic.Prefix;
+            writer.Write(currentPrefix);
 
             ReadingState readingState = new ReadingState(new UserInputTextHandler(), userInterfaceModule);
             Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
 
             if (networkModule.IsConnected())
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                long graphicalTimeoutMs = (long)TimeSpan.FromSeconds(2).TotalMilliseconds;
+
                 while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
                 {
                     if (networkModule.HasDataAvailable)
@@ -80,13 +84,33 @@ namespace MySharpChat.Client
                                     PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
                                     NetworkModule.Send(packetWrapper);
                                 }
-                                
+
                             }
                             else if (packet.Package is ChatPacket chatPackage)
                             {
                                 HandleChatPacket(chatPackage);
                             }
                         }
+                    }
+                    bool graphicalUpdateTimeout = stopwatch.ElapsedMilliseconds > graphicalTimeoutMs;
+                    if (graphicalUpdateTimeout)
+                    {
+                        string previousInputNotValidated = readingState.InputTextHandler.ToString();
+                        IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
+                        using (writer.Lock())
+                        {
+                            cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                            int prefixLength = currentPrefix.Length;
+                            cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                            int inputTextLength = cursorHandler.Position;
+                            for (int i = 0; i < prefixLength + inputTextLength; i++)
+                                writer.Write(" ");
+                            cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                            currentPrefix = CurrentLogic.Prefix;
+                            writer.Write(currentPrefix);
+                            writer.Write(previousInputNotValidated);
+                        }
+                        stopwatch.Restart();
                     }
                 }
             }
