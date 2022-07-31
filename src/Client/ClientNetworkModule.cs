@@ -112,7 +112,7 @@ namespace MySharpChat.Client
             IPEndPoint remoteEP = SocketUtils.CreateEndPoint(connexionData);
 
             // Create a TCP/IP socket.  
-            m_socket = SocketUtils.OpenListener(connexionData);
+            m_socket = SocketUtils.CreateSocket(connexionData);
 
             const int CONNECTION_TIMEOUT_MS = 5000;
 
@@ -138,7 +138,7 @@ namespace MySharpChat.Client
         {
             if (m_socket != null)
             {
-                SocketUtils.ShutdownListener(m_socket);
+                SocketUtils.ShutdownSocket(m_socket);
             }
         }
 
