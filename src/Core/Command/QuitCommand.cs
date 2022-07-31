@@ -8,7 +8,7 @@ namespace MySharpChat.Core.Command
     {
         protected QuitCommand() { }
 
-        public string Name { get => "Quit"; }
+        public string Name => "Quit";
 
         public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
         {
