@@ -50,6 +50,8 @@ namespace MySharpChat.Client
             }
         }
 
+        public bool HasDataAvailable => m_socket != null && m_socket.Available > 0;
+
         public bool Connect(IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite)
         {
             bool timeout = false;
