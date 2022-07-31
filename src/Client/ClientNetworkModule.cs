@@ -1,11 +1,14 @@
-﻿using MySharpChat.Core.SocketModule;
+﻿using MySharpChat.Core.Packet;
+using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,7 +152,26 @@ namespace MySharpChat.Client
             return m_socket != null && SocketUtils.IsConnected(m_socket);
         }
 
-        public void Send(string? text)
+        public void Send(PacketWrapper? packet)
+        {
+            if (packet == null)
+                throw new ArgumentNullException(nameof(packet));
+
+            string content = PacketSerializer.Serialize(packet);
+            SendImpl(content);
+        }
+
+        public PacketWrapper Read(TimeSpan timeoutSpan)
+        {
+            if (m_socket == null)
+                throw new ArgumentException("NetworkModule not initialized");
+
+            string content = ReadImpl(timeoutSpan);
+
+            return PacketSerializer.Deserialize(content);
+        }
+
+        private void SendImpl(string? text)
         {
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
@@ -157,12 +179,12 @@ namespace MySharpChat.Client
             SocketUtils.Send(m_socket, text, this);
         }
 
-        public string Read(TimeSpan timeoutSpan)
+        private string ReadImpl(TimeSpan timeoutSpan)
         {
             using (CancellationTokenSource cancelSource = new CancellationTokenSource())
             {
                 CancellationToken cancelToken = cancelSource.Token;
-                Task<string> readTask = ReadAsync(cancelToken);
+                Task<string> readTask = ReadAsyncImpl(cancelToken);
 
                 bool timeout = !readTask.Wait(timeoutSpan);
 
@@ -181,7 +203,7 @@ namespace MySharpChat.Client
             }
         }
 
-        public Task<string> ReadAsync(CancellationToken cancelToken = default)
+        private Task<string> ReadAsyncImpl(CancellationToken cancelToken = default)
         {
             return SocketUtils.ReadAsync(m_socket, this, cancelToken);
         }

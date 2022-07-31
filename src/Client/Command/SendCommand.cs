@@ -1,5 +1,6 @@
 ﻿using System;
 using MySharpChat.Core.Command;
+using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
@@ -16,8 +17,17 @@ namespace MySharpChat.Client.Command
                 throw new ArgumentNullException(nameof(client));
 
             string? text = args.Length > 0 ? args[0] : null;
-            client.NetworkModule.Send(text);
-
+            if (!string.IsNullOrEmpty(text))
+            {
+                ChatPacket chatPacket = new ChatPacket(text);
+                PacketWrapper packet = new PacketWrapper(client.NetworkModule.LocalEndPoint, chatPacket);
+                client.NetworkModule.Send(packet);
+            }
+            else
+            {
+                HelpCommand helpCommand = client.CurrentLogic.CommandParser.GetHelpCommand();
+                helpCommand.Execute(client.UserInterfaceModule.OutputWriter, Name);
+            }
             return true;
         }
 

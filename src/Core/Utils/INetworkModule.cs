@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySharpChat.Core.Packet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,10 +14,10 @@ namespace MySharpChat.Core.Utils
         string RemoteEndPoint { get; }
         bool HasDataAvailable { get; }
 
-        void Send(string? text);
-        Task<string> ReadAsync(CancellationToken cancelToken = default);
-        string Read(TimeSpan timeoutSpan);
-        string Read()
+        void Send(PacketWrapper? packet);
+
+        PacketWrapper Read(TimeSpan timeoutSpan);
+        PacketWrapper Read()
         {
             return Read(Timeout.InfiniteTimeSpan);
         }
