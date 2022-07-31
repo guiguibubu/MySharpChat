@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Server
 {
-    internal class ServerNetworkModule : INetworkModule
+    public class ServerNetworkModule : INetworkModule
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ServerNetworkModule>();
 
