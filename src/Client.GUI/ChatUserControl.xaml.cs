@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySharpChat.Client.GUI.Commands;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,33 +21,39 @@ namespace MySharpChat.Client.GUI
     /// </summary>
     public partial class ChatUserControl : UserControl
     {
-        public ChatUserControl()
+        private string SendTextValue => InputBox.Text;
+
+        private readonly ChatViewModel m_viewModel;
+
+        internal ChatUserControl(ChatViewModel viewModel)
         {
             InitializeComponent();
+
+            m_viewModel = viewModel;
 
             OutputBox.TextWrapping = TextWrapping.Wrap;
             OutputBox.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             OutputBox.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
 
-            InputBox.KeyDown += InputBox_KeyDown; 
+            InputBox.KeyDown += InputBox_KeyDown;
 
-            SendButton.Command = new SendCommand();
-            SendButton.CommandParameter = this;
+            SendButton.Command = new WpfSendCommand();
+            SendButton.CommandParameter = new WpfSendArgs() { chatUC = this, client = (Application.Current as App)!.ClientImpl, args = new string[] { SendTextValue } }; ;
         }
 
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
         {
             Key key = e.Key;
             if (key == Key.Enter)
-                Send();
+                SendButton.Command.Execute(SendButton.CommandParameter);
         }
 
-        public void Send()
+        public void OnSendSuccess()
         {
-            string text = InputBox.Text;
+            string text = SendTextValue;
             if (!string.IsNullOrEmpty(text))
             {
-                OutputBox.AppendText(text + Environment.NewLine);
+                OutputBox.AppendText((Application.Current as App)!.ClientImpl.Username + ": " + text + Environment.NewLine);
                 OutputBoxScroller.ScrollToEnd();
                 InputBox.Text = "";
                 InputBox.Focus();

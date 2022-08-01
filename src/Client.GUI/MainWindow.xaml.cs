@@ -20,16 +20,37 @@ namespace MySharpChat.Client.GUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        private UserControl currentUC;
+        private readonly ChatUserControl chatUC;
+        private readonly ConnectionUserControl connectionUC;
+        private readonly MainWindowViewModel m_viewModel;
+
+        internal MainWindow(MainWindowViewModel viewModel)
         {
             InitializeComponent();
-            connectionUC.OnConnectionSuccessEvent += OnConnectionSucess;
+
+            m_viewModel = viewModel;
+
+            ConnectionViewModel connectionViewModel = new ConnectionViewModel(m_viewModel.Client);
+            connectionViewModel.OnConnectionSuccessEvent += OnConnectionSucess;
+
+            connectionUC = new ConnectionUserControl(connectionViewModel);
+
+            ChatViewModel chatViewModel = new ChatViewModel(m_viewModel.Client);
+            chatUC = new ChatUserControl(chatViewModel);
+
+            currentUC = connectionUC;
+            WindowGrid.Children.Add(currentUC);
         }
 
         private void OnConnectionSucess()
         {
-            chatUC.IsEnabled = !chatUC.IsEnabled;
-            chatUC.Visibility = (chatUC.Visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
+            //chatUC.IsEnabled = !chatUC.IsEnabled;
+            //chatUC.Visibility = (chatUC.Visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
+
+            WindowGrid.Children.Remove(currentUC);
+            currentUC = chatUC;
+            WindowGrid.Children.Add(currentUC);
         }
     }
 }

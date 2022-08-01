@@ -17,8 +17,6 @@
     <Window.Resources>
     </Window.Resources>
 
-    <Grid>
-        <local:ChatUserControl x:Name="chatUC" IsEnabled="False" Visibility="Hidden"/>
-        <local:ConnectionUserControl x:Name="connectionUC" IsEnabled="True" Visibility="Visible"/>
+    <Grid x:Name="WindowGrid">
     </Grid>
 </Window>

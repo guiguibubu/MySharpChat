@@ -8,7 +8,7 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {
-    internal class ConnectCommand : Singleton<ConnectCommand>, IClientCommand
+    public class ConnectCommand : Singleton<ConnectCommand>, IClientCommand
     {
         protected ConnectCommand() { }
 
