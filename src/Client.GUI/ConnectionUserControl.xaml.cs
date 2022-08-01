@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySharpChat.Client.GUI.Commands;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,20 +21,19 @@ namespace MySharpChat.Client.GUI
     /// </summary>
     public partial class ConnectionUserControl : UserControl
     {
-        public ConnectionUserControl()
+        private readonly ConnectionViewModel m_viewModel;
+        internal ConnectionUserControl(ConnectionViewModel viewModel)
         {
             InitializeComponent();
 
-            ConnectButton.Command = new ConnectCommand();
-            ConnectButton.CommandParameter = this;
-        }
+            m_viewModel = viewModel;
 
-        public event Action OnConnectionSuccessEvent = () => { };
-        public void OnConnectionSuccess()
-        {
-            IsEnabled = !IsEnabled;
-            Visibility = (Visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
-            OnConnectionSuccessEvent();
+            UserNameInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.Username = UserNameInputBox.Text; };
+            IpInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.ServerIp = IpInputBox.Text; };
+            PortInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.ServerPort = PortInputBox.Text; };
+
+            ConnectButton.Command = new WpfConnectCommand();
+            ConnectButton.CommandParameter = new WpfConnectionArgs() { ViewModel = m_viewModel };
         }
     }
 }

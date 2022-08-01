@@ -77,19 +77,19 @@ namespace MySharpChat.Client
                     // Connect to the remote endpoint.  
                     Task connectTask = socket!.ConnectAsync(remoteEP);
 
-                    const string prefix = "Connecting";
-                    const int nbDotsMax = 3;
-                    StringBuilder loadingText = new StringBuilder(prefix);
-                    int nbDots = attempt % (nbDotsMax + 1);
-                    for (int i = 0; i < nbDots; i++)
-                        loadingText.Append(".");
-                    for (int i = 0; i < nbDotsMax - nbDots; i++)
-                        loadingText.Append(" ");
+                    //const string prefix = "Connecting";
+                    //const int nbDotsMax = 3;
+                    //StringBuilder loadingText = new StringBuilder(prefix);
+                    //int nbDots = attempt % (nbDotsMax + 1);
+                    //for (int i = 0; i < nbDots; i++)
+                    //    loadingText.Append(".");
+                    //for (int i = 0; i < nbDotsMax - nbDots; i++)
+                    //    loadingText.Append(" ");
 
-                    IUserInputCursorHandler cursorHandler = _client.UserInterfaceModule.CursorHandler;
-                    LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
-                    writer.Write(loadingText);
-                    cursorHandler.MovePositionNegative(loadingText.Length, CursorUpdateMode.GraphicalOnly);
+                    //IUserInputCursorHandler cursorHandler = _client.UserInterfaceModule.CursorHandler;
+                    //LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
+                    //writer.Write(loadingText);
+                    //cursorHandler.MovePositionNegative(loadingText.Length, CursorUpdateMode.GraphicalOnly);
 
                     try
                     {

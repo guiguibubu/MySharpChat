@@ -13,46 +13,25 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
-    internal class ConsoleClientImpl : IClientImpl
+    internal class ConsoleClientImpl : BaseClientImpl
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleClientImpl>();
 
-        private readonly INetworkModule networkModule;
-        public INetworkModule NetworkModule => networkModule;
+        protected readonly CommandInput commandInput;
 
-        private readonly IUserInterfaceModule userInterfaceModule;
-        public IUserInterfaceModule UserInterfaceModule => userInterfaceModule;
-
-        public string LocalEndPoint => networkModule.LocalEndPoint;
-
-        public string RemoteEndPoint => networkModule.RemoteEndPoint;
-
-        public IClientLogic CurrentLogic { get; set; }
-
-        public Guid ClientId { get; private set; } = Guid.Empty;
-        public string Username { get; private set; } = Environment.UserName;
-
-        private readonly LoaderClientLogic loaderLogic;
-
-        private readonly CommandInput commandInput;
-
-        public ConsoleClientImpl()
+        public ConsoleClientImpl() : base(new ConsoleUserInterfaceModule())
         {
-            loaderLogic = new LoaderClientLogic(this);
-            CurrentLogic = loaderLogic;
-            userInterfaceModule = new ConsoleUserInterfaceModule();
-            networkModule = new ClientNetworkModule(this);
-            commandInput = new CommandInput(userInterfaceModule);
+            commandInput = new CommandInput(m_userInterfaceModule);
         }
 
-        public void Run(Client client)
+        public override void Run(Client client)
         {
             // TODO reorganise to support read/write from network while reading inputs
-            LockTextWriter writer = userInterfaceModule.OutputWriter;
+            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
             string currentPrefix = CurrentLogic.Prefix;
             writer.Write(currentPrefix);
 
-            ReadingState readingState = new ReadingState(new UserInputTextHandler(), userInterfaceModule);
+            ReadingState readingState = new ReadingState(new UserInputTextHandler(), m_userInterfaceModule);
             Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
 
             if (networkModule.IsConnected())
@@ -96,7 +75,7 @@ namespace MySharpChat.Client
                     if (graphicalUpdateTimeout)
                     {
                         string previousInputNotValidated = readingState.InputTextHandler.ToString();
-                        IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
+                        IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
                         using (writer.Lock())
                         {
                             cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
@@ -139,16 +118,10 @@ namespace MySharpChat.Client
             writer.WriteLine();
         }
 
-        public void Stop()
-        {
-            networkModule.Disconnect();
-            CurrentLogic = loaderLogic;
-        }
-
         private void HandleChatPacket(ChatPacket chatPacket)
         {
-            IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
-            LockTextWriter writer = userInterfaceModule.OutputWriter;
+            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
+            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
 
             string readText = chatPacket.Message;
             if (!string.IsNullOrEmpty(readText))
