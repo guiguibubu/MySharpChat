@@ -1,19 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MySharpChat.Client.Command;
 using System.Windows.Input;
 
-namespace MySharpChat.Client.GUI
+namespace MySharpChat.Client.GUI.Commands
 {
-    internal class SendCommand : ICommand
+    internal class WpfConnectCommand : ICommand
     {
         private bool _isExecuting = false;
 
         public bool CanExecute(object? parameter)
         {
-            return !(_isExecuting);
+            return !_isExecuting;
         }
 
         public event EventHandler? CanExecuteChanged;
@@ -23,13 +20,14 @@ namespace MySharpChat.Client.GUI
             if (parameter == null)
                 throw new ArgumentNullException(nameof(parameter));
 
-            if (parameter is ChatUserControl chatUC)
+            if (parameter is WpfConnectionArgs connectionArgs)
             {
                 _isExecuting = true;
                 OnCanExecuteChanged();
                 try
                 {
-                    chatUC.Send();
+                    if (ConnectCommand.Instance.Execute(connectionArgs.ViewModel.Client, connectionArgs.ViewModel.ServerIp))
+                        connectionArgs.ViewModel.OnConnectionSuccess();
                 }
                 finally
                 {
@@ -39,7 +37,7 @@ namespace MySharpChat.Client.GUI
             }
             else
             {
-                throw new ArgumentException(string.Format("{0} must be of type {1}", nameof(parameter), typeof(ChatUserControl)));
+                throw new ArgumentException(string.Format("{0} must be of type {1}", nameof(parameter), typeof(WpfConnectionArgs)));
             }
         }
 

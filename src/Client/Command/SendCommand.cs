@@ -6,7 +6,7 @@ using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
 {
-    internal class SendCommand : Singleton<SendCommand>, IClientCommand
+    public class SendCommand : Singleton<SendCommand>, IClientCommand
     {
         protected SendCommand() { }
 
