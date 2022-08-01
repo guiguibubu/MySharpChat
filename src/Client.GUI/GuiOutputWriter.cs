@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Server
+namespace MySharpChat.Client.GUI
 {
-    internal class ServerOutputWriter : LockTextWriter
+    internal class GuiOutputWriter : LockTextWriter
     {
-        public ServerOutputWriter(LockTextWriter output) : base(output)
+        public GuiOutputWriter(TextWriter output) : base(output)
         {
         }
     }
