@@ -53,7 +53,7 @@ namespace MySharpChat.Client.GUI
                     outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
                     outpuBlock.VerticalAlignment = VerticalAlignment.Center;
                     outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                    outpuBlock.Text = m_viewModel.Client.Username + ": " + text;
+                    outpuBlock.Text = text;
 
                     OutputStack.Children.Add(outpuBlock);
                     OutputScroller.ScrollToEnd();

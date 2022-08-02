@@ -24,7 +24,6 @@ namespace MySharpChat.Client.GUI
 
         public void OnSendSuccess()
         {
-            OnMessageReceived(InputMessage);
             OnSendFinishedEvent();
             
         }
