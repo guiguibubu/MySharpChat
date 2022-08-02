@@ -62,6 +62,8 @@ namespace MySharpChat.Client.GUI
             }
         }
 
+        public event Action<string> OnUserAddedEvent = (string s) => { };
+        public event Action<string> OnUserRemovedEvent = (string s) => { };
         public event Action OnUsernameChangeEvent = () => {};
         public event Action<string> ChatMessageReceivedEvent = (string message) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };

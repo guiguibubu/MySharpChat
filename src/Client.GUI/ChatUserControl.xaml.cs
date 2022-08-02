@@ -24,6 +24,8 @@ namespace MySharpChat.Client.GUI
     {
         private readonly ChatViewModel m_viewModel;
 
+        private readonly List<TextBlock> usersUiElements = new List<TextBlock>();
+
         internal ChatUserControl(ChatViewModel viewModel)
         {
             InitializeComponent();
@@ -36,6 +38,8 @@ namespace MySharpChat.Client.GUI
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
+            m_viewModel.OnUserRemovedEvent += OnUsernameRemoved;
+            m_viewModel.OnUserAddedEvent += OnUsernameAdded;
             m_viewModel.OnUsernameChangeEvent += OnUsernameChange;
             m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
             m_viewModel.OnSendFinishedEvent += OnSendFinished;
@@ -58,6 +62,39 @@ namespace MySharpChat.Client.GUI
         }
 
         public event Action OnDisconnectionEvent = () => { };
+
+        private void OnUsernameRemoved(string username)
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == username);
+                if(userUiElement != null)
+                {
+                    usersUiElements.Remove(userUiElement);
+                    UsersStack.Children.Remove(userUiElement);
+                }
+            }
+            else
+            {
+                uiDispatcher.Invoke(OnUsernameRemoved, username);
+            }
+        }
+
+        private void OnUsernameAdded(string username)
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                TextBlock userUiElement = new TextBlock() { Text = username };
+                usersUiElements.Add(userUiElement);
+                UsersStack.Children.Add(userUiElement);
+            }
+            else
+            {
+                uiDispatcher.Invoke(OnUsernameAdded, username);
+            }
+        }
 
         private void OnMessageReceived(string message)
         {

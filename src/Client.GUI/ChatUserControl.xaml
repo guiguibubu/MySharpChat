@@ -28,7 +28,11 @@
             </Border>
         </ScrollViewer>
 
-        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel x:Name="UsersStack" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+            <Label HorizontalContentAlignment="Center">Connected Users</Label>
+        </StackPanel>
+        
+        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
             <TextBlock x:Name="ConnectionStatus" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0" Background="Transparent" TextAlignment="Justify"/>
         </DockPanel>
 
