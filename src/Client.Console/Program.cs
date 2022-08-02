@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
-namespace MySharpChat.Client
+namespace MySharpChat.Client.Console
 {
     class Program
     {
@@ -34,6 +34,8 @@ namespace MySharpChat.Client
                 if (client.Start())
                 {
                     client.Wait();
+                    logger.LogInfo("Client stopped !");
+                    System.Console.WriteLine("Client stopped !");
                 }
 
                 exitCode = client.ExitCode;

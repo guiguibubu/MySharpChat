@@ -4,7 +4,7 @@ using System;
 
 namespace MySharpChat.Client.Command
 {
-    internal class DisconnectCommand : Singleton<DisconnectCommand>, IClientCommand
+    public class DisconnectCommand : Singleton<DisconnectCommand>, IClientCommand
     {
         protected DisconnectCommand() { }
 
@@ -16,7 +16,6 @@ namespace MySharpChat.Client.Command
                 throw new ArgumentNullException(nameof(client));
 
             client.NetworkModule.Disconnect();
-            client.CurrentLogic = new LoaderClientLogic(client);
             return true;
         }
 

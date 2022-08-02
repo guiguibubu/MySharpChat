@@ -1,5 +1,5 @@
 ﻿using MySharpChat.Client.Command;
-using MySharpChat.Client.Console;
+using MySharpChat.Client.Console.Command;
 using MySharpChat.Client.Input;
 using MySharpChat.Core.Command;
 using MySharpChat.Core.Packet;
@@ -11,17 +11,26 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Client
+namespace MySharpChat.Client.Console
 {
     internal class ConsoleClientImpl : BaseClientImpl
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleClientImpl>();
 
+        private readonly IUserInterfaceModule m_userInterfaceModule;
+        public IUserInterfaceModule UserInterfaceModule => m_userInterfaceModule;
+
+        public IClientLogic CurrentLogic { get; set; }
+        protected readonly LoaderClientLogic loaderLogic;
+
         protected readonly CommandInput commandInput;
 
-        public ConsoleClientImpl() : base(new ConsoleUserInterfaceModule())
+        public ConsoleClientImpl() : base()
         {
+            m_userInterfaceModule = new ConsoleUserInterfaceModule();
             commandInput = new CommandInput(m_userInterfaceModule);
+            loaderLogic = new LoaderClientLogic(this);
+            CurrentLogic = loaderLogic;
         }
 
         public override void Run(Client client)
@@ -36,9 +45,6 @@ namespace MySharpChat.Client
 
             if (networkModule.IsConnected())
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                long graphicalTimeoutMs = (long)TimeSpan.FromSeconds(2).TotalMilliseconds;
-
                 while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
                 {
                     if (networkModule.HasDataAvailable)
@@ -71,6 +77,10 @@ namespace MySharpChat.Client
                             }
                         }
                     }
+
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    long graphicalTimeoutMs = (long)TimeSpan.FromSeconds(2).TotalMilliseconds;
+
                     bool graphicalUpdateTimeout = stopwatch.ElapsedMilliseconds > graphicalTimeoutMs;
                     if (graphicalUpdateTimeout)
                     {
@@ -102,11 +112,39 @@ namespace MySharpChat.Client
             string text = userInputTask.Result;
             if (parser.TryParse(text, out string[] args, out IClientCommand? clientCommand))
             {
-                clientCommand?.Execute(this, args);
+                if (!clientCommand!.Execute(this, args))
+                {
+                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    HelpCommand helpCommand = parser.GetHelpCommand();
+                    helpCommand.Execute(writer, clientCommand.Name);
+                }
             }
             else if (parser.TryParse(text, out args, out IAsyncMachineCommand? asyncMachineCommand))
             {
-                asyncMachineCommand?.Execute(client, args);
+                if (!asyncMachineCommand!.Execute(client, args))
+                {
+                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    HelpCommand helpCommand = parser.GetHelpCommand();
+                    helpCommand.Execute(writer, asyncMachineCommand.Name);
+                }
+            }
+            else if (parser.TryParse(text, out args, out ConsoleCommand? consoleCommand))
+            {
+                object? data = null;
+                if (consoleCommand!.UnderlyingCommandIs(typeof(IClientCommand)))
+                {
+                    data = this;
+                }
+                else if (consoleCommand!.UnderlyingCommandIs(typeof(IAsyncMachineCommand)))
+                {
+                    data = client;
+                }
+                if (!consoleCommand!.Execute(data, args))
+                {
+                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    HelpCommand helpCommand = parser.GetHelpCommand();
+                    helpCommand.Execute(writer, consoleCommand.Name);
+                }
             }
             else
             {
@@ -139,6 +177,12 @@ namespace MySharpChat.Client
                     writer.Write(CurrentLogic.Prefix);
                 }
             }
+        }
+
+        public override void Stop()
+        {
+            base.Stop();
+            CurrentLogic = loaderLogic;
         }
     }
 }

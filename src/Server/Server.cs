@@ -31,12 +31,9 @@ namespace MySharpChat.Server
 
         public int ExitCode { get; private set; }
 
-        public LockTextWriter OutputWriter { get; private set; }
-
         public Server(IServerImpl serverImpl)
         {
             _serverImpl = serverImpl;
-            OutputWriter = new ServerOutputWriter(new ConsoleOutputWriter());
             Initialize();
         }
 
