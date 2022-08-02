@@ -53,6 +53,13 @@ namespace MySharpChat.Server
                 session.NetworkModule.Send(messagePacket);
             }
 
+            foreach (ChatSession connectedSession in m_connectedSessions)
+            {
+                UserStatusPacket userPackage = new UserStatusPacket(connectedSession.User.Username, true);
+                PacketWrapper messagePacket = new PacketWrapper(_serverId, userPackage);
+                session.NetworkModule.Send(messagePacket);
+            }
+
             m_connectedSessions.Add(session);
 
         }
