@@ -16,9 +16,11 @@ namespace MySharpChat.Client.GUI
         public ChatViewModel(GuiClientImpl client)
         {
             Client = client;
+            Client.DisconnectionEvent += (bool manualDisconnection) => OnDisconnectionEvent(manualDisconnection);
             Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
 
+        public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
         public event Action<string> OnMessageReceivedEvent = (string message) => { };
         public event Action OnSendFinishedEvent = () => { };
 
