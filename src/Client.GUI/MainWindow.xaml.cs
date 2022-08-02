@@ -45,9 +45,6 @@ namespace MySharpChat.Client.GUI
 
         private void OnConnectionSucess()
         {
-            //chatUC.IsEnabled = !chatUC.IsEnabled;
-            //chatUC.Visibility = (chatUC.Visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
-
             WindowGrid.Children.Remove(currentUC);
             currentUC = chatUC;
             WindowGrid.Children.Add(currentUC);
