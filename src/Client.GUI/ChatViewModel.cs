@@ -17,10 +17,12 @@ namespace MySharpChat.Client.GUI
         {
             Client = client;
             Client.DisconnectionEvent += (bool manualDisconnection) => OnDisconnectionEvent(manualDisconnection);
+            Client.OnUsernameChangeEvent += OnUsernameChange;
             Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
 
         public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
+        public event Action OnUsernameChangeEvent = () => { };
         public event Action<string> OnMessageReceivedEvent = (string message) => { };
         public event Action OnSendFinishedEvent = () => { };
 
@@ -28,6 +30,11 @@ namespace MySharpChat.Client.GUI
         {
             OnSendFinishedEvent();
             
+        }
+
+        public void OnUsernameChange()
+        {
+            OnUsernameChangeEvent();
         }
 
         public void OnMessageReceived(string message)
