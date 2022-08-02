@@ -1,6 +1,5 @@
 ﻿using MySharpChat.Core.Packet;
 using MySharpChat.Core.SocketModule;
-using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;

@@ -1,5 +1,4 @@
-﻿using MySharpChat.Core.UI;
-using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Utils;
 using System;
 
 namespace MySharpChat.Client

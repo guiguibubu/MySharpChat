@@ -1,6 +1,4 @@
-﻿using MySharpChat.Core.UI;
-
-namespace MySharpChat.Client.Console
+﻿namespace MySharpChat.Client.Console.UI
 {
     public class ConsoleCursorHandler : IUserInputCursorHandler
     {
@@ -50,7 +48,7 @@ namespace MySharpChat.Client.Console
                 _context.Y = top;
             }
 
-            if(cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
+            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
                 Position++;
         }
 
@@ -65,7 +63,7 @@ namespace MySharpChat.Client.Console
                 {
                     left--;
                 }
-                else
+                else if (top > 0)
                 {
                     top--;
                     left = bufferWidth - 1;
@@ -74,7 +72,7 @@ namespace MySharpChat.Client.Console
                 _context.Y = top;
             }
 
-            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
+            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly && Position > 0)
                 Position--;
         }
 

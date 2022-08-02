@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Diagnostics;
 
-using MySharpChat.Client.Input;
+using MySharpChat.Client.Console.Input;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
-using MySharpChat.Core.UI;
+using MySharpChat.Client.Console.UI;
+using MySharpChat.Core.Console;
 
 namespace MySharpChat.Client.Console.Command
 {
-    public class CommandInput
+    public class ConsoleCommandInput
     {
 
         private static readonly KeyActionsCollection KeyActions = new KeyActionsCollection();
@@ -18,12 +19,12 @@ namespace MySharpChat.Client.Console.Command
 
         private readonly IUserInterfaceModule _userInterfaceModule;
 
-        static CommandInput()
+        static ConsoleCommandInput()
         {
             InitializeKeyActions();
         }
 
-        public CommandInput(IUserInterfaceModule userInterfaceModule)
+        public ConsoleCommandInput(IUserInterfaceModule userInterfaceModule)
         {
             _userInterfaceModule = userInterfaceModule;
         }
@@ -39,7 +40,7 @@ namespace MySharpChat.Client.Console.Command
         public string ReadLine(ReadingState? reading = null)
         {
             ReadingState readingState = reading ?? new ReadingState(new UserInputTextHandler(), _userInterfaceModule);
-            IInputReader inputReader = _userInterfaceModule.InputReader;
+            ConsoleInputReader inputReader = _userInterfaceModule.InputReader;
 
             while (!readingState.ReadingFinished)
             {
@@ -64,6 +65,8 @@ namespace MySharpChat.Client.Console.Command
                     CommandHistory.Add(text);
                 CommandHistory.ResetPosition();
             }
+
+            readingState.ReadingFinished = false;
 
             return text;
         }
@@ -107,15 +110,6 @@ namespace MySharpChat.Client.Console.Command
                 (ReadingState readingState) =>
                 {
                     readingState.ReadingFinished = true;
-                    IUserInterfaceModule userInterfaceModule = readingState.UserInterfaceModule;
-                    IUserInputTextHandler inputTextHandler = readingState.InputTextHandler;
-                    
-                    TextWriter outputStream = userInterfaceModule.OutputWriter;
-                    IUserInputCursorHandler cursorHandler = userInterfaceModule.CursorHandler;
-
-                    outputStream.WriteLine();
-                    cursorHandler.MovePositionNegative(inputTextHandler.Length, CursorUpdateMode.NoGraphic);
-
                 }
             );
             KeyActions.Add(ConsoleKey.Escape,
@@ -252,7 +246,20 @@ namespace MySharpChat.Client.Console.Command
             );
         }
 
-        private static void ClearCommand(ReadingState readingState)
+        public static void ClearCommand(ReadingState readingState)
+        {
+            IUserInputTextHandler inputTextHandler = readingState.InputTextHandler;
+            int oldStringSize = inputTextHandler.Length;
+
+            inputTextHandler.Clear();
+
+            ResetPosition(readingState);
+            for (int i = 0; i < oldStringSize; i++)
+                WriteChar(readingState, ' ');
+            ResetPosition(readingState);
+        }
+
+        public static void ClearLine(ReadingState readingState)
         {
             IUserInputTextHandler inputTextHandler = readingState.InputTextHandler;
             int oldStringSize = inputTextHandler.Length;
