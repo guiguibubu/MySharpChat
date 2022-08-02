@@ -7,23 +7,34 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="5, 5">
+        <Grid.Background>
+            <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.MenuBarColorKey}}"/>
+        </Grid.Background>
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="150"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer x:Name="OutputScroller" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="1" VerticalScrollBarVisibility="Auto" Background="White">
-            <StackPanel x:Name="OutputStack">
-            </StackPanel>
+        <ScrollViewer x:Name="OutputScroller" Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" VerticalScrollBarVisibility="Auto" Background="Transparent">
+            <Border BorderBrush="#FFABADB3" BorderThickness="1">
+                <Grid Margin="3,0" Background="White">
+                    <StackPanel x:Name="OutputStack">
+                    </StackPanel>
+                </Grid>
+            </Border>
         </ScrollViewer>
 
-        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
-            <Button x:Name="SendButton" Width = "80" HorizontalAlignment = "Left" Margin = "10">Send</Button>
-            <TextBox x:Name="InputBox" BorderThickness="1" Height="Auto" TextWrapping="Wrap"/>
+        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <TextBlock x:Name="ConnectionStatus" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0" Background="Transparent" TextAlignment="Justify"/>
+        </DockPanel>
+
+        <DockPanel Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <Button x:Name="SendButton" Width = "80" HorizontalAlignment = "Right" Margin = "10" DockPanel.Dock="Right">Send</Button>
+            <TextBox x:Name="InputBox" BorderThickness="1" HorizontalAlignment="Stretch" Height="Auto" TextWrapping="Wrap" TextAlignment="Left" DockPanel.Dock="Left" BorderBrush="#FFABADB3"/>
         </DockPanel>
 
     </Grid>

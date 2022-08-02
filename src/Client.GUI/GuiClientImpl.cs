@@ -34,6 +34,7 @@ namespace MySharpChat.Client.GUI
                                 string newUsername = connectInitPackage.Username;
                                 if (!string.IsNullOrEmpty(newUsername))
                                     Username = newUsername;
+                                    OnUsernameChangeEvent();
                             }
                             else
                             {
@@ -61,6 +62,7 @@ namespace MySharpChat.Client.GUI
             }
         }
 
+        public event Action OnUsernameChangeEvent = () => {};
         public event Action<string> ChatMessageReceivedEvent = (string message) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };
 
