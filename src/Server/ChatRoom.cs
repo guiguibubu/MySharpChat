@@ -78,7 +78,7 @@ namespace MySharpChat.Server
 
         private void Broadcast(ChatSession origin, PacketWrapper packet)
         {
-            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions.Where(s => s != origin);
+            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions;
             foreach (ChatSession session in sessionToBroadcast)
             {
                 session.NetworkModule.Send(packet);
