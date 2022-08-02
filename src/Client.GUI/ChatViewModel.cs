@@ -17,8 +17,8 @@ namespace MySharpChat.Client.GUI
         {
             Client = client;
             Client.DisconnectionEvent += (bool manualDisconnection) => OnDisconnectionEvent(manualDisconnection);
-            Client.OnUserAddedEvent += OnUsernameChange;
-            Client.OnUserRemovedEvent += OnUsernameChange;
+            Client.OnUserAddedEvent += OnUserAdded;
+            Client.OnUserRemovedEvent += OnUserRemoved;
             Client.OnUsernameChangeEvent += OnUsernameChange;
             Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
@@ -36,7 +36,7 @@ namespace MySharpChat.Client.GUI
             
         }
 
-        public void OnUserRemovedAdded(string username)
+        public void OnUserAdded(string username)
         {
             OnUserAddedEvent(username);
         }

@@ -34,7 +34,7 @@ namespace MySharpChat.Client.GUI
                                 string newUsername = connectInitPackage.Username;
                                 if (!string.IsNullOrEmpty(newUsername))
                                     Username = newUsername;
-                                    OnUsernameChangeEvent();
+                                OnUsernameChangeEvent();
                             }
                             else
                             {
@@ -51,10 +51,14 @@ namespace MySharpChat.Client.GUI
                         {
                             HandleChatPacket(chatPackage);
                         }
+                        else if (packet.Package is UserStatusPacket userStatusPackage)
+                        {
+                            HandleUserStatusPacket(userStatusPackage);
+                        }
                     }
                 }
             }
-            else if(isLoggedIn)
+            else if (isLoggedIn)
             {
                 networkModule.Disconnect();
                 isLoggedIn = false;
@@ -64,7 +68,7 @@ namespace MySharpChat.Client.GUI
 
         public event Action<string> OnUserAddedEvent = (string s) => { };
         public event Action<string> OnUserRemovedEvent = (string s) => { };
-        public event Action OnUsernameChangeEvent = () => {};
+        public event Action OnUsernameChangeEvent = () => { };
         public event Action<string> ChatMessageReceivedEvent = (string message) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };
 
@@ -74,6 +78,18 @@ namespace MySharpChat.Client.GUI
             if (!string.IsNullOrEmpty(readText))
             {
                 ChatMessageReceivedEvent(readText);
+            }
+        }
+
+        private void HandleUserStatusPacket(UserStatusPacket userStatusPacket)
+        {
+            string username = userStatusPacket.Username;
+            if (!string.IsNullOrEmpty(username))
+            {
+                if (userStatusPacket.Connected)
+                    OnUserAddedEvent(username);
+                else
+                    OnUserRemovedEvent(username);
             }
         }
     }
