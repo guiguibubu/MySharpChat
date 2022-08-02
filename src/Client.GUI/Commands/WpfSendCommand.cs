@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Threading;
 using MySharpChat.Client.Command;
 
 namespace MySharpChat.Client.GUI.Commands
@@ -26,8 +28,13 @@ namespace MySharpChat.Client.GUI.Commands
                 OnCanExecuteChanged();
                 try
                 {
-                    if (SendCommand.Instance.Execute(sendArgs.client, sendArgs.args))
-                        sendArgs.chatUC.OnSendSuccess();
+                    Dispatcher currentDispatcher = Dispatcher.CurrentDispatcher;
+                    Task.Run(() =>
+                    {
+                        bool connectionSuccess = SendCommand.Instance.Execute(sendArgs.ViewModel.Client, sendArgs.ViewModel.InputMessage);
+                        if (connectionSuccess)
+                            currentDispatcher.Invoke(sendArgs.ViewModel.OnSendSuccess);
+                    });
                 }
                 finally
                 {

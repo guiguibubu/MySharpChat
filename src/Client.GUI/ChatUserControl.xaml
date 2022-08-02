@@ -16,8 +16,9 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer x:Name="OutputBoxScroller" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="1" VerticalScrollBarVisibility="Auto">
-            <TextBox x:Name="OutputBox" BorderThickness="1" Height="Auto" IsReadOnly="True"/>
+        <ScrollViewer x:Name="OutputScroller" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="1" VerticalScrollBarVisibility="Auto" Background="White">
+            <StackPanel x:Name="OutputStack">
+            </StackPanel>
         </ScrollViewer>
 
         <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
