@@ -55,17 +55,14 @@ namespace MySharpChat.Client.GUI
             }
         }
 
+        public event Action<string> ChatMessageReceivedEvent = (string message) => {};
+
         private void HandleChatPacket(ChatPacket chatPacket)
         {
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-
             string readText = chatPacket.Message;
             if (!string.IsNullOrEmpty(readText))
             {
-                using (writer.Lock())
-                {
-                    writer.WriteLine(readText);
-                }
+                ChatMessageReceivedEvent(readText);
             }
         }
     }

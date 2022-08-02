@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace MySharpChat.Client.GUI
 {
@@ -34,28 +35,40 @@ namespace MySharpChat.Client.GUI
             SendButton.Command = new WpfSendCommand();
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
-            m_viewModel.OnSendSuccessEvent += OnSendSuccessEvent;
+            m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
+            m_viewModel.OnSendFinishedEvent += OnSendFinished;
         }
 
-        private void OnSendSuccessEvent()
+        private void OnMessageReceived(string message)
         {
-            string text = m_viewModel.InputMessage;
+            string text = message;
             if (!string.IsNullOrEmpty(text))
             {
-                TextBlock outpuBlock = new TextBlock();
-                outpuBlock.TextWrapping = TextWrapping.Wrap;
-                outpuBlock.Margin = new Thickness(0,2,0,2);
-                outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
-                outpuBlock.VerticalAlignment = VerticalAlignment.Center;
-                outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                outpuBlock.Text = m_viewModel.Client.Username + ": " + text;
-                
-                OutputStack.Children.Add(outpuBlock);
-                OutputScroller.ScrollToEnd();
+                Dispatcher uiDispatcher = Application.Current.Dispatcher;
+                if (uiDispatcher.CheckAccess())
+                {
+                    TextBlock outpuBlock = new TextBlock();
+                    outpuBlock.TextWrapping = TextWrapping.Wrap;
+                    outpuBlock.Margin = new Thickness(0, 2, 0, 2);
+                    outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    outpuBlock.VerticalAlignment = VerticalAlignment.Center;
+                    outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                    outpuBlock.Text = m_viewModel.Client.Username + ": " + text;
 
-                InputBox.Text = "";
-                InputBox.Focus();
+                    OutputStack.Children.Add(outpuBlock);
+                    OutputScroller.ScrollToEnd();
+                }
+                else
+                {
+                    uiDispatcher.Invoke(() => OnMessageReceived(text));
+                }
             }
+        }
+
+        private void OnSendFinished()
+        {
+            InputBox.Text = "";
+            InputBox.Focus();
         }
 
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
