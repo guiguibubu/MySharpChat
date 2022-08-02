@@ -6,11 +6,8 @@ using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,10 +53,9 @@ namespace MySharpChat.Client
 
         public bool HasDataAvailable => m_socket != null && m_socket.Available > 0;
 
-        public bool Connect(IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite)
+        public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
-            bool timeout = false;
-            isConnected = false;
+            bool isConnected = false;
 
             Socket? socket = m_socket;
 
@@ -68,7 +64,7 @@ namespace MySharpChat.Client
                 isConnected = SocketUtils.IsConnected(socket);
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 int attempt = 0;
-                timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
+                bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
                 bool attemptConnection = !isConnected && !timeout;
                 while (attemptConnection)
                 {
@@ -76,20 +72,6 @@ namespace MySharpChat.Client
 
                     // Connect to the remote endpoint.  
                     Task connectTask = socket!.ConnectAsync(remoteEP);
-
-                    //const string prefix = "Connecting";
-                    //const int nbDotsMax = 3;
-                    //StringBuilder loadingText = new StringBuilder(prefix);
-                    //int nbDots = attempt % (nbDotsMax + 1);
-                    //for (int i = 0; i < nbDots; i++)
-                    //    loadingText.Append(".");
-                    //for (int i = 0; i < nbDotsMax - nbDots; i++)
-                    //    loadingText.Append(" ");
-
-                    //IUserInputCursorHandler cursorHandler = _client.UserInterfaceModule.CursorHandler;
-                    //LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
-                    //writer.Write(loadingText);
-                    //cursorHandler.MovePositionNegative(loadingText.Length, CursorUpdateMode.GraphicalOnly);
 
                     try
                     {
@@ -99,14 +81,13 @@ namespace MySharpChat.Client
                     }
                     catch (AggregateException)
                     {
-                        timeout = false;
                         isConnected = false;
                         attemptConnection = false;
                     }
                 }
             }
 
-            return timeout;
+            return isConnected;
         }
 
         public bool Connect(ConnexionInfos connexionInfos)
@@ -122,23 +103,29 @@ namespace MySharpChat.Client
 
             const int CONNECTION_TIMEOUT_MS = 5000;
 
-            bool timeout = Connect(remoteEP, out bool isConnected, CONNECTION_TIMEOUT_MS);
-
-            LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool isConnected = Connect(remoteEP, CONNECTION_TIMEOUT_MS);
+            bool timeout = stopwatch.ElapsedMilliseconds > CONNECTION_TIMEOUT_MS;
 
             if (isConnected)
             {
-                writer.WriteLine("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                logger.LogInfo("Connection success to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             }
             else
             {
                 if (timeout)
-                    writer.WriteLine("Connection timeout ! Fail connection in {0} ms", CONNECTION_TIMEOUT_MS);
-                writer.WriteLine("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
+                {
+                    logger.LogError("Connection timeout ! Fail connection in {0} ms", CONNECTION_TIMEOUT_MS);
+                }
+                logger.LogError("Connection fail to {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port);
             }
 
             return isConnected;
         }
+
+        public Task<bool> ConnectAsync(ConnexionInfos connexionInfos) { return Task.Run(() => Connect(connexionInfos)); }
+
+        public Task<bool> ConnectAsync(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite) { return Task.Run(() => Connect(remoteEP, timeoutMs)); }
 
         public void Disconnect()
         {

@@ -19,11 +19,9 @@ namespace MySharpChat.Client
         public int ExitCode { get; private set; }
 
         private bool m_clientRun = false;
-        private Thread? m_clientThread = null;
+        private SafeThread? m_clientThread = null;
 
         private static readonly Logger logger = Logger.Factory.GetLogger<Client>();
-
-        public LockTextWriter OutputWriter => _clientImpl.UserInterfaceModule.OutputWriter;
 
         public virtual void Initialize(object? initObject = null)
         {
@@ -41,22 +39,14 @@ namespace MySharpChat.Client
 
             bool clientStarted = false;
 
-            try
-            {
-                m_clientThread = new Thread(Run);
-                m_clientThread.Start();
+            m_clientThread = new SafeThread(Run);
+            m_clientThread.Start();
 
-                while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
+            while (!m_clientRun && sw.Elapsed < TimeSpan.FromSeconds(1)) { Thread.SpinWait(100); }
 
-                logger.LogInfo("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
+            logger.LogInfo("Client started (in {0} ms) !", sw.ElapsedMilliseconds);
 
-                clientStarted = true;
-
-            }
-            catch (Exception e)
-            {
-                OutputWriter.WriteLine(e.ToString());
-            }
+            clientStarted = true;
 
             return clientStarted;
         }
@@ -74,8 +64,6 @@ namespace MySharpChat.Client
             {
                 _clientImpl.Run(this);
             }
-
-            OutputWriter.WriteLine("Client stopped !");
         }
 
         public virtual bool IsRunning()
@@ -99,6 +87,6 @@ namespace MySharpChat.Client
         {
             return m_clientThread?.Join(millisecondsTimeout) ?? true;
         }
-        
+
     }
 }

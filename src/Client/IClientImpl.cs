@@ -6,10 +6,7 @@ namespace MySharpChat.Client
 {
     public interface IClientImpl
     {
-        IUserInterfaceModule UserInterfaceModule { get; }
         INetworkModule NetworkModule { get; }
-
-        IClientLogic CurrentLogic { get; set; }
 
         Guid ClientId { get; }
         string Username { get; }

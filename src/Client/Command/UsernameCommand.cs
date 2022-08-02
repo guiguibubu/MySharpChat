@@ -22,13 +22,13 @@ namespace MySharpChat.Client.Command
                 ClientInitialisationPacket initPacket = new ClientInitialisationPacket(client.ClientId, newUsername);
                 PacketWrapper packet = new PacketWrapper(client.ClientId, initPacket);
                 client.NetworkModule.Send(packet);
+
+                return true;
             }
             else
             {
-                HelpCommand helpCommand = client.CurrentLogic.CommandParser.GetHelpCommand();
-                helpCommand.Execute(client.UserInterfaceModule.OutputWriter, Name);
+                return false;
             }
-            return true;
         }
 
         public string GetHelp()
