@@ -81,6 +81,10 @@ namespace MySharpChat.Client.Console
                             {
                                 HandleChatPacket(chatPackage);
                             }
+                            else if(packet.Package is UserStatusPacket userStatusPackage)
+                            {
+                                HandleUserStatusPacket(userStatusPackage);
+                            }
                         }
                     }
 
@@ -153,6 +157,18 @@ namespace MySharpChat.Client.Console
                 MoveInputLineDown(readText);
             }
         }
+
+        private void HandleUserStatusPacket(UserStatusPacket userStatusPacket)
+        {
+            string username = userStatusPacket.Username;
+            bool isConnected = userStatusPacket.Connected;
+            string text = isConnected ? $"New user joined : {username}" : $"User leave the session : {username}";
+            if (!string.IsNullOrEmpty(text))
+            {
+                MoveInputLineDown(text);
+            }
+        }
+
 
         public override void Stop()
         {
