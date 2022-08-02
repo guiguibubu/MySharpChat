@@ -20,6 +20,11 @@ namespace MySharpChat.Client.GUI
         {
         }
 
+        public void SetUsername(string? username)
+        {
+            if(!string.IsNullOrEmpty(username))
+                Username = username;
+        }
 
         public override void Run(Client client)
         {

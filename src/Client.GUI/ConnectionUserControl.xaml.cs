@@ -28,7 +28,7 @@ namespace MySharpChat.Client.GUI
 
             m_viewModel = viewModel;
 
-            UserNameInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.Username = UserNameInputBox.Text; };
+            UserNameInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.Client.SetUsername(UserNameInputBox.Text); };
             IpInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.ServerIp = IpInputBox.Text; };
             PortInputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.ServerPort = PortInputBox.Text; };
 
