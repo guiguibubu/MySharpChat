@@ -27,7 +27,7 @@ namespace MySharpChat.Server
         public event Action<ChatSession, string> OnUsernameChangeCallback = (ChatSession session, string oldUsername) => { };
 
         public Guid ClientId { get; private set; } = Guid.NewGuid();
-        public string ClientUsername { get; set; } = "";
+        public User User { get; set; } = new User();
 
         public ChatSession(Socket? socket)
         {
@@ -90,16 +90,16 @@ namespace MySharpChat.Server
 
         private void HandleInitPacket(ClientInitialisationPacket initPackage)
         {
-            bool isClientInitialized = !string.IsNullOrEmpty(ClientUsername);
+            bool isClientInitialized = !string.IsNullOrEmpty(User.Username);
             if (isClientInitialized)
             {
-                string oldUsername = ClientUsername;
-                ClientUsername = initPackage.Username;
+                string oldUsername = User.Username;
+                User.Username = initPackage.Username;
                 OnUsernameChangeCallback(this, oldUsername);
             }
             else
             {
-                ClientUsername = initPackage.Username;
+                User.Username = initPackage.Username;
                 OnSessionInitializedCallback(this);
             }
         }
@@ -110,7 +110,7 @@ namespace MySharpChat.Server
 
             if (!string.IsNullOrEmpty(content))
             {
-                ChatPacket newChatPacket = new ChatPacket(ClientUsername + ": " + content);
+                ChatPacket newChatPacket = new ChatPacket(User.Username + ": " + content);
                 PacketWrapper packet = new PacketWrapper(ClientId, newChatPacket);
                 OnBroadcastCallback(this, packet);
             }
