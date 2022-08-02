@@ -19,10 +19,16 @@ namespace MySharpChat.Client.GUI
         }
 
         public event Action OnConnectionSuccessEvent = () => { };
+        public event Action OnConnectionFailEvent = () => { };
 
         public void OnConnectionSuccess()
         {
             OnConnectionSuccessEvent();
+        }
+
+        public void OnConnectionFail()
+        {
+            OnConnectionFailEvent();
         }
     }
 }
