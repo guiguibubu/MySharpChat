@@ -54,12 +54,22 @@ namespace MySharpChat.Server
 
         public bool HasDataAvailable => m_socket != null && m_socket.Available > 0;
 
-        public bool Connect(IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite)
+        public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
             throw new NotImplementedException("ChatRoom can't connect to a client");
         }
 
         public bool Connect(ConnexionInfos connexionInfos)
+        {
+            throw new NotImplementedException("ChatRoom can't connect to a client");
+        }
+
+        public Task<bool> ConnectAsync(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
+        {
+            throw new NotImplementedException("ChatRoom can't connect to a client");
+        }
+
+        public Task<bool> ConnectAsync(ConnexionInfos connexionInfos)
         {
             throw new NotImplementedException("ChatRoom can't connect to a client");
         }

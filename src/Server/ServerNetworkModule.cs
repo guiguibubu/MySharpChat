@@ -49,7 +49,7 @@ namespace MySharpChat.Server
 
         public bool IsConnectionPending => m_socket != null && SocketUtils.IsConnectionPending(m_socket);
 
-        public bool Connect(IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite)
+        public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
             throw new NotImplementedException("Use Connect(ConnexionInfos connexionInfos) instead");
         }
@@ -73,6 +73,16 @@ namespace MySharpChat.Server
             logger.LogInfo(string.Format("Listenning at {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port));
 
             return true;
+        }
+
+        public Task<bool> ConnectAsync(ConnexionInfos connexionInfos)
+        {
+            return Task.Run(() => Connect(connexionInfos));
+        }
+
+        public Task<bool> ConnectAsync(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
+        {
+            throw new NotImplementedException("Use ConnectAsync(ConnexionInfos connexionInfos) instead");
         }
 
         public void Disconnect()

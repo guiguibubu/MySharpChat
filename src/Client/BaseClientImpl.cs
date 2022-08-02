@@ -18,34 +18,23 @@ namespace MySharpChat.Client
         protected readonly INetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        protected readonly IUserInterfaceModule m_userInterfaceModule;
-        public IUserInterfaceModule UserInterfaceModule => m_userInterfaceModule;
-
         public string LocalEndPoint => networkModule.LocalEndPoint;
 
         public string RemoteEndPoint => networkModule.RemoteEndPoint;
 
-        public IClientLogic CurrentLogic { get; set; }
-
         public Guid ClientId { get; protected set; } = Guid.Empty;
         public string Username { get; protected set; } = Environment.UserName;
 
-        protected readonly LoaderClientLogic loaderLogic;
-
-        protected BaseClientImpl(IUserInterfaceModule userInterfaceModule)
+        protected BaseClientImpl()
         {
-            loaderLogic = new LoaderClientLogic(this);
-            CurrentLogic = loaderLogic;
-            m_userInterfaceModule = userInterfaceModule;
             networkModule = new ClientNetworkModule(this);
         }
 
         public abstract void Run(Client client);
 
-        public void Stop()
+        public virtual void Stop()
         {
             networkModule.Disconnect();
-            CurrentLogic = loaderLogic;
         }
     }
 }

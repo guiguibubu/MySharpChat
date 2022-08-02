@@ -26,13 +26,13 @@ namespace MySharpChat.Client.Command
                 ChatPacket chatPacket = new ChatPacket(text);
                 PacketWrapper packet = new PacketWrapper(client.ClientId, chatPacket);
                 client.NetworkModule.Send(packet);
+
+                return true;
             }
             else
             {
-                HelpCommand helpCommand = client.CurrentLogic.CommandParser.GetHelpCommand();
-                helpCommand.Execute(client.UserInterfaceModule.OutputWriter, Name);
+                return false;
             }
-            return true;
         }
 
         public string GetHelp()

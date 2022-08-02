@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using MySharpChat.Core.UI;
 
-namespace MySharpChat.Client.Command
+namespace MySharpChat.Client.Console.Command
 {
     public class CommandInput
     {

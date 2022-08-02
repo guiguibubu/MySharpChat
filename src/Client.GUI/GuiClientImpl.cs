@@ -16,8 +16,12 @@ namespace MySharpChat.Client.GUI
 {
     internal class GuiClientImpl : BaseClientImpl
     {
-        public GuiClientImpl(IUserInputCursorHandler cursorHandler, IInputReader inputReader, LockTextWriter output) : base(new GuiUserInterfaceModule(cursorHandler, inputReader, output))
+        private readonly IUserInterfaceModule m_userInterfaceModule;
+        public IUserInterfaceModule UserInterfaceModule => m_userInterfaceModule;
+
+        public GuiClientImpl(IUserInputCursorHandler cursorHandler, IInputReader inputReader, LockTextWriter output) : base()
         {
+            m_userInterfaceModule = new GuiUserInterfaceModule(cursorHandler, inputReader, output);
         }
 
         public void SetUsername(string? username)
