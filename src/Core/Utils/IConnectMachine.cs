@@ -14,7 +14,9 @@ namespace MySharpChat.Core.Utils
         bool IsConnected();
 
         bool Connect(ConnexionInfos connexionInfos);
-        bool Connect(IPEndPoint remoteEP, out bool isConnected, int timeoutMs = Timeout.Infinite);
+        bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite);
+        Task<bool> ConnectAsync(ConnexionInfos connexionInfos);
+        Task<bool> ConnectAsync(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite);
         void Disconnect();
     }
 }

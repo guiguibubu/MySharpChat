@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MySharpChat.Client.Command
+namespace MySharpChat.Client.Console.Command
 {
     public class CommandHistoryCollection
     {

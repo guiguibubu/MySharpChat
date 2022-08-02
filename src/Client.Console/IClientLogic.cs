@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Client
+namespace MySharpChat.Client.Console
 {
     public interface IClientLogic
     {
