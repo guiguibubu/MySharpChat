@@ -16,17 +16,25 @@ namespace MySharpChat.Client.GUI
         public ChatViewModel(GuiClientImpl client)
         {
             Client = client;
+            Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
 
-        public event Action OnSendSuccessEvent = () => { };
+        public event Action<string> OnMessageReceivedEvent = (string message) => { };
+        public event Action OnSendFinishedEvent = () => { };
 
         public void OnSendSuccess()
         {
-            string text = InputMessage;
-            if (!string.IsNullOrEmpty(text))
+            OnMessageReceived(InputMessage);
+            OnSendFinishedEvent();
+            
+        }
+
+        public void OnMessageReceived(string message)
+        {
+            if (!string.IsNullOrEmpty(message))
             {
-                Messages.Add(text);
-                OnSendSuccessEvent();
+                Messages.Add(message);
+                OnMessageReceivedEvent(message);
             }
         }
     }
