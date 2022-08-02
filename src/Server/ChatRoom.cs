@@ -40,8 +40,7 @@ namespace MySharpChat.Server
         {
             UpdateUsernameIfNecessary(session);
 
-            string message = $"New user joined : {session.ClientUsername}";
-            ChatPacket package = new ChatPacket(message);
+            UserStatusPacket package = new UserStatusPacket(session.ClientUsername, true);
             PacketWrapper packet = new PacketWrapper(_serverId, package);
 
             Broadcast(session, packet);
@@ -54,8 +53,7 @@ namespace MySharpChat.Server
         {
             m_connectedSessions.Remove(session);
 
-            string message = $"User leave the session : {session.ClientUsername}";
-            ChatPacket package = new ChatPacket(message);
+            UserStatusPacket package = new UserStatusPacket(session.ClientUsername, false);
             PacketWrapper packet = new PacketWrapper(_serverId, package);
 
             Broadcast(session, packet);
