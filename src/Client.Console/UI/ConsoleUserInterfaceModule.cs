@@ -1,12 +1,11 @@
 ﻿using MySharpChat.Core.Console;
-using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 
-namespace MySharpChat.Client.Console
+namespace MySharpChat.Client.Console.UI
 {
     public class ConsoleUserInterfaceModule : IUserInterfaceModule
     {
-        public ConsoleUserInterfaceModule(IUserInputCursorHandler cursorHandler, IInputReader inputReader, LockTextWriter output)
+        public ConsoleUserInterfaceModule(IUserInputCursorHandler cursorHandler, ConsoleInputReader inputReader, LockTextWriter output)
         {
             CursorHandler = cursorHandler;
             InputReader = inputReader;
@@ -17,7 +16,7 @@ namespace MySharpChat.Client.Console
 
         public IUserInputCursorHandler CursorHandler { get; private set; }
 
-        public IInputReader InputReader { get; }
+        public ConsoleInputReader InputReader { get; }
 
         public LockTextWriter OutputWriter { get; private set; }
     }

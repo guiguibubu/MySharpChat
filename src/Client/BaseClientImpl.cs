@@ -1,15 +1,5 @@
-﻿using MySharpChat.Client.Command;
-using MySharpChat.Client.Input;
-using MySharpChat.Core.Command;
-using MySharpChat.Core.Packet;
-using MySharpChat.Core.UI;
-using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Utils;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MySharpChat.Client
 {
