@@ -1,8 +1,7 @@
-﻿using MySharpChat.Core.UI;
-using MySharpChat.Core.Utils;
+﻿using MySharpChat.Client.Console.UI;
 using System;
 
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Client.Console.Input
 {
     public sealed class ReadingState
     {

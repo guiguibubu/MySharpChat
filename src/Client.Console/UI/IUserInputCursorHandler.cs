@@ -1,5 +1,5 @@
 ﻿
-namespace MySharpChat.Core.UI
+namespace MySharpChat.Client.Console.UI
 {
     public interface IUserInputCursorHandler
     {

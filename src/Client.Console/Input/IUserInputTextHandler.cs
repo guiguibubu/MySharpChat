@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Client.Console.Input
 {
     public interface IUserInputTextHandler
     {

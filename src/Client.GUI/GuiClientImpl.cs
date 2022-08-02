@@ -1,28 +1,13 @@
-﻿using MySharpChat.Client.Command;
-using MySharpChat.Client.Input;
-using MySharpChat.Core.Command;
-using MySharpChat.Core.Packet;
-using MySharpChat.Core.UI;
-using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Packet;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace MySharpChat.Client.GUI
 {
     internal class GuiClientImpl : BaseClientImpl
     {
-        private readonly IUserInterfaceModule m_userInterfaceModule;
-        public IUserInterfaceModule UserInterfaceModule => m_userInterfaceModule;
-
-        public GuiClientImpl(IUserInputCursorHandler cursorHandler, IInputReader inputReader, LockTextWriter output) : base()
-        {
-            m_userInterfaceModule = new GuiUserInterfaceModule(cursorHandler, inputReader, output);
-        }
+        public GuiClientImpl() : base()
+        { }
 
         public void SetUsername(string? username)
         {

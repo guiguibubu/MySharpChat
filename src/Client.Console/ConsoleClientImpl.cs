@@ -1,9 +1,9 @@
 ﻿using MySharpChat.Client.Command;
 using MySharpChat.Client.Console.Command;
-using MySharpChat.Client.Input;
+using MySharpChat.Client.Console.UI;
+using MySharpChat.Client.Console.Input;
 using MySharpChat.Core.Command;
 using MySharpChat.Core.Packet;
-using MySharpChat.Core.UI;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -23,12 +23,15 @@ namespace MySharpChat.Client.Console
         public IClientLogic CurrentLogic { get; set; }
         protected readonly LoaderClientLogic loaderLogic;
 
-        protected readonly CommandInput commandInput;
+        protected readonly ConsoleCommandInput commandInput;
+
+        private readonly ReadingState readingState;
 
         public ConsoleClientImpl() : base()
         {
             m_userInterfaceModule = new ConsoleUserInterfaceModule();
-            commandInput = new CommandInput(m_userInterfaceModule);
+            readingState = new ReadingState(new UserInputTextHandler(), m_userInterfaceModule);
+            commandInput = new ConsoleCommandInput(m_userInterfaceModule);
             loaderLogic = new LoaderClientLogic(this);
             CurrentLogic = loaderLogic;
         }
@@ -38,15 +41,15 @@ namespace MySharpChat.Client.Console
             // TODO reorganise to support read/write from network while reading inputs
             LockTextWriter writer = m_userInterfaceModule.OutputWriter;
             string currentPrefix = CurrentLogic.Prefix;
-            writer.Write(currentPrefix);
+            UpdateInputLine(currentPrefix, "");
 
-            ReadingState readingState = new ReadingState(new UserInputTextHandler(), m_userInterfaceModule);
             Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
 
             if (networkModule.IsConnected())
             {
                 while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
                 {
+                    bool prefixChanged = false;
                     if (networkModule.HasDataAvailable)
                     {
                         List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
@@ -59,7 +62,10 @@ namespace MySharpChat.Client.Console
                                 {
                                     string newUsername = connectInitPackage.Username;
                                     if (!string.IsNullOrEmpty(newUsername))
+                                    {
                                         Username = newUsername;
+                                        prefixChanged = true;
+                                    }
                                 }
                                 else
                                 {
@@ -78,28 +84,9 @@ namespace MySharpChat.Client.Console
                         }
                     }
 
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    long graphicalTimeoutMs = (long)TimeSpan.FromSeconds(2).TotalMilliseconds;
-
-                    bool graphicalUpdateTimeout = stopwatch.ElapsedMilliseconds > graphicalTimeoutMs;
-                    if (graphicalUpdateTimeout)
+                    if (prefixChanged)
                     {
-                        string previousInputNotValidated = readingState.InputTextHandler.ToString();
-                        IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
-                        using (writer.Lock())
-                        {
-                            cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
-                            int prefixLength = currentPrefix.Length;
-                            cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                            int inputTextLength = cursorHandler.Position;
-                            for (int i = 0; i < prefixLength + inputTextLength; i++)
-                                writer.Write(" ");
-                            cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                            currentPrefix = CurrentLogic.Prefix;
-                            writer.Write(currentPrefix);
-                            writer.Write(previousInputNotValidated);
-                        }
-                        stopwatch.Restart();
+                        UpdateInputLine(currentPrefix, readingState.InputTextHandler.ToString());
                     }
                 }
             }
@@ -110,6 +97,9 @@ namespace MySharpChat.Client.Console
 
             CommandParser parser = CurrentLogic.CommandParser;
             string text = userInputTask.Result;
+
+            CleanInputLine(currentPrefix);
+
             if (parser.TryParse(text, out string[] args, out IClientCommand? clientCommand))
             {
                 if (!clientCommand!.Execute(this, args))
@@ -153,29 +143,14 @@ namespace MySharpChat.Client.Console
                 writer.WriteLine("Available commands");
                 parser.GetHelpCommand().Execute(writer);
             }
-            writer.WriteLine();
         }
 
         private void HandleChatPacket(ChatPacket chatPacket)
         {
-            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-
             string readText = chatPacket.Message;
             if (!string.IsNullOrEmpty(readText))
             {
-                using (writer.Lock())
-                {
-                    cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
-                    int prefixLength = CurrentLogic.Prefix.Length;
-                    cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                    int inputTextLength = cursorHandler.Position;
-                    for (int i = 0; i < prefixLength + inputTextLength; i++)
-                        writer.Write(" ");
-                    cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                    writer.WriteLine("server> {0}", readText);
-                    writer.Write(CurrentLogic.Prefix);
-                }
+                MoveInputLineDown(readText);
             }
         }
 
@@ -183,6 +158,58 @@ namespace MySharpChat.Client.Console
         {
             base.Stop();
             CurrentLogic = loaderLogic;
+        }
+
+        private void MoveInputLineDown(string text)
+        {
+            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
+            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
+
+            using (writer.Lock())
+            {
+                cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
+                int prefixLength = CurrentLogic.Prefix.Length;
+                cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+                int inputTextLength = cursorHandler.Position;
+                for (int i = 0; i < prefixLength + inputTextLength; i++)
+                    writer.Write(" ");
+                cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
+                writer.WriteLine(text);
+                writer.Write(CurrentLogic.Prefix);
+            }
+        }
+
+        private void UpdateInputLine(string oldPrefix, string currentInputText)
+        {
+            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
+            using (writer.Lock())
+            {
+                CleanInputLine(oldPrefix);
+                writer.Write(CurrentLogic.Prefix);
+                writer.Write(currentInputText);
+            }
+        }
+
+        private void CleanInputLine(string oldPrefix)
+        {
+            ConsoleCommandInput.ClearCommand(readingState);
+            CleanPrefix(oldPrefix);
+        }
+
+        private void CleanPrefix(string prefix)
+        {
+            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
+            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
+            using (writer.Lock())
+            {
+                int prefixLength = prefix.Length;
+                System.Console.CursorLeft = 0;
+                for (int i = 0; i < prefixLength; i++)
+                {
+                    writer.Write(' ');
+                }
+                cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
+            }
         }
     }
 }

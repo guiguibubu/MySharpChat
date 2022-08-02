@@ -1,9 +1,7 @@
-﻿using MySharpChat.Core.Command;
-using MySharpChat.Core.UI;
+﻿using MySharpChat.Client.Console.UI;
+using MySharpChat.Core.Command;
 using MySharpChat.Core.Utils;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -39,7 +37,10 @@ namespace MySharpChat.Client.Console.Command
 
             bool isConnected = connectionTask.Result;
             if (isConnected)
+            {
                 _client.CurrentLogic = new ChatClientLogic(_client);
+                System.Console.Clear();
+            }
             else
                 _client.UserInterfaceModule.OutputWriter.WriteLine("Connection fail !");
             return isConnected;

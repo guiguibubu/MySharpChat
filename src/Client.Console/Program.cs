@@ -29,6 +29,8 @@ namespace MySharpChat.Client.Console
             int exitCode;
             try
             {
+                System.Console.Clear();
+
                 Client client = new Client(new ConsoleClientImpl());
 
                 if (client.Start())
@@ -49,6 +51,8 @@ namespace MySharpChat.Client.Console
 
             System.Console.WriteLine("\nPress ENTER to continue...");
             System.Console.Read();
+
+            System.Console.Clear();
 
             return exitCode;
         }

@@ -1,5 +1,5 @@
 ﻿
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Client.Console.Input
 {
     public delegate void KeyActionDelegate(ReadingState readingState);
 }
