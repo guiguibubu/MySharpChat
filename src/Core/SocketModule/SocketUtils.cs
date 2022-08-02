@@ -214,10 +214,13 @@ namespace MySharpChat.Core.SocketModule
 
         public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
         {
+            string actualHostName = 
+                !string.IsNullOrEmpty(hostname) ? 
+                hostname
 #if DEBUG
-            string actualHostName = hostname ?? "localhost";
+                : "localhost";
 #else
-            string actualHostName = hostname ?? Dns.GetHostName();
+                : Dns.GetHostName();
 #endif
 
             IPHostEntry ipHostInfo = Dns.GetHostEntry(actualHostName);
