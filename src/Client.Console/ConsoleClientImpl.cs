@@ -45,47 +45,14 @@ namespace MySharpChat.Client.Console
 
             Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
 
-            if (networkModule.IsConnected())
+            while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
             {
-                while (!userInputTask.Wait(TimeSpan.FromSeconds(1)))
+                if (networkModule.IsConnected())
                 {
                     bool prefixChanged = false;
                     if (networkModule.HasDataAvailable)
                     {
-                        List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
-                        foreach (PacketWrapper packet in packets)
-                        {
-                            if (packet.Package is ClientInitialisationPacket connectInitPackage)
-                            {
-                                bool isInitialised = ClientId != Guid.Empty;
-                                if (isInitialised)
-                                {
-                                    string newUsername = connectInitPackage.Username;
-                                    if (!string.IsNullOrEmpty(newUsername))
-                                    {
-                                        Username = newUsername;
-                                        prefixChanged = true;
-                                    }
-                                }
-                                else
-                                {
-                                    ClientId = connectInitPackage.SessionId;
-                                    // Tell the server our username
-                                    ClientInitialisationPacket initPacket = new ClientInitialisationPacket(ClientId, Username);
-                                    PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
-                                    NetworkModule.Send(packetWrapper);
-                                }
-
-                            }
-                            else if (packet.Package is ChatPacket chatPackage)
-                            {
-                                HandleChatPacket(chatPackage);
-                            }
-                            else if(packet.Package is UserStatusPacket userStatusPackage)
-                            {
-                                HandleUserStatusPacket(userStatusPackage);
-                            }
-                        }
+                        HandleNetworkPackets();
                     }
 
                     if (prefixChanged)
@@ -93,12 +60,19 @@ namespace MySharpChat.Client.Console
                         UpdateInputLine(currentPrefix, readingState.InputTextHandler.ToString());
                     }
                 }
+                else
+                {
+                    if (CurrentLogic is ChatClientLogic)
+                    {
+                        writer.WriteLine("Connection to server lost. Will disconnect.");
+                        Task.Delay(3000).GetAwaiter().GetResult();
+                        ConsoleDisconnectCommand? disconnectCommand = CurrentLogic.CommandParser.Parse<ConsoleDisconnectCommand>(DisconnectCommand.Instance.Name);
+                        disconnectCommand!.Execute(this);
+                        return;
+                    }
+                }
             }
-            else
-            {
-                userInputTask.Wait();
-            }
-
+                
             CommandParser parser = CurrentLogic.CommandParser;
             string text = userInputTask.Result;
 
@@ -146,6 +120,43 @@ namespace MySharpChat.Client.Console
                 writer.WriteLine();
                 writer.WriteLine("Available commands");
                 parser.GetHelpCommand().Execute(writer);
+            }
+        }
+
+        private void HandleNetworkPackets()
+        {
+            List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
+            foreach (PacketWrapper packet in packets)
+            {
+                if (packet.Package is ClientInitialisationPacket connectInitPackage)
+                {
+                    bool isInitialised = ClientId != Guid.Empty;
+                    if (isInitialised)
+                    {
+                        string newUsername = connectInitPackage.Username;
+                        if (!string.IsNullOrEmpty(newUsername))
+                        {
+                            Username = newUsername;
+                        }
+                    }
+                    else
+                    {
+                        ClientId = connectInitPackage.SessionId;
+                        // Tell the server our username
+                        ClientInitialisationPacket initPacket = new ClientInitialisationPacket(ClientId, Username);
+                        PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
+                        NetworkModule.Send(packetWrapper);
+                    }
+
+                }
+                else if (packet.Package is ChatPacket chatPackage)
+                {
+                    HandleChatPacket(chatPackage);
+                }
+                else if (packet.Package is UserStatusPacket userStatusPackage)
+                {
+                    HandleUserStatusPacket(userStatusPackage);
+                }
             }
         }
 

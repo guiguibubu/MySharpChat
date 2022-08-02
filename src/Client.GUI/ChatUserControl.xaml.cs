@@ -35,9 +35,12 @@ namespace MySharpChat.Client.GUI
             SendButton.Command = new WpfSendCommand();
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
+            m_viewModel.OnDisconnectionEvent += OnDisconnection;
             m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
             m_viewModel.OnSendFinishedEvent += OnSendFinished;
         }
+
+        public event Action OnDisconnectionEvent = () => { };
 
         private void OnMessageReceived(string message)
         {
@@ -62,6 +65,21 @@ namespace MySharpChat.Client.GUI
                 {
                     uiDispatcher.Invoke(() => OnMessageReceived(text));
                 }
+            }
+        }
+
+        private void OnDisconnection(bool manual)
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                if (!manual)
+                    MessageBox.Show(Application.Current.MainWindow, "Server connection lost. You will be disconnected.");
+                OnDisconnectionEvent();
+            }
+            else
+            {
+                uiDispatcher.Invoke(() => OnDisconnection(manual));
             }
         }
 
