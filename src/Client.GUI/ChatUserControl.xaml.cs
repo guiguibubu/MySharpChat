@@ -36,8 +36,25 @@ namespace MySharpChat.Client.GUI
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
+            m_viewModel.OnUsernameChangeEvent += OnUsernameChange;
             m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
             m_viewModel.OnSendFinishedEvent += OnSendFinished;
+
+            DataContext = m_viewModel;
+        }
+
+        private void OnUsernameChange()
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
+                ConnectionStatus.Text = string.Format("Connected as : {0}", m_viewModel.Client.Username);
+            }
+            else
+            {
+                uiDispatcher.Invoke(OnUsernameChange);
+            }
         }
 
         public event Action OnDisconnectionEvent = () => { };
