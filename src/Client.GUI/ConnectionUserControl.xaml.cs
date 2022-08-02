@@ -34,6 +34,29 @@ namespace MySharpChat.Client.GUI
 
             ConnectButton.Command = new WpfConnectCommand();
             ConnectButton.CommandParameter = new WpfConnectionArgs() { ViewModel = m_viewModel };
+            ConnectButton.Click += ConnectButton_Click;
+
+            m_viewModel.OnConnectionSuccessEvent += OnConnectionSucess;
+            m_viewModel.OnConnectionFailEvent += OnConnectionFail;
+        }
+
+        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            ConnectButton.IsEnabled = false;
+        }
+
+        private void OnConnectionSucess()
+        {
+            ConnectionStatus.Text = "Connection success !";
+            ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
+            ConnectButton.IsEnabled = true;
+        }
+
+        private void OnConnectionFail()
+        {
+            ConnectionStatus.Text = "Connection failed !";
+            ConnectionStatus.Foreground = new SolidColorBrush(Colors.Red);
+            ConnectButton.IsEnabled = true;
         }
     }
 }
