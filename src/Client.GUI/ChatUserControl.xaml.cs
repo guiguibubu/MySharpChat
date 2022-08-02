@@ -21,8 +21,6 @@ namespace MySharpChat.Client.GUI
     /// </summary>
     public partial class ChatUserControl : UserControl
     {
-        private string SendTextValue => InputBox.Text;
-
         private readonly ChatViewModel m_viewModel;
 
         internal ChatUserControl(ChatViewModel viewModel)
@@ -31,14 +29,33 @@ namespace MySharpChat.Client.GUI
 
             m_viewModel = viewModel;
 
-            OutputBox.TextWrapping = TextWrapping.Wrap;
-            OutputBox.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-            OutputBox.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-
             InputBox.KeyDown += InputBox_KeyDown;
-
+            InputBox.TextChanged += (object sender, TextChangedEventArgs e) => { m_viewModel.InputMessage = InputBox.Text; };
             SendButton.Command = new WpfSendCommand();
-            SendButton.CommandParameter = new WpfSendArgs() { chatUC = this, client = (Application.Current as App)!.ClientImpl, args = new string[] { SendTextValue } }; ;
+            SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
+
+            m_viewModel.OnSendSuccessEvent += OnSendSuccessEvent;
+        }
+
+        private void OnSendSuccessEvent()
+        {
+            string text = m_viewModel.InputMessage;
+            if (!string.IsNullOrEmpty(text))
+            {
+                TextBlock outpuBlock = new TextBlock();
+                outpuBlock.TextWrapping = TextWrapping.Wrap;
+                outpuBlock.Margin = new Thickness(0,2,0,2);
+                outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
+                outpuBlock.VerticalAlignment = VerticalAlignment.Center;
+                outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                outpuBlock.Text = m_viewModel.Client.Username + ": " + text;
+                
+                OutputStack.Children.Add(outpuBlock);
+                OutputScroller.ScrollToEnd();
+
+                InputBox.Text = "";
+                InputBox.Focus();
+            }
         }
 
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
@@ -46,18 +63,6 @@ namespace MySharpChat.Client.GUI
             Key key = e.Key;
             if (key == Key.Enter)
                 SendButton.Command.Execute(SendButton.CommandParameter);
-        }
-
-        public void OnSendSuccess()
-        {
-            string text = SendTextValue;
-            if (!string.IsNullOrEmpty(text))
-            {
-                OutputBox.AppendText((Application.Current as App)!.ClientImpl.Username + ": " + text + Environment.NewLine);
-                OutputBoxScroller.ScrollToEnd();
-                InputBox.Text = "";
-                InputBox.Focus();
-            }
         }
     }
 }
