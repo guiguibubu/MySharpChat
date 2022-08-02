@@ -1,14 +1,6 @@
-﻿using MySharpChat.Core.UI;
-using MySharpChat.Core.Utils;
-using MySharpChat.Core.Utils.Logger;
+﻿using MySharpChat.Core.Utils.Logger;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace MySharpChat.Client.GUI
@@ -20,18 +12,13 @@ namespace MySharpChat.Client.GUI
     {
         public App() : base()
         {
-            GuiCursorHandler cursorHandler = new GuiCursorHandler();
-            GuiInputReader inputReader = new GuiInputReader();
-
-            StringWriter stringWriter = new StringWriter();
-            LockTextWriter writer = new LockTextWriter(stringWriter);
-            GuiOutputWriter output = new GuiOutputWriter(writer);
-            ClientImpl = new GuiClientImpl(cursorHandler, inputReader, output);
+            
+            ClientImpl = new GuiClientImpl();
 
             clientMainThread = new Thread(StartClient);
             clientMainThread.Name = "ClientMainThread";
 
-            MainWindowViewModel viewModel = new MainWindowViewModel(ClientImpl, stringWriter);
+            MainWindowViewModel viewModel = new MainWindowViewModel(ClientImpl);
             mainWindow = new MainWindow(viewModel);
         }
 

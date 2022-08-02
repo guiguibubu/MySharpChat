@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace MySharpChat.Client.Input
+namespace MySharpChat.Client.Console.Input
 {
     public class KeyActionsCollection
     {

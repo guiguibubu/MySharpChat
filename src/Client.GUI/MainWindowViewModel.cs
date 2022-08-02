@@ -10,12 +10,10 @@ namespace MySharpChat.Client.GUI
     internal class MainWindowViewModel
     {
         public GuiClientImpl Client { get; private set; }
-        public StringWriter Output { get; private set; }
 
-        public MainWindowViewModel(GuiClientImpl client, StringWriter output)
+        public MainWindowViewModel(GuiClientImpl client)
         {
             Client = client;
-            Output = output;
         }
     }
 }
