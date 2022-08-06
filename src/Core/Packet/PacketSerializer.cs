@@ -75,5 +75,19 @@ namespace MySharpChat.Core.Packet
                 throw new ArgumentException("Fail deserialize this : " + data, e);
             }
         }
+
+        public static bool TryDeserialize(string? data, out List<PacketWrapper> listPackets)
+        {
+            try
+            {
+                listPackets = Deserialize(data);
+                return true;
+            }
+            catch
+            {
+                listPackets = new List<PacketWrapper>();
+                return false;
+            }
+        }
     }
 }
