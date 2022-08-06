@@ -15,6 +15,10 @@ namespace MySharpChat.Client.GUI
                 Username = username;
         }
 
+        public void Logout()
+        {
+            isLoggedIn = false;
+        }
         private bool isLoggedIn = false;
 
         public override void Run(Client client)

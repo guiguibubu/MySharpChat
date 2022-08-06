@@ -37,6 +37,19 @@ namespace MySharpChat.Client.GUI
             SendButton.Command = new WpfSendCommand();
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
+            DisconnectButton.Command = new WpfDisconnectCommand();
+            DisconnectButton.CommandParameter = new WpfDisconnectionArgs() { ViewModel = m_viewModel};
+
+            BitmapImage myBitmapImage = new BitmapImage();
+            // BitmapImage.UriSource must be in a BeginInit/EndInit block
+            myBitmapImage.BeginInit();
+            string currentDir = System.IO.Directory.GetCurrentDirectory();
+            string iconPath = System.IO.Path.Combine(currentDir, @"res\icons\exit.ico");
+            myBitmapImage.UriSource = new Uri(iconPath);
+            myBitmapImage.EndInit();
+            //set image source
+            DisconnectButtonImage.Source = myBitmapImage;
+
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
             m_viewModel.OnUserRemovedEvent += OnUsernameRemoved;
             m_viewModel.OnUserAddedEvent += OnUsernameAdded;
@@ -61,7 +74,7 @@ namespace MySharpChat.Client.GUI
             }
         }
 
-        public event Action OnDisconnectionEvent = () => { };
+        public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
 
         private void OnUsernameRemoved(string username)
         {
@@ -129,7 +142,7 @@ namespace MySharpChat.Client.GUI
             {
                 if (!manual)
                     MessageBox.Show(Application.Current.MainWindow, "Server connection lost. You will be disconnected.");
-                OnDisconnectionEvent();
+                OnDisconnectionEvent(manual);
             }
             else
             {

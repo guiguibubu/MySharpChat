@@ -38,13 +38,14 @@ namespace MySharpChat.Client.GUI
 
             ChatViewModel chatViewModel = new ChatViewModel(m_viewModel.Client);
             chatUC = new ChatUserControl(chatViewModel);
-            chatUC.OnDisconnectionEvent += OnDisconnectionLost;
+            chatUC.OnDisconnectionEvent += OnDisconnection;
+            chatUC.OnDisconnectionEvent += connectionViewModel.OnDisconnection;
             currentUC = connectionUC;
 
             WindowGrid.Children.Add(currentUC);
         }
 
-        private void OnDisconnectionLost()
+        private void OnDisconnection(bool manual)
         {
             WindowGrid.Children.Remove(currentUC);
             currentUC = connectionUC;

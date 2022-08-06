@@ -18,8 +18,14 @@ namespace MySharpChat.Client.GUI
             Client = client;
         }
 
+        public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
         public event Action OnConnectionSuccessEvent = () => { };
         public event Action OnConnectionFailEvent = () => { };
+
+        public void OnDisconnection(bool manual)
+        {
+            OnDisconnectionEvent(manual);
+        }
 
         public void OnConnectionSuccess()
         {
