@@ -68,8 +68,14 @@ namespace MySharpChat.Core.SocketModule
                 bool isDisconnected = canReadOrDisconnected && noDataToRead;
                 return socket.Connected && !isDisconnected;
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException e)
             {
+                logger.LogError(e, "Fail to detect connection status");
+                return false;
+            }
+            catch (SocketException e)
+            {
+                logger.LogError(e, "Fail to detect connection status");
                 return false;
             }
         }
