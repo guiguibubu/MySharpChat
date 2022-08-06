@@ -31,9 +31,16 @@
         <StackPanel x:Name="UsersStack" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <Label HorizontalContentAlignment="Center">Connected Users</Label>
         </StackPanel>
-        
-        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
-            <TextBlock x:Name="ConnectionStatus" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0" Background="Transparent" TextAlignment="Justify"/>
+
+        <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,5">
+            <TextBlock x:Name="ConnectionStatus" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0" Background="Transparent" TextAlignment="Left" TextWrapping="Wrap" DockPanel.Dock="Left"/>
+            <Button x:Name="DisconnectButton" MinWidth="10" MaxWidth="60" MinHeight="10" MaxHeight="60" VerticalAlignment="Stretch" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                <Image x:Name="DisconnectButtonImage">
+                    <Image.Source>
+                        <BitmapImage UriSource="res/icons/exit.ico" />
+                    </Image.Source>
+                </Image>
+            </Button>
         </DockPanel>
 
         <DockPanel Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">

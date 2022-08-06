@@ -51,4 +51,14 @@
         <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="..\..\res\**" LinkBase="res" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="..\..\res\icons\exit.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

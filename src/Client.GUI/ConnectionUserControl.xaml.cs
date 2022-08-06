@@ -38,11 +38,19 @@ namespace MySharpChat.Client.GUI
 
             m_viewModel.OnConnectionSuccessEvent += OnConnectionSucess;
             m_viewModel.OnConnectionFailEvent += OnConnectionFail;
+            m_viewModel.OnDisconnectionEvent += OnDisconnection;
         }
 
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             ConnectButton.IsEnabled = false;
+        }
+
+        private void OnDisconnection(bool manual)
+        {
+            ConnectionStatus.Text = manual ? "Disconnect successfully !" : "Connection lost !";
+            ConnectionStatus.Foreground = manual ? new SolidColorBrush(Colors.LimeGreen) : new SolidColorBrush(Colors.Red);
+            ConnectButton.IsEnabled = true;
         }
 
         private void OnConnectionSucess()
