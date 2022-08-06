@@ -4,6 +4,7 @@ using MySharpChat.Core.SocketModule;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -29,6 +30,8 @@ namespace MySharpChat.Server
         public Guid ClientId { get; private set; } = Guid.NewGuid();
         public User User { get; set; } = new User();
 
+        public bool Initialized { get; private set; } = false;
+
         public ChatSession(Socket? socket)
         {
             networkModule = new ChatSessionNetworkModule(socket);
@@ -37,26 +40,91 @@ namespace MySharpChat.Server
         public void Start(Guid serverId)
         {
             string remoteEP = networkModule.RemoteEndPoint;
-            logger.LogInfo("Connection accepted. Begin session with {0}", remoteEP);
+            logger.LogInfo("Connection accepted. Initialize session with {0}", remoteEP);
 
             if (Thread.CurrentThread.Name == null)
             {
                 Thread.CurrentThread.Name = $"WorkingThread{remoteEP}";
             }
 
-            logger.LogDebug("Send sessionId to client");
+            if (Initialize(serverId))
+            {
+                Run();
 
-            ClientId = Guid.NewGuid();
-            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(ClientId);
-            networkModule.Send(new PacketWrapper(serverId, connectInitPacket));
+                logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
 
-            Run();
-
-            logger.LogInfo("Connection lost. Session with {0} finished", remoteEP);
-
-            OnSessionFinishedCallback(this);
+                Initialized = false;
+                OnSessionFinishedCallback(this);
+            }
 
             networkModule.Disconnect();
+        }
+
+        private enum InitializeState
+        {
+            FirstPass,
+            WaitingResponse,
+            HttpRequest
+        }
+
+        private bool Initialize(Guid serverId)
+        {
+            InitializeState state = InitializeState.FirstPass;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool timeout = false;
+            while (networkModule.IsConnected() && !Initialized && state != InitializeState.HttpRequest && !timeout)
+            {
+                if (state == InitializeState.FirstPass)
+                {
+                    if (networkModule.HasDataAvailable)
+                    {
+                        string content = networkModule.ReadRaw(TimeSpan.FromSeconds(1));
+                        if (HttpParser.TryParseHttpRequest(content, out _))
+                        {
+                            state = InitializeState.HttpRequest;
+                            logger.LogError("Http request. Direct chat not allowed: \"{0}\"", content);
+                            HandleHttpRequest(content);
+                        }
+                        else
+                        {
+                            logger.LogWarning("Session must be initilized before handling packets");
+                        }
+                    }
+                    else
+                    {
+                        logger.LogDebug("Send sessionId to client");
+
+                        ClientId = Guid.NewGuid();
+                        ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(ClientId);
+                        networkModule.Send(new PacketWrapper(serverId, connectInitPacket));
+                        state = InitializeState.WaitingResponse;
+                    }
+                }
+                else if (state == InitializeState.WaitingResponse)
+                {
+                    if (networkModule.HasDataAvailable)
+                    {
+                        string content = networkModule.ReadRaw(TimeSpan.FromSeconds(1));
+                        if (PacketSerializer.TryDeserialize(content, out List<PacketWrapper> packets))
+                        {
+                            foreach (PacketWrapper packet in packets)
+                            {
+                                if (packet.Package is ClientInitialisationPacket initPackage)
+                                {
+                                    HandleInitPacket(initPackage);
+                                }
+                                else
+                                {
+                                    logger.LogWarning("Session must be initialized before handling any other packets. (session with {0})", networkModule.RemoteEndPoint);
+                                }
+                            }
+                        }
+                    }
+                }
+                timeout = stopwatch.Elapsed < TimeSpan.FromSeconds(30);
+            }
+
+            return Initialized;
         }
 
         private void Run()
@@ -67,11 +135,8 @@ namespace MySharpChat.Server
                 {
                     string content = networkModule.ReadRaw(TimeSpan.FromSeconds(1));
 
-                    if (HttpParser.TryParseHttpRequest(content, out _))
-                        HandleHttpRequest(content);
-                    else
+                    if (PacketSerializer.TryDeserialize(content, out List<PacketWrapper> packets))
                     {
-                        List<PacketWrapper> packets = PacketSerializer.Deserialize(content);
                         foreach (PacketWrapper packet in packets)
                         {
                             if (packet.Package is ClientInitialisationPacket initPackage)
@@ -83,6 +148,15 @@ namespace MySharpChat.Server
                                 HandleChatPacket(package);
                             }
                         }
+                    }
+                    else if (HttpParser.TryParseHttpRequest(content, out _))
+                    {
+                        logger.LogError("Http request. Direct chat not allowed: \"{0}\"", content);
+                        HandleHttpRequest(content);
+                    }
+                    else
+                    {
+                        logger.LogError("Data received but with the wrong format: \"{0}\"", content);
                     }
                 }
             }
@@ -100,6 +174,8 @@ namespace MySharpChat.Server
             else
             {
                 User.Username = initPackage.Username;
+                Initialized = true;
+                logger.LogInfo("Session initialized with {0}", networkModule.RemoteEndPoint);
                 OnSessionInitializedCallback(this);
             }
         }
@@ -115,6 +191,7 @@ namespace MySharpChat.Server
                 OnBroadcastCallback(this, packet);
             }
         }
+
 
         private void HandleHttpRequest(string httpContent)
         {

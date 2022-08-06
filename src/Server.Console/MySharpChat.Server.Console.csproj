@@ -46,8 +46,14 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Core.Console\MySharpChat.Core.Console.csproj" />
-        <ProjectReference Include="..\Core\MySharpChat.Core.csproj"/>
-        <ProjectReference Include="..\Server\MySharpChat.Server.csproj"/>
+        <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
+        <ProjectReference Include="..\Server\MySharpChat.Server.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Ressources\icon.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
