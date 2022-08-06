@@ -121,6 +121,7 @@ namespace MySharpChat.Server
             ConnectCommand command = commandManager.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
             if (command.Execute(_serverImpl))
             {
+                _serverImpl.Start();
                 m_serverRun = true;
                 while (m_serverRun)
                 {

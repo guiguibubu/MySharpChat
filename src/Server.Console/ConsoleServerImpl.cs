@@ -27,10 +27,12 @@ namespace MySharpChat.Server
 
         public ChatRoom ChatRoom { get; private set; }
 
+        private readonly HttpServer httpServer;
         public ConsoleServerImpl()
         {
             networkModule = new ServerNetworkModule();
             ChatRoom = new ChatRoom(ServerId);
+            httpServer = new HttpServer();
         }
 
         public void Run(Server server)
@@ -46,6 +48,11 @@ namespace MySharpChat.Server
             Socket connectedSocket = networkModule.Accept();
 
             LaunchSession(connectedSocket);
+        }
+
+        public void Start()
+        {
+            httpServer.Start(System.Net.IPEndPoint.Parse(networkModule.LocalEndPoint));
         }
 
         public void Stop()

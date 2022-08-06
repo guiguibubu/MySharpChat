@@ -11,6 +11,7 @@ namespace MySharpChat.Server
         ChatRoom ChatRoom { get; }
 
         void Run(Server server);
+        void Start();
         void Stop();
     }
 }
