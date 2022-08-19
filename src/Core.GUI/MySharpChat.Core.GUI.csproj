@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
+        <OutputType>Library</OutputType>
         <TargetFramework>net6.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
@@ -37,26 +37,20 @@
             <_Parameter1>MySharpChat.Test</_Parameter1>
         </AssemblyAttribute>
     </ItemGroup>
-
+    
     <ItemGroup>
         <None Include="..\..\LICENSE">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
         </None>
     </ItemGroup>
-
+    
     <ItemGroup>
-        <ProjectReference Include="..\Client.Input\MySharpChat.Client.Input.csproj" />
-        <ProjectReference Include="..\Client\MySharpChat.Client.csproj" />
-        <ProjectReference Include="..\Core.GUI\MySharpChat.Core.GUI.csproj" />
-        <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
+      <PackageReference Include="NLog" Version="5.0.1" />
     </ItemGroup>
-
+    
     <ItemGroup>
-      <Content Include="res/**/*">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
+      <ProjectReference Include="..\Core\MySharpChat.Core.csproj" />
     </ItemGroup>
 
 </Project>
