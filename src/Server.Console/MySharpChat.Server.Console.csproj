@@ -32,6 +32,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="res\icons\favicon.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
             <_Parameter1>MySharpChat.Test</_Parameter1>
         </AssemblyAttribute>
@@ -51,9 +55,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Ressources\icon.ico">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+        <Content Include="res\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>

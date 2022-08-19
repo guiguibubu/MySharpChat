@@ -63,9 +63,16 @@ namespace MySharpChat.Server
                 string uriPath = request.Url!.AbsolutePath.Substring(1);
                 string osPath = uriPath.Replace('/', Path.DirectorySeparatorChar);
 
-                if (File.Exists(Path.Combine("Ressources", osPath)))
+                if (string.IsNullOrEmpty(osPath))
                 {
-                    bodyBytes = File.ReadAllBytes(Path.Combine("Ressources", osPath));
+                    string text = "Welcome on MySharpChat server.";
+                    response.StatusCode = (int)HttpStatusCode.OK;
+
+                    bodyBytes = System.Text.Encoding.UTF8.GetBytes(text);
+                }
+                else if (File.Exists(Path.Combine("res", osPath)))
+                {
+                    bodyBytes = File.ReadAllBytes(Path.Combine("res", osPath));
                     response.StatusCode = (int)HttpStatusCode.OK;
                 }
                 else
