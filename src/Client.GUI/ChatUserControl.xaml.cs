@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Windows.Resources;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
@@ -38,17 +40,7 @@ namespace MySharpChat.Client.GUI
             SendButton.CommandParameter = new WpfSendArgs() { ViewModel = m_viewModel };
 
             DisconnectButton.Command = new WpfDisconnectCommand();
-            DisconnectButton.CommandParameter = new WpfDisconnectionArgs() { ViewModel = m_viewModel};
-
-            BitmapImage myBitmapImage = new BitmapImage();
-            // BitmapImage.UriSource must be in a BeginInit/EndInit block
-            myBitmapImage.BeginInit();
-            string currentDir = System.IO.Directory.GetCurrentDirectory();
-            string iconPath = System.IO.Path.Combine(currentDir, @"res\icons\exit.ico");
-            myBitmapImage.UriSource = new Uri(iconPath);
-            myBitmapImage.EndInit();
-            //set image source
-            DisconnectButtonImage.Source = myBitmapImage;
+            DisconnectButton.CommandParameter = new WpfDisconnectionArgs() { ViewModel = m_viewModel };
 
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
             m_viewModel.OnUserRemovedEvent += OnUsernameRemoved;
@@ -65,8 +57,10 @@ namespace MySharpChat.Client.GUI
             Dispatcher uiDispatcher = Application.Current.Dispatcher;
             if (uiDispatcher.CheckAccess())
             {
+                UserName.Foreground = new SolidColorBrush(Colors.Black);
+                UserName.Text = m_viewModel.Client.Username;
                 ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
-                ConnectionStatus.Text = string.Format("Connected as : {0}", m_viewModel.Client.Username);
+                ConnectionStatus.Text = "Connected !";
             }
             else
             {
@@ -82,7 +76,7 @@ namespace MySharpChat.Client.GUI
             if (uiDispatcher.CheckAccess())
             {
                 TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == username);
-                if(userUiElement != null)
+                if (userUiElement != null)
                 {
                     usersUiElements.Remove(userUiElement);
                     UsersStack.Children.Remove(userUiElement);
@@ -99,7 +93,7 @@ namespace MySharpChat.Client.GUI
             Dispatcher uiDispatcher = Application.Current.Dispatcher;
             if (uiDispatcher.CheckAccess())
             {
-                TextBlock userUiElement = new TextBlock() { Text = username };
+                TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
                 usersUiElements.Add(userUiElement);
                 UsersStack.Children.Add(userUiElement);
             }
