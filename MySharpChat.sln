@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Client.GUI", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Server.Console", "src\Server.Console\MySharpChat.Server.Console.csproj", "{4931925E-F1C1-466B-9186-D369D9D1131B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Core.GUI", "src\Core.GUI\MySharpChat.Core.GUI.csproj", "{AA3E7D83-9638-4D1A-88EE-61A329E2889A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +141,18 @@ Global
 		{4931925E-F1C1-466B-9186-D369D9D1131B}.Release|x64.Build.0 = Release|Any CPU
 		{4931925E-F1C1-466B-9186-D369D9D1131B}.Release|x86.ActiveCfg = Release|Any CPU
 		{4931925E-F1C1-466B-9186-D369D9D1131B}.Release|x86.Build.0 = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|x64.Build.0 = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Debug|x86.Build.0 = Debug|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|x64.ActiveCfg = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|x64.Build.0 = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|x86.ActiveCfg = Release|Any CPU
+		{AA3E7D83-9638-4D1A-88EE-61A329E2889A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
