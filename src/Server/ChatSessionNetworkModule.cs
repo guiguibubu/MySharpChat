@@ -1,5 +1,5 @@
 ﻿using MySharpChat.Core.Packet;
-using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.NetworkModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -82,7 +82,7 @@ namespace MySharpChat.Server
 
         public bool IsConnected()
         {
-            bool isConnected = m_tcpClient != null && m_tcpClient.Connected && SocketUtils.IsConnected(m_tcpClient.Client);
+            bool isConnected = m_tcpClient != null && NetworkUtils.IsConnected(m_tcpClient);
             return isConnected;
         }
 

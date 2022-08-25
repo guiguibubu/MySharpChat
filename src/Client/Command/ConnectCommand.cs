@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using MySharpChat.Core.Command;
-using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.NetworkModule;
 using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Command
@@ -24,7 +24,7 @@ namespace MySharpChat.Client.Command
             string? serverAdress = args.Length > 0 ? args[0] : null;
             ConnexionInfos.Data data = connexionInfos.Remote!;
 
-            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = SocketUtils.GetAvailableIpAdresses(serverAdress);
+            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = NetworkUtils.GetAvailableIpAdresses(serverAdress);
             data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
             if (data.Ip == null)
             {

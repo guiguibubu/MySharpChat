@@ -2,10 +2,10 @@
 using System.Text;
 using System.Threading;
 
-namespace MySharpChat.Core.SocketModule
+namespace MySharpChat.Core.NetworkModule
 {
     // State object for reading client data asynchronously  
-    public class SocketContext
+    internal class SocketContext
     {
         // Object owner of the socket
         public object? owner = null;
