@@ -1,0 +1,48 @@
+﻿<ContentView x:Class="MySharpChat.Client.GUI.MAUI.ChatUserControl"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MySharpChat.Client.GUI.MAUI"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid x:Name="MainGrid" Margin="5, 5">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <VerticalStackLayout x:Name="UsersStack" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" Margin="2">
+            <Label HorizontalTextAlignment="Center" FontAttributes="Bold">Connected Users</Label>
+        </VerticalStackLayout>
+
+        <Border Stroke="#FFABADB3" StrokeThickness="1" Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1">
+            <CollectionView x:Name="OutputStack" ItemsUpdatingScrollMode="KeepLastItemInView" Margin="3,0" Background="White"/>
+        </Border>
+
+        <Grid x:Name="ConnectGrid" Margin="2" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1">
+            <VerticalStackLayout Margin="0">
+                <HorizontalStackLayout>
+                    <Image  x:Name="UserImage"
+                            Source="res/icons/user.ico"
+                            MinimumWidthRequest="20" MaximumWidthRequest="40" MinimumHeightRequest="20" MaximumHeightRequest="40"/>
+                    <Label x:Name="UserName" HorizontalTextAlignment="Start" VerticalTextAlignment="Start" Margin="0" Background="Transparent" LineBreakMode="TailTruncation" Text="Your Username ziufgzuoifguzeogze"/>
+                </HorizontalStackLayout>
+                <Label x:Name="ConnectionStatus" HorizontalTextAlignment="Start" Margin="0" Background="Transparent" LineBreakMode="TailTruncation"/>
+            </VerticalStackLayout>
+            <Button x:Name="DisconnectButton" MinimumWidthRequest="20" MaximumWidthRequest="40" MinimumHeightRequest="20" MaximumHeightRequest="40" ImageSource="res/icons/exit.ico"/>
+        </Grid>
+
+        <HorizontalStackLayout Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1">
+            <Button x:Name="SendButton" WidthRequest="80" Margin="10" Text="Send"/>
+            <Border Stroke="#FFABADB3" StrokeThickness="1">
+                <Entry x:Name="InputBox" HorizontalTextAlignment="Start"/>
+            </Border>
+        </HorizontalStackLayout>
+
+    </Grid>
+</ContentView>
