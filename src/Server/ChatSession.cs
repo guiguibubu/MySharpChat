@@ -121,7 +121,7 @@ namespace MySharpChat.Server
                         }
                     }
                 }
-                timeout = stopwatch.Elapsed < TimeSpan.FromSeconds(30);
+                timeout = stopwatch.Elapsed > TimeSpan.FromSeconds(30);
             }
 
             return Initialized;
