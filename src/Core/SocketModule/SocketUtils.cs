@@ -56,6 +56,7 @@ namespace MySharpChat.Core.SocketModule
         }
 
         //https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
+        //https://github.com/jchristn/SuperSimpleTcp/blob/5c4bfbef56dd7a5a2e437f17ac62450f26feb3bf/src/SuperSimpleTcp/SimpleTcpClient.cs
         public static bool IsConnected(Socket? socket)
         {
             if (socket == null)
@@ -63,9 +64,17 @@ namespace MySharpChat.Core.SocketModule
 
             try
             {
-                bool canReadOrDisconnected = socket.Poll(5000, SelectMode.SelectRead);
+                bool hasToReadOrDisconnected = socket.Poll(0, SelectMode.SelectRead);
                 bool noDataToRead = socket.Available == 0;
-                bool isDisconnected = canReadOrDisconnected && noDataToRead;
+                bool isDisconnected = hasToReadOrDisconnected && noDataToRead;
+
+                if (hasToReadOrDisconnected)
+                {
+                    //Update socket connection status
+                    byte[] buff = new byte[1];
+                    socket.Receive(buff, SocketFlags.Peek);
+                }
+
                 return socket.Connected && !isDisconnected;
             }
             catch (ObjectDisposedException e)

@@ -32,9 +32,9 @@ namespace MySharpChat.Server
 
         public bool Initialized { get; private set; } = false;
 
-        public ChatSession(Socket? socket)
+        public ChatSession(TcpClient? tcpClient)
         {
-            networkModule = new ChatSessionNetworkModule(socket);
+            networkModule = new ChatSessionNetworkModule(tcpClient);
         }
 
         public void Start(Guid serverId)
@@ -55,6 +55,10 @@ namespace MySharpChat.Server
 
                 Initialized = false;
                 OnSessionFinishedCallback(this);
+            }
+            else
+            {
+                logger.LogWarning("Failed to initialize session with {0}", remoteEP);
             }
 
             networkModule.Disconnect();
@@ -169,6 +173,7 @@ namespace MySharpChat.Server
             {
                 string oldUsername = User.Username;
                 User.Username = initPackage.Username;
+                logger.LogInfo("Username changed {0} -> {1}", oldUsername, User.Username);
                 OnUsernameChangeCallback(this, oldUsername);
             }
             else

@@ -19,10 +19,6 @@ namespace MySharpChat.Server
         private readonly ServerNetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        public string LocalEndPoint => networkModule.LocalEndPoint;
-
-        public string RemoteEndPoint => networkModule.RemoteEndPoint;
-
         public Guid ServerId { get; private set; } = Guid.NewGuid();
 
         public ChatRoom ChatRoom { get; private set; }
@@ -45,9 +41,12 @@ namespace MySharpChat.Server
                 Thread.Sleep(1000);
             }
 
-            Socket connectedSocket = networkModule.Accept();
-
-            LaunchSession(connectedSocket);
+            TcpClient tcpClient = networkModule.Accept();
+            tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int)TimeSpan.FromHours(2).TotalMilliseconds);
+            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, (int)TimeSpan.FromSeconds(1).TotalMilliseconds);
+            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10);
+            LaunchSession(tcpClient);
         }
 
         public void Start()
@@ -65,9 +64,9 @@ namespace MySharpChat.Server
             return networkModule.Connect(connexionInfos);
         }
 
-        private void LaunchSession(Socket? socket)
+        private void LaunchSession(TcpClient tcpClient)
         {
-            ChatRoom.LaunchSession(socket);
+            ChatRoom.LaunchSession(tcpClient);
         }
     }
 }
