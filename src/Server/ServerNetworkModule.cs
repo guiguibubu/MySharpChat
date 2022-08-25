@@ -18,7 +18,7 @@ namespace MySharpChat.Server
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ServerNetworkModule>();
 
-        private Socket? m_socket = null;
+        private TcpListener? tcpListener = null;
 
         public ServerNetworkModule()
         { }
@@ -27,27 +27,18 @@ namespace MySharpChat.Server
         {
             get
             {
-                if (m_socket != null && m_socket.LocalEndPoint != null)
-                    return m_socket.LocalEndPoint.ToString() ?? string.Empty;
+                if (tcpListener != null && tcpListener.LocalEndpoint != null)
+                    return tcpListener.LocalEndpoint.ToString() ?? string.Empty;
                 else
                     return string.Empty;
             }
         }
 
-        public string RemoteEndPoint
-        {
-            get
-            {
-                if (m_socket != null && m_socket.RemoteEndPoint != null)
-                    return m_socket.RemoteEndPoint.ToString() ?? string.Empty;
-                else
-                    return string.Empty;
-            }
-        }
+        public string RemoteEndPoint => string.Empty;
 
-        public bool HasDataAvailable => m_socket != null && m_socket.Available > 0;
+        public bool HasDataAvailable => false;
 
-        public bool IsConnectionPending => m_socket != null && SocketUtils.IsConnectionPending(m_socket);
+        public bool IsConnectionPending => tcpListener != null && tcpListener.Pending();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
@@ -63,12 +54,10 @@ namespace MySharpChat.Server
             IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(connexionData);
 
             // Create a TCP/IP socket.  
-            m_socket = SocketUtils.CreateSocket(connexionData);
+            tcpListener = new TcpListener(localEndPoint);
 
             // Bind the socket to the local endpoint and listen for incoming connections. 
-            m_socket.Bind(localEndPoint);
-
-            m_socket.Listen(100);
+            tcpListener.Start(100);
 
             logger.LogInfo(string.Format("Listenning at {0} : {1}:{2}", connexionData.Hostname, connexionData.Ip, connexionData.Port));
 
@@ -87,20 +76,20 @@ namespace MySharpChat.Server
 
         public void Disconnect()
         {
-            if (m_socket != null)
+            if (tcpListener != null)
             {
-                SocketUtils.ShutdownSocket(m_socket);
+                tcpListener.Stop();
             }
         }
 
-        public Socket Accept()
+        public TcpClient Accept()
         {
-            return m_socket!.Accept();
+            return tcpListener!.AcceptTcpClient();
         }
 
         public bool IsConnected()
         {
-            return m_socket != null && SocketUtils.IsConnected(m_socket);
+            return tcpListener != null;
         }
 
         public void Send(PacketWrapper? packet)
