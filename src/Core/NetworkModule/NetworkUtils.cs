@@ -4,20 +4,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MySharpChat.Core.SocketModule
+namespace MySharpChat.Core.NetworkModule
 {
-    public class SocketUtils
+    public class NetworkUtils
     {
-        private static readonly Logger logger = Logger.Factory.GetLogger<SocketUtils>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<NetworkUtils>();
         public static readonly Encoding Encoding = Encoding.ASCII;
 
-        private SocketUtils() { }
+        private NetworkUtils() { }
 
         public static Socket CreateSocket(ConnexionInfos.Data data)
         {
@@ -89,6 +88,14 @@ namespace MySharpChat.Core.SocketModule
             }
         }
 
+        public static bool IsConnected(TcpClient? tcpClient)
+        {
+            if (tcpClient == null)
+                throw new ArgumentNullException(nameof(tcpClient));
+
+            return tcpClient.Connected && IsConnected(tcpClient.Client);
+        }
+
         public static bool IsConnectionPending(Socket? socket)
         {
             if (socket == null)
@@ -102,6 +109,14 @@ namespace MySharpChat.Core.SocketModule
             {
                 return false;
             }
+        }
+
+        public static bool IsConnectionPending(TcpListener? tcpListener)
+        {
+            if (tcpListener == null)
+                throw new ArgumentNullException(nameof(tcpListener));
+
+            return tcpListener.Pending();
         }
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
@@ -137,6 +152,41 @@ namespace MySharpChat.Core.SocketModule
             return content;
         }
 
+        public static string Read(TcpClient? tcpClient, CancellationToken cancelToken = default)
+        {
+            if (tcpClient == null)
+                throw new ArgumentNullException(nameof(tcpClient));
+
+            while (tcpClient.Available == 0)
+            {
+                Thread.SpinWait(100);
+                cancelToken.ThrowIfCancellationRequested();
+            }
+
+            string content = string.Empty;
+            try
+            {
+                NetworkStream stream = tcpClient.GetStream();
+                int bytesRead;
+                // Size of receive buffer.  
+                const int BUFFER_SIZE = 256;
+                // Receive buffer.  
+                byte[] buffer = new byte[BUFFER_SIZE];
+                // Received data string.  
+                StringBuilder dataStringBuilder = new StringBuilder();
+
+                while (stream.DataAvailable && (bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0 && !cancelToken.IsCancellationRequested)
+                {
+                    // There  might be more data, so store the data received so far.
+                    string dataStr = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    dataStringBuilder.Append(dataStr);
+                }
+                content = dataStringBuilder.ToString();
+            }
+            catch (OperationCanceledException) { }
+            return content;
+        }
+
         public static Task<string> ReadAsync(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -144,6 +194,19 @@ namespace MySharpChat.Core.SocketModule
                 {
                     string content = string.Empty;
                     try { content = Read(handler, caller, cancelToken); }
+                    catch (OperationCanceledException) { }
+                    return content;
+                }
+            , cancelToken);
+        }
+
+        public static Task<string> ReadAsync(TcpClient? tcpClient, CancellationToken cancelToken = default)
+        {
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    string content = string.Empty;
+                    try { content = Read(tcpClient, cancelToken); }
                     catch (OperationCanceledException) { }
                     return content;
                 }
@@ -164,7 +227,7 @@ namespace MySharpChat.Core.SocketModule
 
                 int bytesRead = handler.Receive(new ArraySegment<byte>(state.buffer, 0, SocketContext.BUFFER_SIZE), 0);
 
-                if(bytesRead > 0)
+                if (bytesRead > 0)
                 {
                     // There  might be more data, so store the data received so far.
                     string dataStr = Encoding.GetString(state.buffer, 0, bytesRead);
@@ -214,6 +277,34 @@ namespace MySharpChat.Core.SocketModule
             return success;
         }
 
+        public static bool Send(TcpClient? tcpClient, string data)
+        {
+            if (tcpClient == null)
+                throw new ArgumentNullException(nameof(tcpClient));
+
+            bool success;
+
+            if (IsConnected(tcpClient))
+            {
+                // Begin sending the data to the remote device.  
+                NetworkStream stream = tcpClient.GetStream();
+                // Convert the string data to byte data using ASCII encoding.  
+                byte[] byteData = Encoding.GetBytes(data);
+                stream.Write(byteData);
+
+                EndPoint remoteEP = tcpClient.Client.RemoteEndPoint!;
+                logger.LogDebug("Send {0} bytes to {1}. Data :{2}", byteData.Length, remoteEP, data);
+                success = true;
+            }
+            else
+            {
+                logger.LogError("Can not send data. Socket is disconnect.");
+                success = false;
+            }
+
+            return success;
+        }
+
         public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -227,10 +318,23 @@ namespace MySharpChat.Core.SocketModule
             , cancelToken);
         }
 
+        public static Task<bool> SendAsync(TcpClient? tcpClient, string data, CancellationToken cancelToken = default)
+        {
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    bool success = false;
+                    try { success = Send(tcpClient, data); }
+                    catch (OperationCanceledException) { }
+                    return success;
+                }
+            , cancelToken);
+        }
+
         public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
         {
-            string actualHostName = 
-                !string.IsNullOrEmpty(hostname) ? 
+            string actualHostName =
+                !string.IsNullOrEmpty(hostname) ?
                 hostname
 #if DEBUG
                 : "localhost";

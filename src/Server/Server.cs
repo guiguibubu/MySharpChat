@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using MySharpChat.Core.Command;
-using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.NetworkModule;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
@@ -90,7 +90,7 @@ namespace MySharpChat.Server
 
         public bool IsConnected(Socket? socket)
         {
-            return socket != null && SocketUtils.IsConnected(socket);
+            return socket != null && NetworkUtils.IsConnected(socket);
         }
 
         public void Stop(int exitCode = 0)
