@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MySharpChat.Server
@@ -19,14 +18,14 @@ namespace MySharpChat.Server
             _serverId = serverId;
         }
 
-        public void LaunchSession(Socket? socket)
+        public void LaunchSession(TcpClient tcpClient)
         {
-            if (socket == null)
-                throw new ArgumentNullException(nameof(socket));
+            if (tcpClient == null)
+                throw new ArgumentNullException(nameof(tcpClient));
 
             Task.Run(() =>
             {
-                ChatSession session = new ChatSession(socket);
+                ChatSession session = new ChatSession(tcpClient);
                 session.OnSessionInitializedCallback += OnSessionInitialized;
                 session.OnSessionFinishedCallback += OnSessionFinished;
                 session.OnBroadcastCallback += Broadcast;

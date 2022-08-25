@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,11 +20,11 @@ namespace MySharpChat.Client
 
         private readonly IClientImpl _client;
 
-        private Socket? m_socket = null;
+        private readonly TcpClient m_tcpClient = new TcpClient(AddressFamily.InterNetwork);
 
         public ClientNetworkModule(IClientImpl client)
         {
-            if(client == null)
+            if (client == null)
                 throw new ArgumentNullException(nameof(client));
 
             _client = client;
@@ -32,8 +34,8 @@ namespace MySharpChat.Client
         {
             get
             {
-                if (m_socket != null && m_socket.LocalEndPoint != null)
-                    return m_socket.LocalEndPoint.ToString() ?? string.Empty;
+                if (m_tcpClient != null && m_tcpClient.Client.LocalEndPoint != null)
+                    return m_tcpClient.Client.LocalEndPoint.ToString() ?? string.Empty;
                 else
                     return string.Empty;
             }
@@ -43,47 +45,52 @@ namespace MySharpChat.Client
         {
             get
             {
-                if (m_socket != null && m_socket.RemoteEndPoint != null)
-                    return m_socket.RemoteEndPoint.ToString() ?? string.Empty;
+                if (m_tcpClient != null && m_tcpClient.Client.RemoteEndPoint != null)
+                    return m_tcpClient.Client.RemoteEndPoint.ToString() ?? string.Empty;
                 else
                     return string.Empty;
             }
         }
 
-        public bool HasDataAvailable => m_socket != null && m_socket.Available > 0;
+        public bool HasDataAvailable => m_tcpClient != null && m_tcpClient.Available > 0;
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
-            bool isConnected = false;
+            if (m_tcpClient.Connected)
+                throw new InvalidOperationException("You are already connected. Disconnect before connection");
 
-            Socket? socket = m_socket;
-
-            if (socket != null)
+            m_tcpClient.Connect(remoteEP);
+            bool isConnected = m_tcpClient.Connected;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int attempt = 0;
+            bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
+            bool attemptConnection = !isConnected && !timeout;
+            while (attemptConnection)
             {
-                isConnected = SocketUtils.IsConnected(socket);
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                int attempt = 0;
-                bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
-                bool attemptConnection = !isConnected && !timeout;
-                while (attemptConnection)
+                attempt++;
+
+                // Connect to the remote endpoint.  
+                Task connectTask = m_tcpClient!.ConnectAsync(remoteEP);
+
+                try
                 {
-                    attempt++;
-
-                    // Connect to the remote endpoint.  
-                    Task connectTask = socket!.ConnectAsync(remoteEP);
-
-                    try
-                    {
-                        timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
-                        isConnected = SocketUtils.IsConnected(socket);
-                        attemptConnection = !isConnected && !timeout;
-                    }
-                    catch (AggregateException)
-                    {
-                        isConnected = false;
-                        attemptConnection = false;
-                    }
+                    timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
+                    isConnected = m_tcpClient.Connected;
+                    attemptConnection = !isConnected && !timeout;
                 }
+                catch (AggregateException)
+                {
+                    isConnected = false;
+                    attemptConnection = false;
+                }
+            }
+
+            if (isConnected)
+            {
+                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int)TimeSpan.FromHours(2).TotalMilliseconds);
+                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, (int)TimeSpan.FromSeconds(1).TotalMilliseconds);
+                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10);
             }
 
             return isConnected;
@@ -96,9 +103,6 @@ namespace MySharpChat.Client
                 throw new ArgumentException(nameof(connexionInfos.Remote));
 
             IPEndPoint remoteEP = SocketUtils.CreateEndPoint(connexionData);
-
-            // Create a TCP/IP socket.  
-            m_socket = SocketUtils.CreateSocket(connexionData);
 
             const int CONNECTION_TIMEOUT_MS = 5000;
 
@@ -128,15 +132,16 @@ namespace MySharpChat.Client
 
         public void Disconnect()
         {
-            if (m_socket != null)
+            if (m_tcpClient != null)
             {
-                SocketUtils.ShutdownSocket(m_socket);
+                logger.LogInfo("Disconnection of Network Module");
+                m_tcpClient.Close();
             }
         }
 
         public bool IsConnected()
         {
-            return m_socket != null && SocketUtils.IsConnected(m_socket);
+            return m_tcpClient != null && m_tcpClient.Connected && SocketUtils.IsConnected(m_tcpClient.Client);
         }
 
         public void Send(PacketWrapper? packet)
@@ -150,12 +155,12 @@ namespace MySharpChat.Client
 
         public List<PacketWrapper> Read(TimeSpan timeoutSpan)
         {
-            if (m_socket == null)
+            if (!m_tcpClient.Connected)
                 throw new ArgumentException("NetworkModule not initialized");
 
-            string content = ReadImpl(timeoutSpan);
+            string data = ReadImpl(timeoutSpan);
 
-            return PacketSerializer.Deserialize(content);
+            return PacketSerializer.Deserialize(data);
         }
 
         private void SendImpl(string? text)
@@ -163,7 +168,12 @@ namespace MySharpChat.Client
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentNullException(nameof(text));
 
-            SocketUtils.Send(m_socket, text, this);
+            NetworkStream stream = m_tcpClient.GetStream();
+            // Convert the string data to byte data using ASCII encoding.  
+            byte[] byteData = Encoding.ASCII.GetBytes(text);
+            stream.Write(byteData);
+
+            logger.LogInfo("Request send : {0}", text);
         }
 
         private string ReadImpl(TimeSpan timeoutSpan)
@@ -178,7 +188,7 @@ namespace MySharpChat.Client
                 if (!timeout)
                 {
                     string text = readTask.Result;
-                    
+
                     logger.LogInfo("Response received : {0}", text);
                     return text;
                 }
@@ -193,7 +203,33 @@ namespace MySharpChat.Client
 
         private Task<string> ReadAsyncImpl(CancellationToken cancelToken = default)
         {
-            return SocketUtils.ReadAsync(m_socket, this, cancelToken);
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    string content = string.Empty;
+                    try
+                    {
+                        NetworkStream stream = m_tcpClient.GetStream();
+                        int bytesRead;
+                        // Size of receive buffer.  
+                        const int BUFFER_SIZE = 256;
+                        // Receive buffer.  
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        // Received data string.  
+                        StringBuilder dataStringBuilder = new StringBuilder();
+
+                        while (stream.DataAvailable && (bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0 && !cancelToken.IsCancellationRequested)
+                        {
+                            // There  might be more data, so store the data received so far.
+                            string dataStr = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                            dataStringBuilder.Append(dataStr);
+                        }
+                        content = dataStringBuilder.ToString();
+                    }
+                    catch (OperationCanceledException) { }
+                    return content;
+                }
+            , cancelToken);
         }
     }
 }
