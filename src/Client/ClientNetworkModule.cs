@@ -1,5 +1,5 @@
 ﻿using MySharpChat.Core.Packet;
-using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.NetworkModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -56,11 +56,11 @@ namespace MySharpChat.Client
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
-            if (m_tcpClient.Connected)
+            if (IsConnected())
                 throw new InvalidOperationException("You are already connected. Disconnect before connection");
 
             m_tcpClient.Connect(remoteEP);
-            bool isConnected = m_tcpClient.Connected;
+            bool isConnected = IsConnected();
             Stopwatch stopwatch = Stopwatch.StartNew();
             int attempt = 0;
             bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
@@ -75,7 +75,7 @@ namespace MySharpChat.Client
                 try
                 {
                     timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
-                    isConnected = m_tcpClient.Connected;
+                    isConnected = IsConnected();
                     attemptConnection = !isConnected && !timeout;
                 }
                 catch (AggregateException)
@@ -102,7 +102,7 @@ namespace MySharpChat.Client
             if (connexionData == null)
                 throw new ArgumentException(nameof(connexionInfos.Remote));
 
-            IPEndPoint remoteEP = SocketUtils.CreateEndPoint(connexionData);
+            IPEndPoint remoteEP = NetworkUtils.CreateEndPoint(connexionData);
 
             const int CONNECTION_TIMEOUT_MS = 5000;
 
@@ -141,7 +141,7 @@ namespace MySharpChat.Client
 
         public bool IsConnected()
         {
-            return m_tcpClient != null && m_tcpClient.Connected && SocketUtils.IsConnected(m_tcpClient.Client);
+            return m_tcpClient != null && NetworkUtils.IsConnected(m_tcpClient);
         }
 
         public void Send(PacketWrapper? packet)
@@ -155,7 +155,7 @@ namespace MySharpChat.Client
 
         public List<PacketWrapper> Read(TimeSpan timeoutSpan)
         {
-            if (!m_tcpClient.Connected)
+            if (!IsConnected())
                 throw new ArgumentException("NetworkModule not initialized");
 
             string data = ReadImpl(timeoutSpan);

@@ -1,5 +1,5 @@
 ﻿using MySharpChat.Core.Packet;
-using MySharpChat.Core.SocketModule;
+using MySharpChat.Core.NetworkModule;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
@@ -38,7 +38,7 @@ namespace MySharpChat.Server
 
         public bool HasDataAvailable => false;
 
-        public bool IsConnectionPending => tcpListener != null && tcpListener.Pending();
+        public bool IsConnectionPending => tcpListener != null && NetworkUtils.IsConnectionPending(tcpListener);
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
@@ -51,7 +51,7 @@ namespace MySharpChat.Server
             if (connexionData == null)
                 throw new ArgumentException(nameof(connexionInfos.Local));
 
-            IPEndPoint localEndPoint = SocketUtils.CreateEndPoint(connexionData);
+            IPEndPoint localEndPoint = NetworkUtils.CreateEndPoint(connexionData);
 
             // Create a TCP/IP socket.  
             tcpListener = new TcpListener(localEndPoint);
