@@ -21,28 +21,45 @@
         </VerticalStackLayout>
 
         <Border Stroke="#FFABADB3" StrokeThickness="1" Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1">
-            <CollectionView x:Name="OutputStack" ItemsUpdatingScrollMode="KeepLastItemInView" Margin="3,0" Background="White"/>
+            <CollectionView x:Name="OutputStack" ItemsUpdatingScrollMode="KeepLastItemInView" Margin="3,0" Background="Transparent">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Label 
+                            LineBreakMode="TailTruncation" 
+                            Margin="0,2" 
+                            HorizontalTextAlignment="Center" VerticalTextAlignment="Center" 
+                            BackgroundColor="WhiteSmoke" TextColor="Black"
+                            Text="{Binding}"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
         </Border>
 
         <Grid x:Name="ConnectGrid" Margin="2" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1">
             <VerticalStackLayout Margin="0">
                 <HorizontalStackLayout>
                     <Image  x:Name="UserImage"
-                            Source="res/icons/user.ico"
+                            Source="user.ico"
                             MinimumWidthRequest="20" MaximumWidthRequest="40" MinimumHeightRequest="20" MaximumHeightRequest="40"/>
                     <Label x:Name="UserName" HorizontalTextAlignment="Start" VerticalTextAlignment="Start" Margin="0" Background="Transparent" LineBreakMode="TailTruncation" Text="Your Username ziufgzuoifguzeogze"/>
                 </HorizontalStackLayout>
                 <Label x:Name="ConnectionStatus" HorizontalTextAlignment="Start" Margin="0" Background="Transparent" LineBreakMode="TailTruncation"/>
             </VerticalStackLayout>
-            <Button x:Name="DisconnectButton" MinimumWidthRequest="20" MaximumWidthRequest="40" MinimumHeightRequest="20" MaximumHeightRequest="40" ImageSource="res/icons/exit.ico"/>
+            <Button x:Name="DisconnectButton" 
+                    MinimumWidthRequest="20" MaximumWidthRequest="40" MinimumHeightRequest="20" MaximumHeightRequest="40" 
+                    ImageSource="exit.ico"/>
         </Grid>
 
-        <HorizontalStackLayout Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1">
-            <Button x:Name="SendButton" WidthRequest="80" Margin="10" Text="Send"/>
-            <Border Stroke="#FFABADB3" StrokeThickness="1">
-                <Entry x:Name="InputBox" HorizontalTextAlignment="Start"/>
-            </Border>
-        </HorizontalStackLayout>
-
+        <Border Stroke="#FFABADB3" StrokeThickness="1" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1">
+            <Grid HorizontalOptions="FillAndExpand">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="SendButton" Grid.Column="0" Margin="5" Text="Send"/>
+                <Entry x:Name="InputBox" HorizontalTextAlignment="Start" Grid.Column="1" HorizontalOptions="FillAndExpand"/>
+            </Grid>
+        </Border>
     </Grid>
+
 </ContentView>

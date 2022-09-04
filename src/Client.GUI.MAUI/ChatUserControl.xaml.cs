@@ -20,7 +20,7 @@ namespace MySharpChat.Client.GUI.MAUI
         private readonly ChatViewModel m_viewModel;
 
         private readonly List<Entry> usersUiElements = new List<Entry>();
-        private readonly ObservableCollection<Label> messages = new ObservableCollection<Label>();
+        private readonly ObservableCollection<string> messages = new ObservableCollection<string>();
 
         internal ChatUserControl(ChatViewModel viewModel)
         {
@@ -101,15 +101,7 @@ namespace MySharpChat.Client.GUI.MAUI
                 string text = message;
                 if (!string.IsNullOrEmpty(text))
                 {
-                    Label outpuBlock = new Label();
-                    outpuBlock.LineBreakMode = LineBreakMode.TailTruncation;
-                    outpuBlock.Margin = new Thickness(0, 2, 0, 2);
-                    outpuBlock.HorizontalTextAlignment = TextAlignment.Center;
-                    outpuBlock.VerticalTextAlignment = TextAlignment.Center;
-                    outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                    outpuBlock.Text = text;
-
-                    messages.Add(outpuBlock);
+                    messages.Add(text);
                 }
             }
             else
