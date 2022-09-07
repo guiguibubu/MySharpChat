@@ -1,6 +1,9 @@
 ﻿using MySharpChat.Core.Utils.Logger;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace MySharpChat.Server
@@ -15,19 +18,28 @@ namespace MySharpChat.Server
         public const int HTTP_PORT = 80;
 #endif
         private readonly HttpListener _listener;
+        public ReadOnlyCollection<string> Prefixes => _listener.Prefixes.ToList().AsReadOnly();
+        private bool _running = false;
+        public bool IsRunning => _running;
+
+        public readonly Queue<HttpListenerContext> requestQueue = new Queue<HttpListenerContext>();
 
         public HttpServer()
         {
             _listener = new HttpListener();
         }
 
-        public void Start(IPEndPoint endpoint)
+        public void Start(IPAddress? ipAdress)
         {
-            string httpAdresse = string.Format("http://{0}:{1}/", endpoint.Address, HTTP_PORT);
+            if (ipAdress == null)
+                throw new ArgumentNullException(nameof(ipAdress));
+
+            string httpAdresse = string.Format("http://{0}:{1}/", ipAdress.ToString(), HTTP_PORT);
             _listener.Prefixes.Add(httpAdresse);
             try
             {
                 _listener.Start();
+                _running = true;
             }
             catch (HttpListenerException e)
             {
@@ -39,6 +51,7 @@ namespace MySharpChat.Server
 
         public void Stop()
         {
+            _running = false;
             _listener.Stop();
         }
 
@@ -52,36 +65,7 @@ namespace MySharpChat.Server
             if (_listener.IsListening)
             {
                 HttpListenerContext context = _listener.EndGetContext(result);
-                HttpListenerRequest request = context.Request;
-
-                HttpListenerResponse response = context.Response;
-                Stream output = response.OutputStream;
-
-                byte[] bodyBytes;
-
-                //Remove the first '/' character
-                string uriPath = request.Url!.AbsolutePath.Substring(1);
-                string osPath = !string.IsNullOrEmpty(uriPath) ? uriPath.Replace('/', Path.DirectorySeparatorChar) : "index.html";
-
-                if (File.Exists(Path.Combine("res", osPath)))
-                {
-                    bodyBytes = File.ReadAllBytes(Path.Combine("res", osPath));
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                }
-                else
-                {
-                    string text = "Welcome on MySharpChat server.";
-                    text += Environment.NewLine;
-                    text += $"No data at {request.Url!}";
-                    response.StatusCode = (int)HttpStatusCode.NotFound;
-
-                    bodyBytes = System.Text.Encoding.UTF8.GetBytes(text);
-                }
-
-                response.ContentLength64 = bodyBytes.Length;
-                output.Write(bodyBytes);
-                output.Close();
-                response.Close();
+                requestQueue.Enqueue(context);
 
                 Receive();
             }

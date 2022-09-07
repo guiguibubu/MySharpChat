@@ -88,11 +88,6 @@ namespace MySharpChat.Server
             return m_serverRun;
         }
 
-        public bool IsConnected(Socket? socket)
-        {
-            return socket != null && NetworkUtils.IsConnected(socket);
-        }
-
         public void Stop(int exitCode = 0)
         {
             _serverImpl.NetworkModule.Disconnect();
