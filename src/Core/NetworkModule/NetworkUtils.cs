@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace MySharpChat.Core.NetworkModule
 {
+    [Obsolete("No more use of raw sockets and TCP connections")]
     public class NetworkUtils
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<NetworkUtils>();

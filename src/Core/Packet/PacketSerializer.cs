@@ -8,6 +8,18 @@ namespace MySharpChat.Core.Packet
 {
     public static class PacketSerializer
     {
+        public static string Serialize(IEnumerable<PacketWrapper?> packets)
+        {
+            IEnumerator<PacketWrapper?> enumerator = packets.GetEnumerator();
+            StringBuilder sb = new StringBuilder();
+            while (enumerator.MoveNext())
+            {
+                sb.Append(Serialize(enumerator.Current));
+            }
+
+            return sb.ToString();
+        }
+
         public static string Serialize(PacketWrapper? packet)
         {
             if (packet == null)
