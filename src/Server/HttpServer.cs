@@ -1,5 +1,6 @@
 ﻿using MySharpChat.Core.Utils.Logger;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -12,29 +13,24 @@ namespace MySharpChat.Server
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<HttpServer>();
 
-#if DEBUG
-        public const int HTTP_PORT = 8080;
-#else
-        public const int HTTP_PORT = 80;
-#endif
         private readonly HttpListener _listener;
         public ReadOnlyCollection<string> Prefixes => _listener.Prefixes.ToList().AsReadOnly();
         private bool _running = false;
         public bool IsRunning => _running;
 
-        public readonly Queue<HttpListenerContext> requestQueue = new Queue<HttpListenerContext>();
+        public readonly ConcurrentQueue<HttpListenerContext> requestQueue = new();
 
         public HttpServer()
         {
             _listener = new HttpListener();
         }
 
-        public void Start(IPAddress? ipAdress)
+        public void Start(IPEndPoint? endpoint)
         {
-            if (ipAdress == null)
-                throw new ArgumentNullException(nameof(ipAdress));
+            if (endpoint == null)
+                throw new ArgumentNullException(nameof(endpoint));
 
-            string httpAdresse = string.Format("http://{0}:{1}/", ipAdress.ToString(), HTTP_PORT);
+            string httpAdresse = string.Format("http://{0}:{1}/", endpoint.Address.ToString(), endpoint.Port);
             _listener.Prefixes.Add(httpAdresse);
             try
             {

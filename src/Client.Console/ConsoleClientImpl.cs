@@ -10,6 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using MySharpChat.Core.Http;
+using System.Linq;
+using MySharpChat.Core.Model;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MySharpChat.Client.Console
 {
@@ -50,7 +54,8 @@ namespace MySharpChat.Client.Console
                 if (networkModule.IsConnected())
                 {
                     bool prefixChanged = false;
-                    if (networkModule.HasDataAvailable)
+                    int nbPacketsHandles = 0;
+                    while (networkModule.HasDataAvailable && nbPacketsHandles < 100)
                     {
                         HandleNetworkPackets();
                     }
@@ -72,7 +77,7 @@ namespace MySharpChat.Client.Console
                     }
                 }
             }
-                
+
             CommandParser parser = CurrentLogic.CommandParser;
             string text = userInputTask.Result;
 
@@ -125,61 +130,68 @@ namespace MySharpChat.Client.Console
 
         private void HandleNetworkPackets()
         {
-            List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
-            foreach (PacketWrapper packet in packets)
+            ClientNetworkModule clientNetworkModule = ((ClientNetworkModule)networkModule);
+            PacketWrapper packet = clientNetworkModule.CurrentPacket;
+            if (packet.Package is UserInfoPacket userInfoPacket)
             {
-                if (packet.Package is ClientInitialisationPacket connectInitPackage)
-                {
-                    bool isInitialised = ClientId != Guid.Empty;
-                    if (isInitialised)
-                    {
-                        string newUsername = connectInitPackage.Username;
-                        if (!string.IsNullOrEmpty(newUsername))
-                        {
-                            Username = newUsername;
-                        }
-                    }
-                    else
-                    {
-                        ClientId = connectInitPackage.SessionId;
-                        // Tell the server our username
-                        ClientInitialisationPacket initPacket = new ClientInitialisationPacket(ClientId, Username);
-                        PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
-                        NetworkModule.Send(packetWrapper);
-                    }
+                User user = userInfoPacket.User;
+                Guid userId = user.Id;
+                string username = user.Username;
 
-                }
-                else if (packet.Package is ChatPacket chatPackage)
+                if(LocalUser.Id == userId)
+                    LocalUser.Username = username;
+
+                bool knownUser = ChatRoom!.Users.Contains(userId);
+                bool isConnected = userInfoPacket.Connected;
+                bool isDisconnection = knownUser && !isConnected;
+                if (isDisconnection)
                 {
-                    HandleChatPacket(chatPackage);
+                    ChatRoom!.Users.Remove(userId);
+                    string text = $"User leave the session : {username}";
+                    MoveInputLineDown(text);
+                    return;
                 }
-                else if (packet.Package is UserStatusPacket userStatusPackage)
+
+                bool alreadyDiconnected = !knownUser && !isConnected;
+                if (alreadyDiconnected)
+                    return;
+
+                bool newUser = !knownUser && isConnected;
+                if (newUser)
                 {
-                    HandleUserStatusPacket(userStatusPackage);
+                    ChatRoom!.Users.Add(new UserState(user, true));
+                    string text = $"New user joined : {username}";
+                    MoveInputLineDown(text);
+                    return;
                 }
+
+                User userInCache = ChatRoom!.Users[userId].User;
+                string oldUsername = userInCache.Username;
+                if (oldUsername != username)
+                {
+                    string text = $"Username change from {oldUsername} to {username}";
+                    userInCache.Username = username;
+                    MoveInputLineDown(text);
+                }
+            }
+            else if (packet.Package is ChatPacket chatPackage)
+            {
+                HandleChatPacket(chatPackage);
             }
         }
 
         private void HandleChatPacket(ChatPacket chatPacket)
         {
-            string readText = chatPacket.Message;
-            if (!string.IsNullOrEmpty(readText))
+            ChatMessage chatMessage = chatPacket.ChatMessage;
+            if (!ChatRoom!.Messages.Contains(chatMessage))
             {
+                ChatRoom!.Messages.Add(chatMessage);
+                string username = chatMessage.User.Username;
+                string messageText = chatMessage.Message;
+                string readText = $"{username} : {messageText}";
                 MoveInputLineDown(readText);
             }
         }
-
-        private void HandleUserStatusPacket(UserStatusPacket userStatusPacket)
-        {
-            string username = userStatusPacket.Username;
-            bool isConnected = userStatusPacket.Connected;
-            string text = isConnected ? $"New user joined : {username}" : $"User leave the session : {username}";
-            if (!string.IsNullOrEmpty(text))
-            {
-                MoveInputLineDown(text);
-            }
-        }
-
 
         public override void Stop()
         {

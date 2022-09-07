@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Model;
+using MySharpChat.Core.Utils;
 using System;
 
 namespace MySharpChat.Client
@@ -8,13 +9,9 @@ namespace MySharpChat.Client
         protected readonly INetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        public string LocalEndPoint => networkModule.LocalEndPoint;
-
-        public string RemoteEndPoint => networkModule.RemoteEndPoint;
-
-        public Guid ClientId { get; protected set; } = Guid.Empty;
-        public string Username { get; protected set; } = Environment.UserName;
-
+        public User LocalUser { get; protected set; } = new User(Guid.NewGuid(), Environment.UserName);
+        public ChatRoom? ChatRoom { get; set; } = null;
+    
         protected BaseClientImpl()
         {
             networkModule = new ClientNetworkModule(this);

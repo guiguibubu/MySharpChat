@@ -1,6 +1,6 @@
 ﻿using System;
 using MySharpChat.Core;
-using MySharpChat.Core.Command;
+using MySharpChat.Core.Http;
 using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
 
@@ -17,15 +17,19 @@ namespace MySharpChat.Client.Command
             if (client == null)
                 throw new ArgumentNullException(nameof(client));
 
-            if (client.ClientId == Guid.Empty)
+            if (client.LocalUser.Id == Guid.Empty)
                 throw new ConnectionNotInitializedException();
 
             string? text = args.Length > 0 ? args[0] : null;
             if (!string.IsNullOrEmpty(text))
             {
-                ChatPacket chatPacket = new ChatPacket(text);
-                PacketWrapper packet = new PacketWrapper(client.ClientId, chatPacket);
-                client.NetworkModule.Send(packet);
+                ChatPacket chatPacket = new ChatPacket(Guid.NewGuid(), client.LocalUser, text);
+                PacketWrapper packet = new PacketWrapper(client.LocalUser.Id, chatPacket);
+                ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
+                UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);
+                requestUriBuilder.Path += "/message";
+                requestUriBuilder.Query = $"userId={client.LocalUser.Id}";
+                clientNetworkModule.Send(HttpSendRequestContext.Post(requestUriBuilder.Uri), packet);
 
                 return true;
             }

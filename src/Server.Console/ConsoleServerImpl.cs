@@ -23,16 +23,14 @@ namespace MySharpChat.Server
         private readonly ServerNetworkModule networkModule;
         public INetworkModule NetworkModule => networkModule;
 
-        public Guid ServerId { get; private set; } = Guid.NewGuid();
-
         private Dictionary<string, IHttpRequestHandler> httpHandlersCache=  new Dictionary<string, IHttpRequestHandler>();
 
-        public ChatRoom ChatRoom { get; private set; }
+        public ServerChatRoom ChatRoom { get; private set; }
 
         public ConsoleServerImpl()
         {
             networkModule = new ServerNetworkModule();
-            ChatRoom = new ChatRoom(ServerId);
+            ChatRoom = new ServerChatRoom(Guid.NewGuid());
             httpHandlersCache.Add("chat", ChatRoom);
         }
 
@@ -71,9 +69,11 @@ namespace MySharpChat.Server
             //Remove the first '/' character
             string uriPath = request.Url!.AbsolutePath.Substring(1);
 
-            logger.LogDebug("Request reveived : {0}", uriPath);
+            logger.LogDebug("Request received : {0} {1}", request.HttpMethod, uriPath);
 
-            IEnumerable<IHttpRequestHandler> possibleHttpRequestHandlers = httpHandlersCache.Where(pair => uriPath.StartsWith(pair.Key, StringComparison.InvariantCultureIgnoreCase) && (uriPath.Length == pair.Key.Length) || uriPath[pair.Key.Length] == '/').Select(pair => pair.Value);
+            IEnumerable<IHttpRequestHandler> possibleHttpRequestHandlers = httpHandlersCache
+                .Where(pair => uriPath.StartsWith(pair.Key, StringComparison.InvariantCultureIgnoreCase) && (uriPath.Length == pair.Key.Length || (uriPath.Length > pair.Key.Length && uriPath[pair.Key.Length] == '/')))
+                .Select(pair => pair.Value);
             if (possibleHttpRequestHandlers.Any())
             {
                 IHttpRequestHandler httpRequestHandler = possibleHttpRequestHandlers.First();
