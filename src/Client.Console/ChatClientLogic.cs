@@ -16,7 +16,7 @@ namespace MySharpChat.Client.Console
         private readonly CommandParser commandParser;
         public CommandParser CommandParser => commandParser;
 
-        public string Prefix => string.Format("{0}@{1}> ", _client.Username, _client.NetworkModule.LocalEndPoint);
+        public string Prefix => string.Format("{0}@{1}> ", _client.LocalUser.Username, ((ClientNetworkModule)_client.NetworkModule).ServerUri!.Host);
 
         private readonly ConsoleClientImpl _client;
 

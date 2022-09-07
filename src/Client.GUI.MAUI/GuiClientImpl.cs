@@ -30,7 +30,7 @@ namespace MySharpChat.Client.GUI.MAUI
                     List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
                     foreach (PacketWrapper packet in packets)
                     {
-                        if (packet.Package is ClientInitialisationPacket connectInitPackage)
+                        if (packet.Package is UserInfoPacket connectInitPackage)
                         {
                             bool isInitialised = ClientId != Guid.Empty;
                             if (isInitialised)
@@ -42,9 +42,9 @@ namespace MySharpChat.Client.GUI.MAUI
                             }
                             else
                             {
-                                ClientId = connectInitPackage.SessionId;
+                                ClientId = connectInitPackage.UserId;
                                 // Tell the server our username
-                                ClientInitialisationPacket initPacket = new ClientInitialisationPacket(ClientId, Username);
+                                UserInfoPacket initPacket = new UserInfoPacket(ClientId, Username);
                                 PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
                                 NetworkModule.Send(packetWrapper);
                                 isLoggedIn = true;
@@ -87,7 +87,7 @@ namespace MySharpChat.Client.GUI.MAUI
 
         private void HandleUserStatusPacket(UserStatusPacket userStatusPacket)
         {
-            string username = userStatusPacket.Username;
+            string username = userStatusPacket.UserId;
             if (!string.IsNullOrEmpty(username))
             {
                 if (userStatusPacket.Connected)

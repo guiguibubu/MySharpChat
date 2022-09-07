@@ -1,17 +1,18 @@
-﻿using System;
+﻿//using MySharpChat.Core.Model;
+//using System;
 
-namespace MySharpChat.Core.Packet
-{
-    [Serializable]
-    public class UserStatusPacket
-    {
-        public UserStatusPacket(string username, bool connected)
-        {
-            Username = username;
-            Connected = connected;
-        }
+//namespace MySharpChat.Core.Packet
+//{
+//    [Serializable]
+//    public class UserStatusPacket
+//    {
+//        public UserStatusPacket(User user, bool connected)
+//        {
+//            User = user;
+//            Connected = connected;
+//        }
 
-        public string Username { get; set; }
-        public bool Connected { get; set; }
-    }
-}
+//        public User User { get; private set; }
+//        public bool Connected { get; private set; }
+//    }
+//}

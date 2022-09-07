@@ -4,14 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection.Metadata;
+using MySharpChat.Core.Http;
 
 namespace MySharpChat.Core.NetworkModule
 {
-    [Obsolete("No more use of raw sockets and TCP connections")]
     public class NetworkUtils
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<NetworkUtils>();
@@ -19,6 +23,7 @@ namespace MySharpChat.Core.NetworkModule
 
         private NetworkUtils() { }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static Socket CreateSocket(ConnexionInfos.Data data)
         {
             if (data.Ip == null)
@@ -31,6 +36,7 @@ namespace MySharpChat.Core.NetworkModule
             return listener;
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static void ShutdownSocket(Socket? socket)
         {
             if (socket == null)
@@ -55,6 +61,7 @@ namespace MySharpChat.Core.NetworkModule
             }
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         //https://stackoverflow.com/questions/2661764/how-to-check-if-a-socket-is-connected-disconnected-in-c
         //https://github.com/jchristn/SuperSimpleTcp/blob/5c4bfbef56dd7a5a2e437f17ac62450f26feb3bf/src/SuperSimpleTcp/SimpleTcpClient.cs
         public static bool IsConnected(Socket? socket)
@@ -89,6 +96,7 @@ namespace MySharpChat.Core.NetworkModule
             }
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnected(TcpClient? tcpClient)
         {
             if (tcpClient == null)
@@ -97,6 +105,7 @@ namespace MySharpChat.Core.NetworkModule
             return tcpClient.Connected && IsConnected(tcpClient.Client);
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnectionPending(Socket? socket)
         {
             if (socket == null)
@@ -112,6 +121,7 @@ namespace MySharpChat.Core.NetworkModule
             }
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnectionPending(TcpListener? tcpListener)
         {
             if (tcpListener == null)
@@ -131,6 +141,7 @@ namespace MySharpChat.Core.NetworkModule
             return endPoint;
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static string Read(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
             if (handler == null)
@@ -153,6 +164,7 @@ namespace MySharpChat.Core.NetworkModule
             return content;
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static string Read(TcpClient? tcpClient, CancellationToken cancelToken = default)
         {
             if (tcpClient == null)
@@ -188,6 +200,12 @@ namespace MySharpChat.Core.NetworkModule
             return content;
         }
 
+        public static HttpResponseMessage Read(HttpClient httpCLient, HttpReadRequestContext context, CancellationToken cancelToken = default)
+        {
+            return httpCLient.GetAsync(context.Uri, cancelToken).Result;
+        }
+
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static Task<string> ReadAsync(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -201,6 +219,7 @@ namespace MySharpChat.Core.NetworkModule
             , cancelToken);
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static Task<string> ReadAsync(TcpClient? tcpClient, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -214,6 +233,20 @@ namespace MySharpChat.Core.NetworkModule
             , cancelToken);
         }
 
+        public static Task<HttpResponseMessage?> ReadAsync(HttpClient httpCLient, HttpReadRequestContext context, CancellationToken cancelToken = default)
+        {
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    HttpResponseMessage? response = null;
+                    try { response = Read(httpCLient, context, cancelToken); }
+                    catch (OperationCanceledException) { }
+                    return response;
+                }
+            , cancelToken);
+        }
+
+        [Obsolete("No more use of raw sockets and TCP connections")]
         private static void ReadImpl(SocketContext state, CancellationToken cancelToken = default)
         {
             if (state.workSocket == null)
@@ -244,6 +277,7 @@ namespace MySharpChat.Core.NetworkModule
             }
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool Send(Socket? handler, string data, object? caller = null)
         {
             if (handler == null)
@@ -278,6 +312,7 @@ namespace MySharpChat.Core.NetworkModule
             return success;
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool Send(TcpClient? tcpClient, string data)
         {
             if (tcpClient == null)
@@ -306,6 +341,24 @@ namespace MySharpChat.Core.NetworkModule
             return success;
         }
 
+        public static HttpResponseMessage Send(HttpClient httpCLient, HttpSendRequestContext context, string data, CancellationToken cancelToken = default)
+        {
+            HttpContent httpRequestContent = new StringContent(data);
+            httpRequestContent.Headers.ContentType = MediaTypeHeaderValue.Parse(MediaTypeNames.Application.Json);
+            logger.LogInfo("Request send : {0}", data);
+            if (context.HttpMethod == HttpMethod.Put)
+                return httpCLient.PutAsync(context.Uri, httpRequestContent, cancelToken).Result;
+            else if (context.HttpMethod == HttpMethod.Post)
+                return httpCLient.PostAsync(context.Uri, httpRequestContent, cancelToken).Result;
+            else if (context.HttpMethod == HttpMethod.Delete)
+                return httpCLient.DeleteAsync(context.Uri, cancelToken).Result;
+            else if (context.HttpMethod == HttpMethod.Patch)
+                return httpCLient.PatchAsync(context.Uri, httpRequestContent, cancelToken).Result;
+            else
+                throw new InvalidOperationException(string.Format("{0} must be PUT, POST, DELETE or PATCH", nameof(context.HttpMethod)));
+        }
+
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static Task<bool> SendAsync(Socket? handler, string data, object? caller = null, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -319,6 +372,7 @@ namespace MySharpChat.Core.NetworkModule
             , cancelToken);
         }
 
+        [Obsolete("No more use of raw sockets and TCP connections")]
         public static Task<bool> SendAsync(TcpClient? tcpClient, string data, CancellationToken cancelToken = default)
         {
             return Task.Factory.StartNew(
@@ -328,6 +382,19 @@ namespace MySharpChat.Core.NetworkModule
                     try { success = Send(tcpClient, data); }
                     catch (OperationCanceledException) { }
                     return success;
+                }
+            , cancelToken);
+        }
+
+        public static Task<HttpResponseMessage?> SendAsync(HttpClient httpCLient, HttpSendRequestContext context, string data, CancellationToken cancelToken = default)
+        {
+            return Task.Factory.StartNew(
+                () =>
+                {
+                    HttpResponseMessage? response = null;
+                    try { response = Send(httpCLient, context, data); }
+                    catch (OperationCanceledException) { }
+                    return response;
                 }
             , cancelToken);
         }

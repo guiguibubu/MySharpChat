@@ -4,7 +4,14 @@ namespace MySharpChat
 {
     public class ConnexionInfos
     {
-        public const int DEFAULT_PORT = 11000;
+
+#if DEBUG
+        public const int HTTP_PORT = 8080;
+#else
+        public const int HTTP_PORT = 80;
+#endif
+
+        public const int DEFAULT_PORT = HTTP_PORT;
 
         public ConnexionInfos() : this(new Data(), new Data()) { }
         public ConnexionInfos(Data local, Data remote) {

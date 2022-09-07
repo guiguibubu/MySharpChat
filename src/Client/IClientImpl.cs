@@ -1,4 +1,5 @@
-﻿using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Model;
+using MySharpChat.Core.Utils;
 using System;
 
 namespace MySharpChat.Client
@@ -7,8 +8,8 @@ namespace MySharpChat.Client
     {
         INetworkModule NetworkModule { get; }
 
-        Guid ClientId { get; }
-        string Username { get; }
+        User LocalUser { get; }
+        ChatRoom? ChatRoom { get; set; }
 
         void Run(Client client);
         void Stop();
