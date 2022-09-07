@@ -9,9 +9,9 @@ namespace MySharpChat.Core.Packet
     [Serializable]
     public class ClientInitialisationPacket
     {
-        public ClientInitialisationPacket(Guid sessionId, string username = "")
+        public ClientInitialisationPacket(Guid userId, string username = "")
         {
-            SessionId = sessionId;
+            SessionId = userId;
             Username = username;
         }
 

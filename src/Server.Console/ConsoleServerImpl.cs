@@ -9,6 +9,10 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
+using System.IO;
+using System.Net.Http;
+using MySharpChat.Core.Http;
 
 namespace MySharpChat.Server
 {
@@ -21,37 +25,33 @@ namespace MySharpChat.Server
 
         public Guid ServerId { get; private set; } = Guid.NewGuid();
 
+        private Dictionary<string, IHttpRequestHandler> httpHandlersCache=  new Dictionary<string, IHttpRequestHandler>();
+
         public ChatRoom ChatRoom { get; private set; }
 
-        private readonly HttpServer httpServer;
         public ConsoleServerImpl()
         {
             networkModule = new ServerNetworkModule();
             ChatRoom = new ChatRoom(ServerId);
-            httpServer = new HttpServer();
+            httpHandlersCache.Add("chat", ChatRoom);
         }
 
         public void Run(Server server)
         {
             // Start an asynchronous socket to listen for connections.  
-            logger.LogDebug("Waiting for a connection...");
+            logger.LogDebug("Waiting for a request ...");
 
-            while (!networkModule.IsConnectionPending)
+            while (!networkModule.HasDataAvailable)
             {
                 Thread.Sleep(1000);
             }
 
-            TcpClient tcpClient = networkModule.Accept();
-            tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int)TimeSpan.FromHours(2).TotalMilliseconds);
-            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, (int)TimeSpan.FromSeconds(1).TotalMilliseconds);
-            tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10);
-            LaunchSession(tcpClient);
+            HandleHttpRequest(networkModule.CurrentRequest);
         }
 
         public void Start()
         {
-            httpServer.Start(System.Net.IPEndPoint.Parse(networkModule.LocalEndPoint));
+
         }
 
         public void Stop()
@@ -64,9 +64,59 @@ namespace MySharpChat.Server
             return networkModule.Connect(connexionInfos);
         }
 
-        private void LaunchSession(TcpClient tcpClient)
+        private void HandleHttpRequest(HttpListenerContext httpContext)
         {
-            ChatRoom.LaunchSession(tcpClient);
+            HttpListenerRequest request = httpContext.Request;
+
+            //Remove the first '/' character
+            string uriPath = request.Url!.AbsolutePath.Substring(1);
+
+            logger.LogDebug("Request reveived : {0}", uriPath);
+
+            IEnumerable<IHttpRequestHandler> possibleHttpRequestHandlers = httpHandlersCache.Where(pair => uriPath.StartsWith(pair.Key, StringComparison.InvariantCultureIgnoreCase) && (uriPath.Length == pair.Key.Length) || uriPath[pair.Key.Length] == '/').Select(pair => pair.Value);
+            if (possibleHttpRequestHandlers.Any())
+            {
+                IHttpRequestHandler httpRequestHandler = possibleHttpRequestHandlers.First();
+                httpRequestHandler.HandleHttpRequest(httpContext);
+            }
+            else
+            {
+                HandleRequestDefault(httpContext);
+            }
+        }
+
+        private void HandleRequestDefault(HttpListenerContext context)
+        {
+            HttpListenerRequest request = context.Request;
+
+            HttpListenerResponse response = context.Response;
+
+            //Remove the first '/' character
+            string uriPath = request.Url!.AbsolutePath.Substring(1);
+            string osPath = !string.IsNullOrEmpty(uriPath) ? uriPath.Replace('/', Path.DirectorySeparatorChar) : "index.html";
+
+            Stream output = response.OutputStream;
+
+            byte[] bodyBytes;
+
+            if (new HttpMethod(request.HttpMethod) == HttpMethod.Get && File.Exists(Path.Combine("res", osPath)))
+            {
+                bodyBytes = File.ReadAllBytes(Path.Combine("res", osPath));
+                response.StatusCode = (int)HttpStatusCode.OK;
+            }
+            else
+            {
+                string text = "Welcome on MySharpChat server.";
+                text += Environment.NewLine;
+                text += $"No data at {uriPath}";
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+
+                bodyBytes = Encoding.UTF8.GetBytes(text);
+            }
+
+            response.ContentLength64 = bodyBytes.Length;
+            output.Write(bodyBytes);
+            output.Close();
         }
     }
 }

@@ -1,16 +1,23 @@
-﻿using MySharpChat.Core.Packet;
+﻿using MySharpChat.Core.Http;
+using MySharpChat.Core.Packet;
+using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Net.Sockets;
-using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http;
+using System.Net.Mime;
+using System.Text;
 
 namespace MySharpChat.Server
 {
-    public class ChatRoom
+    public class ChatRoom : IHttpRequestHandler
     {
-        private readonly List<ChatSession> m_connectedSessions = new List<ChatSession>();
-        private readonly List<ChatMessage> m_messages = new List<ChatMessage>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<ChatRoom>();
+
+        private readonly Dictionary<string, User> m_connectedUsers = new();
+        private readonly Dictionary<string, ChatMessage> m_messages = new();
         private readonly Guid _serverId;
 
         public ChatRoom(Guid serverId)
@@ -18,116 +25,203 @@ namespace MySharpChat.Server
             _serverId = serverId;
         }
 
-        public void LaunchSession(TcpClient tcpClient)
+        public void HandleHttpRequest(HttpListenerContext httpContext)
         {
-            if (tcpClient == null)
-                throw new ArgumentNullException(nameof(tcpClient));
+            HttpListenerRequest request = httpContext.Request;
 
-            Task.Run(() =>
+            //Remove the first '/' character
+            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring("chat".Length);
+
+            if (!string.IsNullOrEmpty(uriPath))
             {
-                ChatSession session = new ChatSession(tcpClient);
-                session.OnSessionInitializedCallback += OnSessionInitialized;
-                session.OnSessionFinishedCallback += OnSessionFinished;
-                session.OnBroadcastCallback += Broadcast;
-                session.OnUsernameChangeCallback += OnUsernameChange;
-                session.Start(_serverId);
+                uriPath = uriPath.Substring(1);
             }
-            );
+            HttpListenerResponse response = httpContext.Response;
+
+            if (uriPath.StartsWith("connect"))
+            {
+                HandleConnectionRequest(httpContext);
+            }
+            else if (uriPath.StartsWith("message"))
+            {
+                HandleMessageRequest(httpContext);
+            }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close();
+            }
         }
 
-
-        private void OnSessionInitialized(ChatSession session)
+        private void HandleConnectionRequest(HttpListenerContext httpContext)
         {
-            UpdateUsernameIfNecessary(session);
+            HttpListenerRequest request = httpContext.Request;
 
-            UserStatusPacket package = new UserStatusPacket(session.User.Username, true);
-            PacketWrapper packet = new PacketWrapper(_serverId, package);
+            HttpListenerResponse response = httpContext.Response;
 
-            Broadcast(session, packet);
-
-            foreach (ChatMessage message in m_messages)
+            string? username = request.QueryString["user"];
+            string? userId = request.QueryString["userId"];
+            if (request.HttpMethod != HttpMethod.Post.ToString())
             {
-                ChatPacket chatPackage = new ChatPacket(message.Message);
-                PacketWrapper messagePacket = new PacketWrapper(_serverId, chatPackage);
-                session.NetworkModule.Send(messagePacket);
-            }
+                string errorMessage = "Connection request must use HTTP POST method";
+                logger.LogError(errorMessage);
 
-            foreach (ChatSession connectedSession in m_connectedSessions)
-            {
-                UserStatusPacket userPackage = new UserStatusPacket(connectedSession.User.Username, true);
-                PacketWrapper messagePacket = new PacketWrapper(_serverId, userPackage);
-                session.NetworkModule.Send(messagePacket);
-            }
-
-            m_connectedSessions.Add(session);
-
-        }
-
-        private void OnSessionFinished(ChatSession session)
-        {
-            m_connectedSessions.Remove(session);
-
-            UserStatusPacket package = new UserStatusPacket(session.User.Username, false);
-            PacketWrapper packet = new PacketWrapper(_serverId, package);
-
-            Broadcast(session, packet);
-        }
-
-        private void OnUsernameChange(ChatSession session, string oldUsername)
-        {
-            bool usernameChanged = !string.Equals(session.User.Username, oldUsername, StringComparison.InvariantCulture);
-            if (!usernameChanged)
+                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
                 return;
-
-            UpdateUsernameIfNecessary(session);
-
-            string message = $"User name changed for \"{oldUsername}\" to \"{session.User.Username}\"";
-            ChatPacket package = new ChatPacket(message);
-            PacketWrapper packet = new PacketWrapper(_serverId, package);
-
-            Broadcast(session, packet);
-        }
-
-        private void Broadcast(ChatSession origin, PacketWrapper packet)
-        {
-            if (packet.Package is ChatPacket chatPacket)
-                m_messages.Add(new ChatMessage(origin.User, chatPacket.Message));
-
-            IEnumerable<ChatSession> sessionToBroadcast = m_connectedSessions;
-            foreach (ChatSession session in sessionToBroadcast)
+            }
+            if (string.IsNullOrEmpty(userId))
             {
-                session.NetworkModule.Send(packet);
+                string errorMessage = "Connection request must have a \"userId\" param";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+            if (!Guid.TryParse(userId, out _))
+            {
+                string errorMessage = "Connection request parameter \"userId\" must respect GUID format";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+
+            if (m_connectedUsers.ContainsKey(userId))
+            {
+                string errorMessage = $"User with userId \"{userId}\" already connected";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.Conflict;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(username))
+                {
+                    username = "AnonymousUser";
+                }
+                if (!IsUserNameAvailable(userId, username))
+                {
+                    username = GenerateNewUsername(userId, username);
+                }
+                m_connectedUsers.Add(userId, new User(username));
+
+                List<PacketWrapper> responsePackets = new();
+                PacketWrapper initPacket = new PacketWrapper(_serverId, new ClientInitialisationPacket(Guid.Parse(userId), username));
+                responsePackets.Add(initPacket);
+
+                foreach(ChatMessage chatMessage in m_messages.Values)
+                {
+                    PacketWrapper chatPacket = new PacketWrapper(_serverId, new ChatPacket(chatMessage.Message));
+                    responsePackets.Add(chatPacket);
+                }
+
+                string packetSerialized = PacketSerializer.Serialize(responsePackets);
+
+                response.ContentType = MediaTypeNames.Application.Json;
+                response.StatusCode = (int)HttpStatusCode.OK;
+                response.Close(Encoding.ASCII.GetBytes(packetSerialized), true);
             }
         }
 
-        private bool IsUserNameAvailable(ChatSession session, string username)
+        private void HandleMessageRequest(HttpListenerContext httpContext)
         {
-            return !m_connectedSessions.Where(s => s != session).Select(s => s.User.Username).Contains(username);
+            HttpListenerRequest request = httpContext.Request;
+
+            HttpListenerResponse response = httpContext.Response;
+
+            string? userId = request.QueryString["userId"];
+            if (request.HttpMethod != HttpMethod.Post.ToString())
+            {
+                string errorMessage = "Message request must use HTTP POST method";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+            if (string.IsNullOrEmpty(userId))
+            {
+                string errorMessage = "Message request must have a \"userId\" param";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+            if (!Guid.TryParse(userId, out _))
+            {
+                string errorMessage = "Connection request parameter \"userId\" must respect GUID format";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+
+            if (!m_connectedUsers.ContainsKey(userId))
+            {
+                string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+
+            string? httpContent = request.ContentType;
+            if (!string.Equals(httpContent, MediaTypeNames.Application.Json))
+            {
+                string errorMessage = $"Message request body must be of format : {MediaTypeNames.Application.Json}";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.UnsupportedMediaType;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return;
+            }
+
+            string requestBody = new StreamReader(request.InputStream).ReadToEnd();
+            if (!string.IsNullOrEmpty(requestBody))
+            {
+                List<PacketWrapper> packets = PacketSerializer.Deserialize(new StreamReader(request.InputStream).ReadToEnd());
+                foreach (PacketWrapper packet in packets)
+                {
+                    if (packet.Package is ChatPacket chatPacket)
+                    {
+                        m_messages.Add(userId, new ChatMessage(m_connectedUsers[userId], chatPacket.Message));
+                    }
+                }
+                response.StatusCode = (int)HttpStatusCode.OK;
+                response.Close();
+            }
+            else
+            {
+                string errorMessage = $"Message request body must not be empty";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+            }
         }
 
-        private string GenerateNewUsername(ChatSession session, string currentUsername)
+        private bool IsUserNameAvailable(string userId, string username)
+        {
+            return !m_connectedUsers.Where(pair => pair.Key == userId).Select(pair => pair.Value.Username).Contains(username);
+        }
+
+        private string GenerateNewUsername(string userId, string currentUsername)
         {
             string newUsername = currentUsername;
             int usernameSuffix = 1;
-            while (!IsUserNameAvailable(session, newUsername))
+            while (!IsUserNameAvailable(userId, newUsername))
             {
                 newUsername = currentUsername + "_" + usernameSuffix;
                 usernameSuffix++;
             }
             return newUsername;
-        }
-
-        private void UpdateUsernameIfNecessary(ChatSession session)
-        {
-            string currentUsername = session.User.Username;
-
-            if (!IsUserNameAvailable(session, currentUsername))
-            {
-                session.User.Username = GenerateNewUsername(session, currentUsername);
-            }
-
-            ClientInitialisationPacket connectInitPacket = new ClientInitialisationPacket(session.ClientId, session.User.Username);
-            session.NetworkModule.Send(new PacketWrapper(_serverId, connectInitPacket));
         }
     }
 }
