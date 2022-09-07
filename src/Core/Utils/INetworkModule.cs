@@ -1,7 +1,9 @@
-﻿using MySharpChat.Core.Packet;
+﻿using MySharpChat.Core.Http;
+using MySharpChat.Core.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,16 +12,13 @@ namespace MySharpChat.Core.Utils
 {
     public interface INetworkModule : IConnectMachine
     {
-        string LocalEndPoint { get; }
-        string RemoteEndPoint { get; }
         bool HasDataAvailable { get; }
 
-        void Send(PacketWrapper? packet);
-
-        List<PacketWrapper> Read(TimeSpan timeoutSpan);
-        List<PacketWrapper> Read()
+        Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet);
+        HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan);
+        public HttpResponseMessage? Read(HttpReadRequestContext context)
         {
-            return Read(Timeout.InfiniteTimeSpan);
+            return Read(context, Timeout.InfiniteTimeSpan);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace MySharpChat.Client.Console
         public CommandParser CommandParser => commandParser;
 
         private readonly ConsoleClientImpl _client;
-        public string Prefix => string.Format("{0}> ", _client.Username);
+        public string Prefix => string.Format("{0}> ", _client.LocalUser.Username);
 
         public LoaderClientLogic(ConsoleClientImpl client)
         {

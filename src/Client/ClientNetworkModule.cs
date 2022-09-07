@@ -11,6 +11,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Net.Mime;
+using MySharpChat.Core.Http;
+using MySharpChat.Core.Model;
 
 namespace MySharpChat.Client
 {
@@ -20,7 +25,10 @@ namespace MySharpChat.Client
 
         private readonly IClientImpl _client;
 
-        private readonly TcpClient m_tcpClient = new TcpClient(AddressFamily.InterNetwork);
+        public Guid? ServerId { get; private set; } = null;
+        public Uri? ServerUri { get; private set; } = null;
+        public Uri? ChatUri { get; private set; } = null;
+        private readonly HttpClient m_httpClient = new HttpClient();
 
         public ClientNetworkModule(IClientImpl client)
         {
@@ -30,37 +38,43 @@ namespace MySharpChat.Client
             _client = client;
         }
 
-        public string LocalEndPoint
-        {
-            get
-            {
-                if (m_tcpClient != null && m_tcpClient.Client.LocalEndPoint != null)
-                    return m_tcpClient.Client.LocalEndPoint.ToString() ?? string.Empty;
-                else
-                    return string.Empty;
-            }
-        }
+        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private Task? _statusUpdateTask = null;
+        private readonly Queue<PacketWrapper> packetsQueue = new();
 
-        public string RemoteEndPoint
-        {
-            get
-            {
-                if (m_tcpClient != null && m_tcpClient.Client.RemoteEndPoint != null)
-                    return m_tcpClient.Client.RemoteEndPoint.ToString() ?? string.Empty;
-                else
-                    return string.Empty;
-            }
-        }
+        public bool HasDataAvailable => packetsQueue.Any();
 
-        public bool HasDataAvailable => m_tcpClient != null && m_tcpClient.Available > 0;
+        public PacketWrapper CurrentPacket => packetsQueue.Dequeue();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
             if (IsConnected())
                 throw new InvalidOperationException("You are already connected. Disconnect before connection");
 
-            m_tcpClient.Connect(remoteEP);
+            UriBuilder serverUriBuilder = new UriBuilder("http", remoteEP.Address.ToString(), remoteEP.Port);
+            ServerUri = serverUriBuilder.Uri;
+
+            UriBuilder chatUriBuilder = new UriBuilder(ServerUri);
+            chatUriBuilder.Path = "chat";
+            ChatUri = chatUriBuilder.Uri;
+
+            User localUser = _client.LocalUser;
+
+            UriBuilder requestUriBuilder = new UriBuilder(ChatUri);
+            requestUriBuilder.Path += "/connect";
+            requestUriBuilder.Query = $"userId={localUser.Id}";
+            requestUriBuilder.Query += $"&user={localUser.Username}";
+            HttpSendRequestContext httpContext = HttpSendRequestContext.Post(requestUriBuilder.Uri);
+            HttpResponseMessage httpResponseMessage = Send(httpContext, null).Result!;
+            string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
             bool isConnected = IsConnected();
+
+            if (isConnected && PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            {
+                packets.ForEach(packet => packetsQueue.Enqueue(packet));
+            }
+
             Stopwatch stopwatch = Stopwatch.StartNew();
             int attempt = 0;
             bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
@@ -70,12 +84,25 @@ namespace MySharpChat.Client
                 attempt++;
 
                 // Connect to the remote endpoint.  
-                Task connectTask = m_tcpClient!.ConnectAsync(remoteEP);
+                Task<HttpResponseMessage?> connectTask = Send(httpContext, null);
 
                 try
                 {
                     timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
+
                     isConnected = IsConnected();
+
+                    if (!timeout)
+                    {
+                        httpResponseMessage = connectTask.Result!;
+                        responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+                        if (isConnected && PacketSerializer.TryDeserialize(responseContent, out packets))
+                        {
+                            packets.ForEach(packet => packetsQueue.Enqueue(packet));
+                        }
+                    }
+
                     attemptConnection = !isConnected && !timeout;
                 }
                 catch (AggregateException)
@@ -87,10 +114,8 @@ namespace MySharpChat.Client
 
             if (isConnected)
             {
-                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, (int)TimeSpan.FromHours(2).TotalMilliseconds);
-                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, (int)TimeSpan.FromSeconds(1).TotalMilliseconds);
-                m_tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 10);
+                StartStatusUpdater();
+                _client.ChatRoom = new ChatRoom(packetsQueue.Peek().SourceId);
             }
 
             return isConnected;
@@ -132,104 +157,121 @@ namespace MySharpChat.Client
 
         public void Disconnect()
         {
-            if (m_tcpClient != null)
+            if (IsConnected())
             {
                 logger.LogInfo("Disconnection of Network Module");
-                m_tcpClient.Close();
+                UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
+                requestUriBuilder.Path += "/connect";
+                requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+                Send(HttpSendRequestContext.Delete(requestUriBuilder.Uri), null).Wait();
+                StopStatusUpdater();
             }
         }
 
         public bool IsConnected()
         {
-            return m_tcpClient != null && NetworkUtils.IsConnected(m_tcpClient);
+            if (ServerUri == null)
+                return false;
+
+            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
+            requestUriBuilder.Path += "/connect";
+            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(HttpReadRequestContext.Get(requestUriBuilder.Uri))!;
+            return httpResponseMessage.IsSuccessStatusCode;
         }
 
-        public void Send(PacketWrapper? packet)
+        public Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet)
         {
-            if (packet == null)
-                throw new ArgumentNullException(nameof(packet));
-
-            string content = PacketSerializer.Serialize(packet);
-            SendImpl(content);
+            string content = packet != null ? PacketSerializer.Serialize(packet) : "";
+            logger.LogInfo("Request send : {0}", content);
+            return NetworkUtils.SendAsync(m_httpClient, context, content);
         }
 
-        public List<PacketWrapper> Read(TimeSpan timeoutSpan)
+        public HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan)
         {
-            if (!IsConnected())
-                throw new ArgumentException("NetworkModule not initialized");
+            HttpResponseMessage? httpResponseMessage = null;
 
-            string data = ReadImpl(timeoutSpan);
-
-            return PacketSerializer.Deserialize(data);
-        }
-
-        private void SendImpl(string? text)
-        {
-            if (string.IsNullOrEmpty(text))
-                throw new ArgumentNullException(nameof(text));
-
-            NetworkStream stream = m_tcpClient.GetStream();
-            // Convert the string data to byte data using ASCII encoding.  
-            byte[] byteData = Encoding.ASCII.GetBytes(text);
-            stream.Write(byteData);
-
-            logger.LogInfo("Request send : {0}", text);
-        }
-
-        private string ReadImpl(TimeSpan timeoutSpan)
-        {
             using (CancellationTokenSource cancelSource = new CancellationTokenSource())
             {
                 CancellationToken cancelToken = cancelSource.Token;
-                Task<string> readTask = ReadAsyncImpl(cancelToken);
-
+                Task<HttpResponseMessage?> readTask = NetworkUtils.ReadAsync(m_httpClient, context, cancelToken);
                 bool timeout = !readTask.Wait(timeoutSpan);
-
                 if (!timeout)
                 {
-                    string text = readTask.Result;
-
-                    logger.LogInfo("Response received : {0}", text);
-                    return text;
+                    httpResponseMessage = readTask.Result!;
+                    string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                    logger.LogInfo("Response received : {0}", responseContent);
                 }
                 else
                 {
                     cancelSource.Cancel();
                     logger.LogDebug("Reading timeout reached. Nothing received from server after {0}", timeoutSpan);
-                    return string.Empty;
                 }
+            }
+            return httpResponseMessage;
+        }
+
+        private void StartStatusUpdater()
+        {
+            if (_statusUpdateTask == null)
+                _statusUpdateTask = Task.Run(() =>
+                {
+                    while (!_cancellationSource.IsCancellationRequested)
+                    {
+                        StatusUpdateAction();
+                    }
+                }, _cancellationSource.Token);
+        }
+
+        private void StopStatusUpdater()
+        {
+            _cancellationSource.Cancel();
+            try
+            {
+                _statusUpdateTask?.Wait();
+            }
+            catch (AggregateException e)
+            {
+                if (!(e.InnerException is TaskCanceledException)) 
+                    throw;
+            }
+            _statusUpdateTask = null;
+        }
+
+        private void StatusUpdateAction()
+        {
+            UserStatusUpdateAction();
+            MessageStatusUpdateAction();
+        }
+
+        private void UserStatusUpdateAction()
+        {
+            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
+            requestUriBuilder.Path += "/user";
+            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
+            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(httpContext)!;
+            string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+            if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            {
+                packets.ForEach(packet => packetsQueue.Enqueue(packet));
             }
         }
 
-        private Task<string> ReadAsyncImpl(CancellationToken cancelToken = default)
+        private void MessageStatusUpdateAction()
         {
-            return Task.Factory.StartNew(
-                () =>
-                {
-                    string content = string.Empty;
-                    try
-                    {
-                        NetworkStream stream = m_tcpClient.GetStream();
-                        int bytesRead;
-                        // Size of receive buffer.  
-                        const int BUFFER_SIZE = 256;
-                        // Receive buffer.  
-                        byte[] buffer = new byte[BUFFER_SIZE];
-                        // Received data string.  
-                        StringBuilder dataStringBuilder = new StringBuilder();
+            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
+            requestUriBuilder.Path += "/message";
+            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
+            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(httpContext)!;
+            string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-                        while (stream.DataAvailable && (bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0 && !cancelToken.IsCancellationRequested)
-                        {
-                            // There  might be more data, so store the data received so far.
-                            string dataStr = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                            dataStringBuilder.Append(dataStr);
-                        }
-                        content = dataStringBuilder.ToString();
-                    }
-                    catch (OperationCanceledException) { }
-                    return content;
-                }
-            , cancelToken);
+            if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            {
+                packets.ForEach(packet => packetsQueue.Enqueue(packet));
+            }
         }
     }
 }

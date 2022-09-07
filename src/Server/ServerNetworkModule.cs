@@ -11,6 +11,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Http;
+using MySharpChat.Core.Http;
 
 namespace MySharpChat.Server
 {
@@ -25,22 +27,17 @@ namespace MySharpChat.Server
             httpServer = new HttpServer();
         }
 
-        public string LocalEndPoint
+        public bool HasDataAvailable => !httpServer.requestQueue.IsEmpty;
+
+        public HttpListenerContext CurrentRequest
         {
             get
             {
-                if (httpServer != null && httpServer.Prefixes != null)
-                    return httpServer.Prefixes.First().ToString() ?? string.Empty;
-                else
-                    return string.Empty;
+                HttpListenerContext context;
+                while (!httpServer.requestQueue.TryDequeue(out context!)) { }
+                return context;
             }
         }
-
-        public string RemoteEndPoint => string.Empty;
-
-        public bool HasDataAvailable => httpServer.requestQueue.Any();
-
-        public HttpListenerContext CurrentRequest => httpServer.requestQueue.Dequeue();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
@@ -53,8 +50,10 @@ namespace MySharpChat.Server
             if (connexionData == null)
                 throw new ArgumentException(nameof(connexionInfos.Local));
 
+            IPEndPoint localEP = NetworkUtils.CreateEndPoint(connexionData);
+
             // Create a HTTP Server.
-            httpServer.Start(connexionData.Ip);
+            httpServer.Start(localEP);
 
             logger.LogInfo(string.Format("Listenning at {0}", httpServer.Prefixes.First()));
 
@@ -84,12 +83,12 @@ namespace MySharpChat.Server
             return httpServer != null && httpServer.IsRunning;
         }
 
-        public void Send(PacketWrapper? packet)
+        public Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet)
         {
             throw new NotImplementedException("Server should not be able to send data");
         }
 
-        public List<PacketWrapper> Read(TimeSpan timeoutSpan)
+        public HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan)
         {
             throw new NotImplementedException("Server should not be able to read data");
         }
