@@ -30,7 +30,6 @@ namespace MySharpChat.Client.GUI.MAUI.Commands
                 {
                     Task.Run(() =>
                     {
-                        connectionArgs.ViewModel.Client.Logout();
                         DisconnectCommand.Instance.Execute(connectionArgs.ViewModel.Client);
                         MainThread.BeginInvokeOnMainThread(() => connectionArgs.ViewModel.OnDisconnection(true));
                     });

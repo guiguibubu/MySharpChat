@@ -1,11 +1,10 @@
-﻿using MySharpChat.Core.Utils;
-using System;
+﻿using MySharpChat.Server.Utils;
 
 namespace MySharpChat.Server
 {
     public interface IServerImpl
     {
-        INetworkModule NetworkModule { get; }
+        IServerNetworkModule NetworkModule { get; }
 
         ServerChatRoom ChatRoom { get; }
 
