@@ -1,22 +1,18 @@
 ﻿using MySharpChat.Core.Packet;
 using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using MySharpChat.Core.Http;
+using MySharpChat.Server.Utils;
 
 namespace MySharpChat.Server
 {
-    public class ServerNetworkModule : INetworkModule
+    public class ServerNetworkModule : IServerNetworkModule
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ServerNetworkModule>();
 
@@ -29,7 +25,7 @@ namespace MySharpChat.Server
 
         public bool HasDataAvailable => !httpServer.requestQueue.IsEmpty;
 
-        public HttpListenerContext CurrentRequest
+        public HttpListenerContext CurrentData
         {
             get
             {

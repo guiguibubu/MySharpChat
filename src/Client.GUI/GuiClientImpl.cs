@@ -1,6 +1,6 @@
-﻿using MySharpChat.Core.Packet;
+﻿using MySharpChat.Core.Model;
+using MySharpChat.Core.Packet;
 using System;
-using System.Collections.Generic;
 
 namespace MySharpChat.Client.GUI
 {
@@ -9,17 +9,18 @@ namespace MySharpChat.Client.GUI
         public GuiClientImpl() : base()
         { }
 
+        public event Action<string> OnUserAddedEvent = (string username) => { };
+        public event Action<string> OnUserRemovedEvent = (string username) => { };
+        public event Action<string, string> OnUsernameChangeEvent = (string oldUsername, string newUsername) => { };
+        public event Action OnLocalUsernameChangeEvent = () => { };
+        public event Action<string> ChatMessageReceivedEvent = (string message) => { };
+        public event Action<bool> DisconnectionEvent = (bool manual) => { };
+
         public void SetUsername(string? username)
         {
             if (!string.IsNullOrEmpty(username))
-                Username = username;
+                LocalUser.Username = username;
         }
-
-        public void Logout()
-        {
-            isLoggedIn = false;
-        }
-        private bool isLoggedIn = false;
 
         public override void Run(Client client)
         {
@@ -27,73 +28,81 @@ namespace MySharpChat.Client.GUI
             {
                 if (networkModule.HasDataAvailable)
                 {
-                    List<PacketWrapper> packets = networkModule.Read(TimeSpan.FromSeconds(1));
-                    foreach (PacketWrapper packet in packets)
-                    {
-                        if (packet.Package is UserInfoPacket connectInitPackage)
-                        {
-                            bool isInitialised = ClientId != Guid.Empty;
-                            if (isInitialised)
-                            {
-                                string newUsername = connectInitPackage.Username;
-                                if (!string.IsNullOrEmpty(newUsername))
-                                    Username = newUsername;
-                                OnUsernameChangeEvent();
-                            }
-                            else
-                            {
-                                ClientId = connectInitPackage.UserId;
-                                // Tell the server our username
-                                UserInfoPacket initPacket = new UserInfoPacket(ClientId, Username);
-                                PacketWrapper packetWrapper = new PacketWrapper(ClientId, initPacket);
-                                NetworkModule.Send(packetWrapper);
-                                isLoggedIn = true;
-                            }
-
-                        }
-                        else if (packet.Package is ChatPacket chatPackage)
-                        {
-                            HandleChatPacket(chatPackage);
-                        }
-                        else if (packet.Package is UserStatusPacket userStatusPackage)
-                        {
-                            HandleUserStatusPacket(userStatusPackage);
-                        }
-                    }
+                    HandleNetworkPackets(100);
                 }
-            }
-            else if (isLoggedIn)
-            {
-                networkModule.Disconnect();
-                isLoggedIn = false;
-                DisconnectionEvent(false);
             }
         }
 
-        public event Action<string> OnUserAddedEvent = (string s) => { };
-        public event Action<string> OnUserRemovedEvent = (string s) => { };
-        public event Action OnUsernameChangeEvent = () => { };
-        public event Action<string> ChatMessageReceivedEvent = (string message) => { };
-        public event Action<bool> DisconnectionEvent = (bool manual) => { };
+        private void HandleNetworkPacket(PacketWrapper packet)
+        {
+            if (packet.Package is UserInfoPacket userInfoPacket)
+            {
+                User user = userInfoPacket.User;
+                Guid userId = user.Id;
+                string username = user.Username;
+
+                if (LocalUser.Id == userId)
+                {
+                    LocalUser.Username = username;
+                    OnLocalUsernameChangeEvent();
+                }
+
+                bool knownUser = ChatRoom!.Users.Contains(userId);
+                bool isConnected = userInfoPacket.Connected;
+                bool isDisconnection = knownUser && !isConnected;
+                if (isDisconnection)
+                {
+                    ChatRoom!.Users.Remove(userId);
+                    OnUserRemovedEvent(username);
+                    return;
+                }
+
+                bool alreadyDiconnected = !knownUser && !isConnected;
+                if (alreadyDiconnected)
+                    return;
+
+                bool newUser = !knownUser && isConnected;
+                if (newUser)
+                {
+                    ChatRoom!.Users.Add(new UserState(user, true));
+                    OnUserAddedEvent(username);
+                    return;
+                }
+
+                User userInCache = ChatRoom!.Users[userId].User;
+                string oldUsername = userInCache.Username;
+                if (oldUsername != username)
+                {
+                    userInCache.Username = username;
+                    OnUsernameChangeEvent(oldUsername, username);
+                }
+            }
+            else if (packet.Package is ChatPacket chatPackage)
+            {
+                HandleChatPacket(chatPackage);
+            }
+        }
+
+        private void HandleNetworkPackets(int nbMaxPacket = int.MaxValue)
+        {
+            int nbPacketsHandles = 0;
+            while (networkModule.HasDataAvailable && nbPacketsHandles < nbMaxPacket)
+            {
+                PacketWrapper packet = networkModule.CurrentData;
+                HandleNetworkPacket(packet);
+            }
+        }
 
         private void HandleChatPacket(ChatPacket chatPacket)
         {
-            string readText = chatPacket.Message;
-            if (!string.IsNullOrEmpty(readText))
+            ChatMessage chatMessage = chatPacket.ChatMessage;
+            if (!ChatRoom!.Messages.Contains(chatMessage))
             {
+                ChatRoom!.Messages.Add(chatMessage);
+                string username = chatMessage.User.Username;
+                string messageText = chatMessage.Message;
+                string readText = $"({chatMessage.Date}) {username} : {messageText}";
                 ChatMessageReceivedEvent(readText);
-            }
-        }
-
-        private void HandleUserStatusPacket(UserStatusPacket userStatusPacket)
-        {
-            string username = userStatusPacket.UserId;
-            if (!string.IsNullOrEmpty(username))
-            {
-                if (userStatusPacket.Connected)
-                    OnUserAddedEvent(username);
-                else
-                    OnUserRemovedEvent(username);
             }
         }
     }

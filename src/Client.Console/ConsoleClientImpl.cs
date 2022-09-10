@@ -54,11 +54,8 @@ namespace MySharpChat.Client.Console
                 if (networkModule.IsConnected())
                 {
                     bool prefixChanged = false;
-                    int nbPacketsHandles = 0;
-                    while (networkModule.HasDataAvailable && nbPacketsHandles < 100)
-                    {
-                        HandleNetworkPackets();
-                    }
+
+                    HandleNetworkPackets(100);
 
                     if (prefixChanged)
                     {
@@ -128,17 +125,15 @@ namespace MySharpChat.Client.Console
             }
         }
 
-        private void HandleNetworkPackets()
+        private void HandleNetworkPacket(PacketWrapper packet)
         {
-            ClientNetworkModule clientNetworkModule = ((ClientNetworkModule)networkModule);
-            PacketWrapper packet = clientNetworkModule.CurrentPacket;
             if (packet.Package is UserInfoPacket userInfoPacket)
             {
                 User user = userInfoPacket.User;
                 Guid userId = user.Id;
                 string username = user.Username;
 
-                if(LocalUser.Id == userId)
+                if (LocalUser.Id == userId)
                     LocalUser.Username = username;
 
                 bool knownUser = ChatRoom!.Users.Contains(userId);
@@ -177,6 +172,16 @@ namespace MySharpChat.Client.Console
             else if (packet.Package is ChatPacket chatPackage)
             {
                 HandleChatPacket(chatPackage);
+            }
+        }
+
+        private void HandleNetworkPackets(int nbMaxPacket = int.MaxValue)
+        {
+            int nbPacketsHandles = 0;
+            while (networkModule.HasDataAvailable && nbPacketsHandles < nbMaxPacket)
+            {
+                PacketWrapper packet = networkModule.CurrentData;
+                HandleNetworkPacket(packet);
             }
         }
 
