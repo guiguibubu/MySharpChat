@@ -9,12 +9,14 @@ namespace MySharpChat.Core.Model
     {
         public Guid Id { get; private set; }
         public User User { get; private set; }
+        public DateTime Date { get; private set; }
         public string Message { get; private set; }
 
-        public ChatMessage(Guid id, User user, string message)
+        public ChatMessage(Guid id, User user, DateTime date, string message)
         {
             Id = id;
             User = user;
+            Date = date;
             Message = message;
         }
 
