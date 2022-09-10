@@ -45,6 +45,7 @@ namespace MySharpChat.Client.GUI
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
             m_viewModel.OnUserRemovedEvent += OnUsernameRemoved;
             m_viewModel.OnUserAddedEvent += OnUsernameAdded;
+            m_viewModel.OnLocalUsernameChangeEvent += OnLocalUsernameChange;
             m_viewModel.OnUsernameChangeEvent += OnUsernameChange;
             m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
             m_viewModel.OnSendFinishedEvent += OnSendFinished;
@@ -52,19 +53,19 @@ namespace MySharpChat.Client.GUI
             DataContext = m_viewModel;
         }
 
-        private void OnUsernameChange()
+        private void OnLocalUsernameChange()
         {
             Dispatcher uiDispatcher = Application.Current.Dispatcher;
             if (uiDispatcher.CheckAccess())
             {
                 UserName.Foreground = new SolidColorBrush(Colors.Black);
-                UserName.Text = m_viewModel.Client.Username;
+                UserName.Text = m_viewModel.Client.LocalUser.Username;
                 ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
                 ConnectionStatus.Text = "Connected !";
             }
             else
             {
-                uiDispatcher.Invoke(OnUsernameChange);
+                uiDispatcher.Invoke(OnLocalUsernameChange);
             }
         }
 
@@ -80,11 +81,31 @@ namespace MySharpChat.Client.GUI
                 {
                     usersUiElements.Remove(userUiElement);
                     UsersStack.Children.Remove(userUiElement);
+                    OnUserStatusChange($"User leave the session : {username}");
                 }
             }
             else
             {
                 uiDispatcher.Invoke(OnUsernameRemoved, username);
+            }
+        }
+
+        private void OnUsernameChange(string oldUsername, string newUsername)
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == oldUsername);
+                if (userUiElement != null)
+                {
+                    userUiElement.Text = newUsername;
+
+                    OnUserStatusChange($"Username change from {oldUsername} to {newUsername}");
+                }
+            }
+            else
+            {
+                uiDispatcher.Invoke(OnUsernameChange, oldUsername, newUsername);
             }
         }
 
@@ -96,6 +117,8 @@ namespace MySharpChat.Client.GUI
                 TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
                 usersUiElements.Add(userUiElement);
                 UsersStack.Children.Add(userUiElement);
+
+                OnUserStatusChange($"New user joined : {username}");
             }
             else
             {
@@ -148,6 +171,20 @@ namespace MySharpChat.Client.GUI
         {
             InputBox.Text = "";
             InputBox.Focus();
+        }
+
+        private void OnUserStatusChange(string message)
+        {
+            TextBlock outpuBlock = new TextBlock();
+            outpuBlock.TextWrapping = TextWrapping.Wrap;
+            outpuBlock.Margin = new Thickness(0, 2, 0, 2);
+            outpuBlock.HorizontalAlignment = HorizontalAlignment.Center;
+            outpuBlock.VerticalAlignment = VerticalAlignment.Center;
+            outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            outpuBlock.Text = message;
+
+            OutputStack.Children.Add(outpuBlock);
+            OutputScroller.ScrollToEnd();
         }
 
         private void InputBox_KeyDown(object sender, KeyEventArgs e)

@@ -20,13 +20,15 @@ namespace MySharpChat.Client.GUI
             Client.OnUserAddedEvent += OnUserAdded;
             Client.OnUserRemovedEvent += OnUserRemoved;
             Client.OnUsernameChangeEvent += OnUsernameChange;
+            Client.OnLocalUsernameChangeEvent += OnLocalUsernameChange;
             Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
 
         public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
         public event Action<string> OnUserAddedEvent = (string s) => { };
         public event Action<string> OnUserRemovedEvent = (string s) => { };
-        public event Action OnUsernameChangeEvent = () => { };
+        public event Action<string, string> OnUsernameChangeEvent = (string s1, string s2) => { };
+        public event Action OnLocalUsernameChangeEvent = () => { };
         public event Action<string> OnMessageReceivedEvent = (string message) => { };
         public event Action OnSendFinishedEvent = () => { };
 
@@ -51,9 +53,14 @@ namespace MySharpChat.Client.GUI
             OnUserRemovedEvent(username);
         }
 
-        public void OnUsernameChange()
+        public void OnUsernameChange(string oldUsername, string newUsername)
         {
-            OnUsernameChangeEvent();
+            OnUsernameChangeEvent(oldUsername, newUsername);
+        }
+
+        public void OnLocalUsernameChange()
+        {
+            OnLocalUsernameChangeEvent();
         }
 
         public void OnMessageReceived(string message)

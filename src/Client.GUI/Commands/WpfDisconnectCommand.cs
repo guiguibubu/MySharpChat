@@ -31,7 +31,6 @@ namespace MySharpChat.Client.GUI.Commands
                     Dispatcher currentDispatcher = Dispatcher.CurrentDispatcher;
                     Task.Run(() =>
                     {
-                        connectionArgs.ViewModel.Client.Logout();
                         DisconnectCommand.Instance.Execute(connectionArgs.ViewModel.Client);
                         currentDispatcher.Invoke(connectionArgs.ViewModel.OnDisconnection, true);
                     });

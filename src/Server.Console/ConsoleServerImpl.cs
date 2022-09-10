@@ -13,6 +13,7 @@ using System.Net;
 using System.IO;
 using System.Net.Http;
 using MySharpChat.Core.Http;
+using MySharpChat.Server.Utils;
 
 namespace MySharpChat.Server
 {
@@ -20,8 +21,8 @@ namespace MySharpChat.Server
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleServerImpl>();
 
-        private readonly ServerNetworkModule networkModule;
-        public INetworkModule NetworkModule => networkModule;
+        private readonly IServerNetworkModule networkModule;
+        public IServerNetworkModule NetworkModule => networkModule;
 
         private Dictionary<string, IHttpRequestHandler> httpHandlersCache=  new Dictionary<string, IHttpRequestHandler>();
 
@@ -44,7 +45,7 @@ namespace MySharpChat.Server
                 Thread.Sleep(1000);
             }
 
-            HandleHttpRequest(networkModule.CurrentRequest);
+            HandleHttpRequest(networkModule.CurrentData);
         }
 
         public void Start()

@@ -1,12 +1,11 @@
-﻿using MySharpChat.Core.Model;
-using MySharpChat.Core.Utils;
-using System;
+﻿using MySharpChat.Client.Utils;
+using MySharpChat.Core.Model;
 
 namespace MySharpChat.Client
 {
     public interface IClientImpl
     {
-        INetworkModule NetworkModule { get; }
+        IClientNetworkModule NetworkModule { get; }
 
         User LocalUser { get; }
         ChatRoom? ChatRoom { get; set; }

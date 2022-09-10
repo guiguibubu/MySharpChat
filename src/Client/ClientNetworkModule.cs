@@ -7,19 +7,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Mime;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
+using MySharpChat.Client.Utils;
 
 namespace MySharpChat.Client
 {
-    public class ClientNetworkModule : INetworkModule
+    public class ClientNetworkModule : IClientNetworkModule
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ClientNetworkModule>();
 
@@ -44,7 +41,7 @@ namespace MySharpChat.Client
 
         public bool HasDataAvailable => packetsQueue.Any();
 
-        public PacketWrapper CurrentPacket => packetsQueue.Dequeue();
+        public PacketWrapper CurrentData => packetsQueue.Dequeue();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
@@ -170,13 +167,14 @@ namespace MySharpChat.Client
 
         public bool IsConnected()
         {
-            if (ServerUri == null)
+            if (ServerUri == null 
+                || ChatUri == null)
                 return false;
 
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
             requestUriBuilder.Path += "/connect";
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
-            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(HttpReadRequestContext.Get(requestUriBuilder.Uri))!;
+            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(HttpReadRequestContext.Get(requestUriBuilder.Uri))!;
             return httpResponseMessage.IsSuccessStatusCode;
         }
 
@@ -251,7 +249,7 @@ namespace MySharpChat.Client
             requestUriBuilder.Path += "/user";
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(httpContext)!;
+            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
             if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
@@ -269,7 +267,7 @@ namespace MySharpChat.Client
             if (chatRoom.Messages.Any())
                 requestUriBuilder.Query += $"&messageId={chatRoom.Messages.MaxBy(message => message.Date)!.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(httpContext)!;
+            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
             if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
