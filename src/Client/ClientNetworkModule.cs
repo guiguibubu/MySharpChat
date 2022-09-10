@@ -38,7 +38,7 @@ namespace MySharpChat.Client
             _client = client;
         }
 
-        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private CancellationTokenSource _cancellationSource = new CancellationTokenSource();
         private Task? _statusUpdateTask = null;
         private readonly Queue<PacketWrapper> packetsQueue = new();
 
@@ -232,9 +232,10 @@ namespace MySharpChat.Client
             }
             catch (AggregateException e)
             {
-                if (!(e.InnerException is TaskCanceledException)) 
+                if (!(e.InnerException is TaskCanceledException))
                     throw;
             }
+            _cancellationSource = new CancellationTokenSource();
             _statusUpdateTask = null;
         }
 
@@ -264,6 +265,9 @@ namespace MySharpChat.Client
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
             requestUriBuilder.Path += "/message";
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            ChatRoom chatRoom = _client.ChatRoom!;
+            if (chatRoom.Messages.Any())
+                requestUriBuilder.Query += $"&messageId={chatRoom.Messages.MaxBy(message => message.Date)!.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
             HttpResponseMessage httpResponseMessage = ((INetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;

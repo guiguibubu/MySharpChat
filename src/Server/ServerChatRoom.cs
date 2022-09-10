@@ -279,6 +279,7 @@ namespace MySharpChat.Server
             HttpListenerResponse response = httpContext.Response;
 
             string? userId = request.QueryString["userId"];
+            string? messageId = request.QueryString["messageId"];
             if (request.HttpMethod != HttpMethod.Get.ToString())
             {
                 string errorMessage = "Get Message request must use HTTP GET method";
@@ -318,7 +319,19 @@ namespace MySharpChat.Server
             }
 
             List<PacketWrapper> packets = new();
-            foreach (ChatMessage message in Messages)
+            IReadOnlyCollection<ChatMessage> messagesToSend;
+            if (string.IsNullOrEmpty(messageId))
+            {
+                messagesToSend = Messages;
+            }
+            else
+            {
+                ChatMessage lastMessageReceived = Messages[Guid.Parse(messageId)];
+                List<ChatMessage> messageOrdered = Messages.OrderByDescending(chat => chat.Date).ToList();
+                int indexLastMessage = messageOrdered.IndexOf(lastMessageReceived);
+                messagesToSend = messageOrdered.GetRange(0, indexLastMessage);
+            }
+            foreach (ChatMessage message in messagesToSend)
             {
                 PacketWrapper packet = new PacketWrapper(Id, new ChatPacket(message));
                 packets.Add(packet);

@@ -188,7 +188,7 @@ namespace MySharpChat.Client.Console
                 ChatRoom!.Messages.Add(chatMessage);
                 string username = chatMessage.User.Username;
                 string messageText = chatMessage.Message;
-                string readText = $"{username} : {messageText}";
+                string readText = $"({chatMessage.Date}) {username} : {messageText}";
                 MoveInputLineDown(readText);
             }
         }

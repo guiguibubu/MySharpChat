@@ -23,7 +23,7 @@ namespace MySharpChat.Client.Command
             string? text = args.Length > 0 ? args[0] : null;
             if (!string.IsNullOrEmpty(text))
             {
-                ChatPacket chatPacket = new ChatPacket(Guid.NewGuid(), client.LocalUser, text);
+                ChatPacket chatPacket = new ChatPacket(Guid.NewGuid(), client.LocalUser, DateTime.Now, text);
                 PacketWrapper packet = new PacketWrapper(client.LocalUser.Id, chatPacket);
                 ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
                 UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);

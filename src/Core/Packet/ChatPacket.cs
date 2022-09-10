@@ -12,8 +12,8 @@ namespace MySharpChat.Core.Packet
     [Serializable]
     public class ChatPacket
     {
-        public ChatPacket(Guid id, User user, string message) 
-            : this(new ChatMessage(id, user, message))
+        public ChatPacket(Guid id, User user, DateTime date, string message) 
+            : this(new ChatMessage(id, user, date, message))
         { }
 
         [JsonConstructor]
