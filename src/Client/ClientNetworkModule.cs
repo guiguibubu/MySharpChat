@@ -68,9 +68,12 @@ namespace MySharpChat.Client
 
             bool isConnected = IsConnected();
 
-            if (isConnected && PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            if (isConnected && PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
             {
-                packets.ForEach(packet => packetsQueue.Enqueue(packet));
+                foreach (PacketWrapper packet in packets)
+                {
+                    packetsQueue.Enqueue(packet);
+                }
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -97,7 +100,10 @@ namespace MySharpChat.Client
 
                         if (isConnected && PacketSerializer.TryDeserialize(responseContent, out packets))
                         {
-                            packets.ForEach(packet => packetsQueue.Enqueue(packet));
+                            foreach (PacketWrapper packet in packets)
+                            {
+                                packetsQueue.Enqueue(packet);
+                            }
                         }
                     }
 
@@ -167,7 +173,7 @@ namespace MySharpChat.Client
 
         public bool IsConnected()
         {
-            if (ServerUri == null 
+            if (ServerUri == null
                 || ChatUri == null)
                 return false;
 
@@ -252,9 +258,12 @@ namespace MySharpChat.Client
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-            if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            if (PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
             {
-                packets.ForEach(packet => packetsQueue.Enqueue(packet));
+                foreach (PacketWrapper packet in packets)
+                {
+                    packetsQueue.Enqueue(packet);
+                }
             }
         }
 
@@ -270,9 +279,12 @@ namespace MySharpChat.Client
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-            if (PacketSerializer.TryDeserialize(responseContent, out List<PacketWrapper> packets))
+            if (PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
             {
-                packets.ForEach(packet => packetsQueue.Enqueue(packet));
+                foreach (PacketWrapper packet in packets)
+                {
+                    packetsQueue.Enqueue(packet);
+                }
             }
         }
     }
