@@ -262,7 +262,7 @@ namespace MySharpChat.Server
             string requestBody = new StreamReader(request.InputStream).ReadToEnd();
             if (!string.IsNullOrEmpty(requestBody))
             {
-                List<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
+                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
                 User user = Users[userIdGuid].User;
                 foreach (PacketWrapper packet in packets)
                 {
@@ -517,7 +517,7 @@ namespace MySharpChat.Server
             if (!string.IsNullOrEmpty(requestBody))
             {
                 string newUsername = "";
-                List<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
+                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
                 foreach (PacketWrapper packet in packets)
                 {
                     if (packet.Package is UserInfoPacket userPacket)
