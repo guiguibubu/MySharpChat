@@ -29,20 +29,23 @@ namespace MySharpChat.Client.Console.Command
                     loadingText.Append(".");
                 for (int i = 0; i < nbDotsMax - nbDots; i++)
                     loadingText.Append(" ");
-                IUserInputCursorHandler cursorHandler = _client.UserInterfaceModule.CursorHandler;
-                LockTextWriter writer = _client.UserInterfaceModule.OutputWriter;
-                writer.Write(loadingText);
-                cursorHandler.MovePositionNegative(loadingText.Length, CursorUpdateMode.GraphicalOnly);
+                ConsoleOutputModule outputModule = _client.UserInterfaceModule.OutputModule;
+                outputModule.WriteOutput(loadingText.ToString());
+                outputModule.MoveOutputPositionNegative(loadingText.Length);
             }
 
             bool isConnected = connectionTask.Result;
             if (isConnected)
             {
                 _client.CurrentLogic = new ChatClientLogic(_client);
-                System.Console.Clear();
+                _client.UserInterfaceModule.OutputModule.Clear();
             }
             else
-                _client.UserInterfaceModule.OutputWriter.WriteLine("Connection fail !");
+            {
+                string errorMessage = "Connection fail !";
+                _client.UserInterfaceModule.OutputModule.WriteLineOutput(errorMessage);
+            }
+                
             return isConnected;
         }
     }

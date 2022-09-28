@@ -25,6 +25,7 @@ namespace MySharpChat.Client
 
         public virtual void Initialize(object? initObject = null)
         {
+            _clientImpl.Initialize(initObject);
         }
 
         public bool Start(object? startObject = null)
