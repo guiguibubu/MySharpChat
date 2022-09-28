@@ -7,15 +7,20 @@ namespace MySharpChat.Client.GUI.MAUI
 {
     internal class GuiClientImpl : BaseClientImpl
     {
-        public GuiClientImpl() : base()
-        { }
-
         public event Action<string> OnUserAddedEvent = (string username) => { };
         public event Action<string> OnUserRemovedEvent = (string username) => { };
         public event Action<string, string> OnUsernameChangeEvent = (string oldUsername, string newUsername) => { };
         public event Action OnLocalUsernameChangeEvent = () => { };
         public event Action<string> ChatMessageReceivedEvent = (string message) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };
+
+        public GuiClientImpl() : base()
+        { }
+
+
+        public override void Initialize(object? initObject = null)
+        {
+        }
 
         public void SetUsername(string? username)
         {

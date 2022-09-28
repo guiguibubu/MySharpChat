@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MySharpChat.Client.Console.Input
 {
-    public class KeyActionsCollection
+    internal class KeyActionsCollection
     {
         private readonly Dictionary<ConsoleKeyIdentifier, KeyActionDelegate> keyActions = new Dictionary<ConsoleKeyIdentifier, KeyActionDelegate>(ConsoleKeyIdentifier.Comparer);
 

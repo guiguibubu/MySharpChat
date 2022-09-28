@@ -1,7 +1,6 @@
 ﻿using MySharpChat.Client.Utils;
 using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
-using MySharpChat.Core.Utils;
 using System;
 
 namespace MySharpChat.Client
@@ -19,6 +18,7 @@ namespace MySharpChat.Client
             networkModule = new ClientNetworkModule(this);
         }
 
+        public abstract void Initialize(object? initObject = null);
         public abstract void Run(Client client);
 
         public virtual void Stop()

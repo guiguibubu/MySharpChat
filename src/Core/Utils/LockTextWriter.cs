@@ -10,7 +10,7 @@ namespace MySharpChat.Core.Utils
 {
     public class LockTextWriter : LockTextWriterAbstract
     {
-        private readonly TextWriter _output;
+        protected readonly TextWriter _output;
 
         private readonly Queue<char> _queue = new Queue<char>();
         private Scope? _scope = null;
@@ -62,6 +62,10 @@ namespace MySharpChat.Core.Utils
             }
         }
 
+        public override string ToString()
+        {
+            return _output.ToString() ?? string.Empty;
+        }
 
         private class Scope : IDisposable
         {

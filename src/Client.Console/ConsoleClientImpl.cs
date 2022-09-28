@@ -4,16 +4,11 @@ using MySharpChat.Client.Console.UI;
 using MySharpChat.Client.Console.Input;
 using MySharpChat.Core.Command;
 using MySharpChat.Core.Packet;
-using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using MySharpChat.Core.Http;
-using System.Linq;
 using MySharpChat.Core.Model;
-using static System.Net.Mime.MediaTypeNames;
+using System.Threading;
 
 namespace MySharpChat.Client.Console
 {
@@ -31,21 +26,32 @@ namespace MySharpChat.Client.Console
 
         private readonly ReadingState readingState;
 
+        private CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private Task? _uiUpdateTask = null;
+
         public ConsoleClientImpl() : base()
         {
             m_userInterfaceModule = new ConsoleUserInterfaceModule();
-            readingState = new ReadingState(new UserInputTextHandler(), m_userInterfaceModule);
-            commandInput = new ConsoleCommandInput(m_userInterfaceModule);
+            ConsoleCursorHandler cursorHandler = new ConsoleCursorHandler();
+            readingState = new ReadingState(new UserInputTextHandler(), cursorHandler, m_userInterfaceModule);
+            commandInput = new ConsoleCommandInput(m_userInterfaceModule, cursorHandler);
+            commandInput.OnInputChanged += UpdateInputLine;
             loaderLogic = new LoaderClientLogic(this);
             CurrentLogic = loaderLogic;
+        }
+
+        public override void Initialize(object? initObject = null)
+        {
+            m_userInterfaceModule.OutputModule.Initialize();
+
+            StartUiUpdater();
         }
 
         public override void Run(Client client)
         {
             // TODO reorganise to support read/write from network while reading inputs
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-            string currentPrefix = CurrentLogic.Prefix;
-            UpdateInputLine(currentPrefix, "");
+            ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
+            UpdateInputLine();
 
             Task<string> userInputTask = commandInput.ReadLineAsync(readingState);
 
@@ -53,20 +59,14 @@ namespace MySharpChat.Client.Console
             {
                 if (networkModule.IsConnected())
                 {
-                    bool prefixChanged = false;
-
                     HandleNetworkPackets(100);
-
-                    if (prefixChanged)
-                    {
-                        UpdateInputLine(currentPrefix, readingState.InputTextHandler.ToString());
-                    }
                 }
                 else
                 {
                     if (CurrentLogic is ChatClientLogic)
                     {
-                        writer.WriteLine("Connection to server lost. Will disconnect.");
+                        string errorMessage = "Connection to server lost. Will disconnect.";
+                        outputModule.WriteLineOutput(errorMessage);
                         Task.Delay(3000).GetAwaiter().GetResult();
                         ConsoleDisconnectCommand? disconnectCommand = CurrentLogic.CommandParser.Parse<ConsoleDisconnectCommand>(DisconnectCommand.Instance.Name);
                         disconnectCommand!.Execute(this);
@@ -78,24 +78,25 @@ namespace MySharpChat.Client.Console
             CommandParser parser = CurrentLogic.CommandParser;
             string text = userInputTask.Result;
 
-            CleanInputLine(currentPrefix);
+            CleanErrorBox();
+            CleanInputLine();
 
             if (parser.TryParse(text, out string[] args, out IClientCommand? clientCommand))
             {
                 if (!clientCommand!.Execute(this, args))
                 {
-                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    outputModule.WriteLineError("Fail of command \"{0}\"", text);
                     HelpCommand helpCommand = parser.GetHelpCommand();
-                    helpCommand.Execute(writer, clientCommand.Name);
+                    helpCommand.Execute(outputModule.ErrorWriter, clientCommand.Name);
                 }
             }
             else if (parser.TryParse(text, out args, out IAsyncMachineCommand? asyncMachineCommand))
             {
                 if (!asyncMachineCommand!.Execute(client, args))
                 {
-                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    outputModule.WriteLineError("Fail of command \"{0}\"", text);
                     HelpCommand helpCommand = parser.GetHelpCommand();
-                    helpCommand.Execute(writer, asyncMachineCommand.Name);
+                    helpCommand.Execute(outputModule.ErrorWriter, asyncMachineCommand.Name);
                 }
             }
             else if (parser.TryParse(text, out args, out ConsoleCommand? consoleCommand))
@@ -111,17 +112,17 @@ namespace MySharpChat.Client.Console
                 }
                 if (!consoleCommand!.Execute(data, args))
                 {
-                    writer.WriteLine("Fail of command \"{0}\"", text);
+                    outputModule.WriteLineError("Fail of command \"{0}\"", text);
                     HelpCommand helpCommand = parser.GetHelpCommand();
-                    helpCommand.Execute(writer, consoleCommand.Name);
+                    helpCommand.Execute(outputModule.ErrorWriter, consoleCommand.Name);
                 }
             }
             else
             {
-                writer.WriteLine("Fail to parse \"{0}\"", text);
-                writer.WriteLine();
-                writer.WriteLine("Available commands");
-                parser.GetHelpCommand().Execute(writer);
+                outputModule.WriteLineError("Fail to parse \"{0}\"", text);
+                outputModule.WriteLineError();
+                outputModule.WriteLineError("Available commands");
+                parser.GetHelpCommand().Execute(outputModule.ErrorWriter);
             }
         }
 
@@ -143,7 +144,7 @@ namespace MySharpChat.Client.Console
                 {
                     ChatRoom!.Users.Remove(userId);
                     string text = $"User leave the session : {username}";
-                    MoveInputLineDown(text);
+                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
                     return;
                 }
 
@@ -156,7 +157,7 @@ namespace MySharpChat.Client.Console
                 {
                     ChatRoom!.Users.Add(new UserState(user, true));
                     string text = $"New user joined : {username}";
-                    MoveInputLineDown(text);
+                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
                     return;
                 }
 
@@ -166,7 +167,8 @@ namespace MySharpChat.Client.Console
                 {
                     string text = $"Username change from {oldUsername} to {username}";
                     userInCache.Username = username;
-                    MoveInputLineDown(text);
+                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
+                    UpdateInputLine();
                 }
             }
             else if (packet.Package is ChatPacket chatPackage)
@@ -193,67 +195,88 @@ namespace MySharpChat.Client.Console
                 ChatRoom!.Messages.Add(chatMessage);
                 string username = chatMessage.User.Username;
                 string messageText = chatMessage.Message;
-                string readText = $"({chatMessage.Date}) {username} : {messageText}";
-                MoveInputLineDown(readText);
+                string text = $"({chatMessage.Date}) {username} : {messageText}";
+                m_userInterfaceModule.OutputModule.WriteLineOutput(text);
             }
+        }
+
+        private void StartUiUpdater()
+        {
+            if (_uiUpdateTask == null)
+                _uiUpdateTask = Task.Run(() =>
+                {
+                    while (!_cancellationSource.IsCancellationRequested)
+                    {
+                        UiUpdateAction();
+                    }
+                }, _cancellationSource.Token);
+        }
+
+        private void StopUiUpdater()
+        {
+            _cancellationSource.Cancel();
+            try
+            {
+                _uiUpdateTask?.Wait();
+            }
+            catch (AggregateException e)
+            {
+                if (!(e.InnerException is TaskCanceledException))
+                    throw;
+            }
+            _cancellationSource = new CancellationTokenSource();
+            _uiUpdateTask = null;
+        }
+
+        private void UiUpdateAction()
+        {
+            Task.Delay(TimeSpan.FromMilliseconds(100)).GetAwaiter().GetResult();
+            m_userInterfaceModule.OutputModule.Refresh();
         }
 
         public override void Stop()
         {
             base.Stop();
+            StopUiUpdater();
             CurrentLogic = loaderLogic;
+            ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
+            outputModule.Clear();
+            outputModule.SetInputPrefix("");
+            outputModule.SetInputPosition(0);
+            outputModule.Refresh(true);
         }
 
-        private void MoveInputLineDown(string text)
+        private void UpdateInputLine()
         {
-            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-
-            using (writer.Lock())
+            ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
+            using (outputModule.Lock())
             {
-                cursorHandler.MovePositionToOrigin(CursorUpdateMode.GraphicalOnly);
-                int prefixLength = CurrentLogic.Prefix.Length;
-                cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-                int inputTextLength = cursorHandler.Position;
-                for (int i = 0; i < prefixLength + inputTextLength; i++)
-                    writer.Write(" ");
-                cursorHandler.MovePositionNegative(prefixLength + inputTextLength, CursorUpdateMode.GraphicalOnly);
-                writer.WriteLine(text);
-                writer.Write(CurrentLogic.Prefix);
+                CleanInputLine();
+
+                IUserInputTextHandler userInputTextHandler = readingState.InputTextHandler;
+                ConsoleCursorHandler inputCursorHandler = readingState.InputCursorHandler;
+                
+                string currentInputText = userInputTextHandler.ToString();
+                string currentPrefix = CurrentLogic.Prefix;
+                int inputPosition = inputCursorHandler.Position;
+             
+                outputModule.SetInputPrefix(currentPrefix);
+                outputModule.WriteInput(currentInputText);
+                outputModule.SetInputPosition(inputPosition);
             }
         }
 
-        private void UpdateInputLine(string oldPrefix, string currentInputText)
+        private void CleanErrorBox()
         {
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-            using (writer.Lock())
-            {
-                CleanInputLine(oldPrefix);
-                writer.Write(CurrentLogic.Prefix);
-                writer.Write(currentInputText);
-            }
+            m_userInterfaceModule.OutputModule.ClearError();
         }
 
-        private void CleanInputLine(string oldPrefix)
+        private void CleanInputLine()
         {
-            ConsoleCommandInput.ClearCommand(readingState);
-            CleanPrefix(oldPrefix);
-        }
-
-        private void CleanPrefix(string prefix)
-        {
-            IUserInputCursorHandler cursorHandler = m_userInterfaceModule.CursorHandler;
-            LockTextWriter writer = m_userInterfaceModule.OutputWriter;
-            using (writer.Lock())
-            {
-                int prefixLength = prefix.Length;
-                System.Console.CursorLeft = 0;
-                for (int i = 0; i < prefixLength; i++)
-                {
-                    writer.Write(' ');
-                }
-                cursorHandler.MovePositionNegative(prefixLength, CursorUpdateMode.GraphicalOnly);
-            }
+            ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
+            outputModule.ClearInput();
+            outputModule.SetInputPosition(0);
+            outputModule.SetInputPrefix("");
         }
     }
 }

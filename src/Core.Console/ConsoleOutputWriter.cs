@@ -1,18 +1,24 @@
 ﻿using MySharpChat.Core.Utils;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading;
 
 namespace MySharpChat.Core.Console
 {
     public class ConsoleOutputWriter : LockTextWriter
     {
+        private readonly StringWriter _outputCache;
+
         public ConsoleOutputWriter(TextWriter output) : base(output)
         {
+            _outputCache = (StringWriter)_output;
         }
 
-        public ConsoleOutputWriter() : this(System.Console.Out) { }
+        public ConsoleOutputWriter() : this(new StringWriter()) { }
+
+        public override void Flush()
+        {
+            string text = _outputCache.ToString();
+            System.Console.Write(text);
+            _output.Flush();
+        }
     }
 }

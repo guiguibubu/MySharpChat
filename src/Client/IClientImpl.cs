@@ -10,6 +10,7 @@ namespace MySharpChat.Client
         User LocalUser { get; }
         ChatRoom? ChatRoom { get; set; }
 
+        void Initialize(object? initObject = null);
         void Run(Client client);
         void Stop();
     }

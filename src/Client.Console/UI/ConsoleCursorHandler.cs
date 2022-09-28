@@ -1,84 +1,49 @@
 ﻿namespace MySharpChat.Client.Console.UI
 {
-    public class ConsoleCursorHandler : IUserInputCursorHandler
+    public class ConsoleCursorHandler
     {
-        private IUserInputCursorContext _context { get; set; }
-
-        public ConsoleCursorHandler(IUserInputCursorContext context)
+        public ConsoleCursorHandler()
         {
-            _context = context;
             Position = 0;
         }
 
         public int Position { get; private set; }
 
-        public void MovePositionNegative(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
+        public void MovePositionNegative(int move)
         {
             for (int i = 0; i < move; i++)
             {
-                MovePositionNegative(cursorUpdateMode);
+                MovePositionNegative();
             }
         }
 
-        public void MovePositionPositive(int move, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
+        public void MovePositionPositive(int move)
         {
             for (int i = 0; i < move; i++)
             {
-                MovePositionPositive(cursorUpdateMode);
+                MovePositionPositive();
             }
         }
 
-        private void MovePositionPositive(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
+        private void MovePositionPositive()
         {
-            if (cursorUpdateMode != CursorUpdateMode.NoGraphic)
-            {
-                int bufferWidth = _context.Width;
-                int left = _context.X;
-                int top = _context.Y;
-                if (left == bufferWidth - 1)
-                {
-                    top++;
-                    left = 0;
-                }
-                else
-                {
-                    left++;
-                }
-                _context.X = left;
-                _context.Y = top;
-            }
-
-            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly)
-                Position++;
+            Position++;
         }
 
-        private void MovePositionNegative(CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
+        private void MovePositionNegative()
         {
-            if (cursorUpdateMode != CursorUpdateMode.NoGraphic)
-            {
-                int bufferWidth = _context.Width;
-                int left = _context.X;
-                int top = _context.Y;
-                if (left > 0)
-                {
-                    left--;
-                }
-                else if (top > 0)
-                {
-                    top--;
-                    left = bufferWidth - 1;
-                }
-                _context.X = left;
-                _context.Y = top;
-            }
-
-            if (cursorUpdateMode != CursorUpdateMode.GraphicalOnly && Position > 0)
+            if (Position > 0)
                 Position--;
         }
 
-        public void MovePositionToTail(int textLength, CursorUpdateMode cursorUpdateMode = CursorUpdateMode.Normal)
+        public void MovePositionToOrigin()
         {
-            MovePositionPositive(textLength - Position, cursorUpdateMode);
+            MovePositionNegative(Position);
+        }
+
+        public void MovePositionToTail(int textLength)
+        {
+            MovePositionPositive(textLength - Position);
         }
     }
 }

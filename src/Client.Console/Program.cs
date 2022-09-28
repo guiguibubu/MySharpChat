@@ -29,9 +29,9 @@ namespace MySharpChat.Client.Console
             int exitCode;
             try
             {
-                System.Console.Clear();
-
                 Client client = new Client(new ConsoleClientImpl());
+
+                client.Initialize();
 
                 if (client.Start())
                 {
