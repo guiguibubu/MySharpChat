@@ -43,9 +43,6 @@ namespace MySharpChat.Client.GUI
             DisconnectButton.CommandParameter = new WpfDisconnectionArgs() { ViewModel = m_viewModel };
 
             m_viewModel.OnDisconnectionEvent += OnDisconnection;
-            m_viewModel.OnUserRemovedEvent += OnUsernameRemoved;
-            m_viewModel.OnUserAddedEvent += OnUsernameAdded;
-            m_viewModel.OnLocalUsernameChangeEvent += OnLocalUsernameChange;
             m_viewModel.OnUsernameChangeEvent += OnUsernameChange;
             m_viewModel.OnMessageReceivedEvent += OnMessageReceived;
             m_viewModel.OnSendFinishedEvent += OnSendFinished;
@@ -57,7 +54,7 @@ namespace MySharpChat.Client.GUI
         {
             Dispatcher uiDispatcher = Application.Current.Dispatcher;
             if (uiDispatcher.CheckAccess())
-            {
+            {   
                 UserName.Foreground = new SolidColorBrush(Colors.Black);
                 UserName.Text = m_viewModel.Client.LocalUser.Username;
                 ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
@@ -71,24 +68,24 @@ namespace MySharpChat.Client.GUI
 
         public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
 
-        private void OnUsernameRemoved(string username)
-        {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == username);
-                if (userUiElement != null)
-                {
-                    usersUiElements.Remove(userUiElement);
-                    UsersStack.Children.Remove(userUiElement);
-                    OnUserStatusChange($"User leave the session : {username}");
-                }
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnUsernameRemoved, username);
-            }
-        }
+        //private void OnUsernameRemoved(string username)
+        //{
+        //    Dispatcher uiDispatcher = Application.Current.Dispatcher;
+        //    if (uiDispatcher.CheckAccess())
+        //    {
+        //        TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == username);
+        //        if (userUiElement != null)
+        //        {
+        //            usersUiElements.Remove(userUiElement);
+        //            UsersStack.Children.Remove(userUiElement);
+        //            OnUserStatusChange($"User leave the session : {username}");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        uiDispatcher.Invoke(OnUsernameRemoved, username);
+        //    }
+        //}
 
         private void OnUsernameChange(string oldUsername, string newUsername)
         {
@@ -109,22 +106,22 @@ namespace MySharpChat.Client.GUI
             }
         }
 
-        private void OnUsernameAdded(string username)
-        {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
-                usersUiElements.Add(userUiElement);
-                UsersStack.Children.Add(userUiElement);
+        //private void OnUsernameAdded(string username)
+        //{
+        //    Dispatcher uiDispatcher = Application.Current.Dispatcher;
+        //    if (uiDispatcher.CheckAccess())
+        //    {
+        //        TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
+        //        usersUiElements.Add(userUiElement);
+        //        UsersStack.Children.Add(userUiElement);
 
-                OnUserStatusChange($"New user joined : {username}");
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnUsernameAdded, username);
-            }
-        }
+        //        OnUserStatusChange($"New user joined : {username}");
+        //    }
+        //    else
+        //    {
+        //        uiDispatcher.Invoke(OnUsernameAdded, username);
+        //    }
+        //}
 
         private void OnMessageReceived(string message)
         {

@@ -28,9 +28,27 @@
             </Border>
         </ScrollViewer>
 
-        <StackPanel x:Name="UsersStack" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="2">
-            <Label HorizontalContentAlignment="Center" FontWeight="Bold">Connected Users</Label>
-        </StackPanel>
+        <Grid Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="1" Grid.RowSpan="1" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" HorizontalContentAlignment="Center" FontWeight="Bold">Connected Users</Label>
+            <ItemsControl x:Name="UsersStack" Grid.Row="1"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="2"
+                      ItemsSource="{Binding Users}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextAlignment="Center" TextWrapping="Wrap"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
 
         <DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2">
             <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0" DockPanel.Dock="Left">
@@ -44,7 +62,7 @@
                             <BitmapImage UriSource="res/icons/user.ico" />
                         </Image.Source>
                     </Image>
-                    <TextBlock x:Name="UserName" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0" Background="Transparent" TextAlignment="Left" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Text="Your Username ziufgzuoifguzeogze"/>
+                    <TextBlock x:Name="UserName" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0" Background="Transparent" TextAlignment="Left" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Text="{Binding LocalUserName}"/>
                 </DockPanel>
                 <TextBlock x:Name="ConnectionStatus" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="1" Grid.RowSpan="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="0" Background="Transparent" TextAlignment="Left" TextWrapping="Wrap"/>
             </Grid>

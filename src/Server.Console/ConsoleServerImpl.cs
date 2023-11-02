@@ -24,7 +24,7 @@ namespace MySharpChat.Server
         private readonly IServerNetworkModule networkModule;
         public IServerNetworkModule NetworkModule => networkModule;
 
-        private Dictionary<string, IHttpRequestHandler> httpHandlersCache=  new Dictionary<string, IHttpRequestHandler>();
+        private readonly Dictionary<string, IHttpRequestHandler> httpHandlersCache=  new Dictionary<string, IHttpRequestHandler>();
 
         public ServerChatRoom ChatRoom { get; private set; }
 
