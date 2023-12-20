@@ -16,10 +16,10 @@ namespace MySharpChat.Core.Event
         }
 
         [JsonConstructor]
-        public ChatMessageEvent(Guid id, DateTime date, ChatMessage message) 
+        public ChatMessageEvent(Guid id, DateTime date, ChatMessage chatMessage) 
             : base(id, date)
         {
-            ChatMessage = message;
+            ChatMessage = chatMessage;
         }
     }
 }
