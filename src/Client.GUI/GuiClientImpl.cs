@@ -39,6 +39,11 @@ namespace MySharpChat.Client.GUI
 
         private void HandleNetworkPacket(PacketWrapper packet)
         {
+            if(ChatRoom == null || packet.SourceId != ChatRoom.Id)
+            {
+                ChatRoom = new ChatRoom(packet.SourceId);
+            }
+
             if (packet.Package is UserInfoPacket userInfoPacket)
             {
                 UserState userState = userInfoPacket.UserState;
@@ -52,12 +57,12 @@ namespace MySharpChat.Client.GUI
                     OnLocalUsernameChangeEvent();
                 }
 
-                bool knownUser = ChatRoom!.Users.Contains(userId);
+                bool knownUser = ChatRoom.Users.Contains(userId);
                 bool isConnected = userState.IsConnected();
                 bool isDisconnection = knownUser && !isConnected;
                 if (isDisconnection)
                 {
-                    ChatRoom!.Users.Remove(userId);
+                    ChatRoom.Users.Remove(userId);
                     OnUserRemovedEvent(username);
                     return;
                 }
@@ -69,12 +74,12 @@ namespace MySharpChat.Client.GUI
                 bool newUser = !knownUser && isConnected;
                 if (newUser)
                 {
-                    ChatRoom!.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
+                    ChatRoom.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
                     OnUserAddedEvent(username);
                     return;
                 }
 
-                User userInCache = ChatRoom!.Users[userId].User;
+                User userInCache = ChatRoom.Users[userId].User;
                 string oldUsername = userInCache.Username;
                 if (oldUsername != username)
                 {

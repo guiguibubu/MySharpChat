@@ -1,6 +1,7 @@
 ﻿using MySharpChat.Core.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -11,38 +12,54 @@ namespace MySharpChat.Core.Model
     public sealed class UserState : IEquatable<UserState>, IObjectWithId
     {
         public User User { get; private set; }
-        public Dictionary<DateTime, ConnexionStatus> ConnexionHistory { get; private set; } = new();
-
-        public Guid Id => User.Id;
-        public ConnexionStatus LastConnexionStatus => ConnexionHistory.MaxBy((pair) => pair.Key).Value;
+        public ConnexionStatus ConnexionStatus { get; private set; }
         
-        public UserState(User user, ConnexionStatus connexionStatus)
+        [JsonIgnore]
+        public Guid Id => User.Id;
+
+        private readonly Dictionary<DateTime, ConnexionStatus> _connexionHistory = new();
+
+        public UserState(User user)
         {
             User = user;
-            ConnexionHistory.Add(DateTime.Now, connexionStatus);
         }
 
         [JsonConstructor]
-        public UserState(User user, Dictionary<DateTime, ConnexionStatus> connexionHistory)
+        public UserState(User user, ConnexionStatus connexionStatus)
         {
             User = user;
-            ConnexionHistory = connexionHistory;
+            _connexionHistory.Add(DateTime.Now, connexionStatus);
+            UpdateCurrentConnexionStatus();
+        }
+
+        public UserState(User user, IEnumerable<KeyValuePair<DateTime, ConnexionStatus>> connexionHistory)
+        {
+            User = user;
+            _connexionHistory = new Dictionary<DateTime, ConnexionStatus>(connexionHistory);
+            UpdateCurrentConnexionStatus();
         }
 
         public bool IsConnected()
         {
-            return LastConnexionStatus == ConnexionStatus.GainConnection;
+            return ConnexionStatus == ConnexionStatus.GainConnection;
         }
 
         public bool HasLostConnection()
         {
-            return LastConnexionStatus == ConnexionStatus.LostConnection;
+            return ConnexionStatus == ConnexionStatus.LostConnection;
         }
 
         public void AddConnexionEvent(ConnexionStatus connexionStatus)
         {
-            ConnexionHistory.Add(DateTime.Now, connexionStatus);
+            _connexionHistory.Add(DateTime.Now, connexionStatus);
+            UpdateCurrentConnexionStatus();
         }
+
+        private void UpdateCurrentConnexionStatus()
+        {
+            ConnexionStatus = _connexionHistory.MaxBy(pair => pair.Key).Value;
+        }
+
         public static readonly IEqualityComparer<UserState> Comparer = new UserStateEqualityComparer();
         private sealed class UserStateEqualityComparer : IEqualityComparer<UserState>
         {

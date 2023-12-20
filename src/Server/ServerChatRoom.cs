@@ -16,7 +16,7 @@ using System.Text;
 
 namespace MySharpChat.Server
 {
-    public class ServerChatRoom : ChatRoom, IHttpRequestHandler
+    public class ServerChatRoom : ChatRoom
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ServerChatRoom>();
 
@@ -26,333 +26,66 @@ namespace MySharpChat.Server
         {
         }
 
-        public void HandleHttpRequest(HttpListenerContext httpContext)
+        public IEnumerable<PacketWrapper> ConnectUser(string? username, Guid userIdGuid)
         {
-            HttpListenerRequest request = httpContext.Request;
+            if (string.IsNullOrEmpty(username))
+            {
+                username = "AnonymousUser";
+            }
+            if (!IsUserNameAvailable(userIdGuid, username))
+            {
+                username = GenerateNewUsername(userIdGuid, username);
+            }
 
-            //Remove the first '/' character
-            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring("chat".Length);
-
-            if (!string.IsNullOrEmpty(uriPath))
+            UserState newUserState;
+            User newUser;
+            if (Users.Contains(userIdGuid))
             {
-                uriPath = uriPath.Substring(1);
-            }
-            HttpListenerResponse response = httpContext.Response;
-
-            if (uriPath.StartsWith("connect"))
-            {
-                HandleConnexionRequest(httpContext);
-            }
-            else if (uriPath.StartsWith("message"))
-            {
-                HandleMessageRequest(httpContext);
-            }
-            else if (uriPath.StartsWith("event"))
-            {
-                HandleEventsRequest(httpContext);
-            }
-            else if (uriPath.StartsWith("user"))
-            {
-                HandleUserRequest(httpContext);
+                newUserState = Users[userIdGuid];
+                newUser = newUserState.User;
+                newUser.Username = username;
+                newUserState.AddConnexionEvent(ConnexionStatus.GainConnection);
             }
             else
             {
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close();
+                newUser = new User(userIdGuid, username);
+                newUserState = new UserState(newUser, ConnexionStatus.GainConnection);
+                Users.Add(newUserState);
             }
+            logger.LogInfo("New user connected : {0}", newUser);
+            ChatEvents.Add(new ConnexionEvent(newUser));
+
+            List<PacketWrapper> responsePackets = new();
+            PacketWrapper initPacket = new PacketWrapper(Id, new UserInfoPacket(newUserState));
+            responsePackets.Add(initPacket);
+
+            foreach (ChatMessage chatMessage in Messages)
+            {
+                PacketWrapper chatPacket = new PacketWrapper(Id, new ChatMessagePacket(chatMessage));
+                responsePackets.Add(chatPacket);
+            }
+
+            return responsePackets;
         }
 
-        private void HandleConnexionRequest(HttpListenerContext httpContext)
+        public void DisconnectUser(Guid userIdGuid)
         {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            string? username = request.QueryString["user"];
-            string? userId = request.QueryString["userId"];
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                string errorMessage = "Connection request must have a \"userId\" param";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (!Guid.TryParse(userId, out Guid userIdGuid))
-            {
-                string errorMessage = "Connection request parameter \"userId\" must respect GUID format";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (request.HttpMethod == HttpMethod.Get.ToString())
-            {
-                if (IsUserConnected(userIdGuid))
-                {
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    response.Close();
-                }
-                else
-                {
-                    response.StatusCode = (int)HttpStatusCode.NotFound;
-                    response.Close();
-                }
-            }
-            else if (request.HttpMethod == HttpMethod.Post.ToString())
-            {
-                if (IsUserConnected(userIdGuid))
-                {
-                    string errorMessage = $"User with userId \"{userId}\" already connected";
-                    logger.LogError(errorMessage);
-
-                    response.StatusCode = (int)HttpStatusCode.Conflict;
-                    response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(username))
-                    {
-                        username = "AnonymousUser";
-                    }
-                    if (!IsUserNameAvailable(userIdGuid, username))
-                    {
-                        username = GenerateNewUsername(userIdGuid, username);
-                    }
-
-                    UserState newUserState;
-                    User newUser;
-                    if (Users.Contains(userIdGuid))
-                    {
-                        newUserState = Users[userIdGuid];
-                        newUser = newUserState.User;
-                        newUser.Username = username;
-                        newUserState.AddConnexionEvent(ConnexionStatus.GainConnection);
-                    }
-                    else
-                    {
-                        newUser = new User(userIdGuid, username);
-                        newUserState = new UserState(newUser, ConnexionStatus.GainConnection);
-                        Users.Add(newUserState);
-                    }
-                    logger.LogInfo("New user connected : {0}", newUser);
-                    ChatEvents.Add(new ConnexionEvent(newUser));
-
-                    List<PacketWrapper> responsePackets = new();
-                    PacketWrapper initPacket = new PacketWrapper(Id, new UserInfoPacket(newUserState));
-                    responsePackets.Add(initPacket);
-
-                    foreach (ChatMessage chatMessage in Messages)
-                    {
-                        PacketWrapper chatPacket = new PacketWrapper(Id, new ChatMessagePacket(chatMessage));
-                        responsePackets.Add(chatPacket);
-                    }
-
-                    string packetSerialized = PacketSerializer.Serialize(responsePackets);
-
-                    response.ContentType = MediaTypeNames.Application.Json;
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    response.Close(Encoding.ASCII.GetBytes(packetSerialized), true);
-                }
-            }
-            else if (request.HttpMethod == HttpMethod.Delete.ToString())
-            {
-                if (IsUserConnected(userIdGuid))
-                {
-                    User user = Users[userIdGuid].User;
-                    logger.LogInfo("Disconnection of : {0}", user);
-                    Users[userIdGuid].AddConnexionEvent(ConnexionStatus.LostConnection);
-                    ChatEvents.Add(new DisconnexionEvent(user));
-                }
-
-                response.StatusCode = (int)HttpStatusCode.OK;
-                response.Close();
-            }
-            else
-            {
-                string errorMessage = "Connection request must use HTTP POST method or GET method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
+            User user = Users[userIdGuid].User;
+            logger.LogInfo("Disconnection of : {0}", user);
+            Users[userIdGuid].AddConnexionEvent(ConnexionStatus.LostConnection);
+            ChatEvents.Add(new DisconnexionEvent(user));
         }
 
-        private void HandleMessageRequest(HttpListenerContext httpContext)
+        public void AddMessage(Guid userIdGuid, ChatMessage message)
         {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            if (request.HttpMethod == HttpMethod.Post.ToString())
-            {
-                HandleAddMessageRequest(httpContext);
-            }
-            else
-            {
-                string errorMessage = $"Message request must use HTTP POST method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-            }
+            User user = Users[userIdGuid].User;
+            logger.LogInfo("Message received from {0} => {1}", user, message.Message);
+            Messages.Add(message);
+            ChatEvents.Add(new ChatMessageEvent(message));
         }
 
-        private void HandleAddMessageRequest(HttpListenerContext httpContext)
+        public IEnumerable<PacketWrapper> GetChatEvents(string? lastId)
         {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            string? userId = request.QueryString["userId"];
-            if (request.HttpMethod != HttpMethod.Post.ToString())
-            {
-                string errorMessage = "Add Message request must use HTTP POST method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (string.IsNullOrEmpty(userId))
-            {
-                string errorMessage = "Message request must have a \"userId\" param";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (!Guid.TryParse(userId, out Guid userIdGuid))
-            {
-                string errorMessage = "Message request parameter \"userId\" must respect GUID format";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (!IsUserConnected(userIdGuid))
-            {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            string? httpContent = request.ContentType;
-            if (!string.Equals(httpContent, MediaTypeNames.Application.Json))
-            {
-                string errorMessage = $"Message request body must be of format : {MediaTypeNames.Application.Json}";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.UnsupportedMediaType;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-            if (!string.IsNullOrEmpty(requestBody))
-            {
-                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
-                User user = Users[userIdGuid].User;
-                foreach (PacketWrapper packet in packets)
-                {
-                    if (packet.Package is ChatMessagePacket chatPacket)
-                    {
-                        ChatMessage message = chatPacket.ChatMessage;
-                        logger.LogInfo("Message received from {0} => {1}", user, message.Message);
-                        Messages.Add(message);
-                        ChatEvents.Add(new ChatMessageEvent(message));
-                    }
-                }
-                response.StatusCode = (int)HttpStatusCode.OK;
-                response.Close();
-            }
-            else
-            {
-                string errorMessage = $"Message request body must not be empty";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-            }
-        }
-
-        private void HandleEventsRequest(HttpListenerContext httpContext)
-        {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            if (request.HttpMethod == HttpMethod.Get.ToString())
-            {
-                HandleGetEventsRequest(httpContext);
-            }
-            else
-            {
-                string errorMessage = $"Event request must use HTTP GET method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-            }
-        }
-
-        private void HandleGetEventsRequest(HttpListenerContext httpContext)
-        {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            string? userId = request.QueryString["userId"];
-            string? lastId = request.QueryString["lastId"];
-            if (request.HttpMethod != HttpMethod.Get.ToString())
-            {
-                string errorMessage = "Get Events request must use HTTP GET method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (string.IsNullOrEmpty(userId))
-            {
-                string errorMessage = "Events request must have a \"userId\" param";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (!Guid.TryParse(userId, out Guid userIdGuid))
-            {
-                string errorMessage = "Events request parameter \"userId\" must respect GUID format";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (!IsUserConnected(userIdGuid))
-            {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before reading any event";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
             List<PacketWrapper> packets = new();
             IReadOnlyCollection<ChatEvent> eventToSend;
             if (string.IsNullOrEmpty(lastId))
@@ -371,189 +104,40 @@ namespace MySharpChat.Server
                 PacketWrapper packet = new ChatEventPacketWrapper(Id, chatEvent);
                 packets.Add(packet);
             }
-            string responseContent = PacketSerializer.Serialize(packets);
-            response.StatusCode = (int)HttpStatusCode.OK;
-            response.Close(Encoding.ASCII.GetBytes(responseContent), true);
+            return packets;
         }
 
-        private void HandleUserRequest(HttpListenerContext httpContext)
+        public IEnumerable<PacketWrapper> GetUsers()
         {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            if (request.HttpMethod == HttpMethod.Put.ToString())
-            {
-                HandlePutUserRequest(httpContext);
-            }
-            else if (request.HttpMethod == HttpMethod.Get.ToString())
-            {
-                HandleGetUserRequest(httpContext);
-            }
-            else
-            {
-                string errorMessage = "User request must use HTTP PUT or GET method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-            }
-        }
-
-        private void HandleGetUserRequest(HttpListenerContext httpContext)
-        {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            string? userId = request.QueryString["userId"];
-            if (request.HttpMethod != HttpMethod.Get.ToString())
-            {
-                string errorMessage = "Get User request must use HTTP GET method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                string errorMessage = "Get User request must have a \"userId\" param";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (!Guid.TryParse(userId, out Guid userIdGuid))
-            {
-                string errorMessage = "Get User request parameter \"userId\" must respect GUID format";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (!IsUserConnected(userIdGuid))
-            {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before reading any info";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
             List<PacketWrapper> packets = new();
             foreach (UserState userState in Users)
             {
-                PacketWrapper packet = new PacketWrapper(Id, new UserInfoPacket(userState.User, userState.ConnexionHistory));
+                PacketWrapper packet = new PacketWrapper(Id, new UserInfoPacket(userState));
                 packets.Add(packet);
             }
-            string responseContent = PacketSerializer.Serialize(packets);
-            response.StatusCode = (int)HttpStatusCode.OK;
-            response.Close(Encoding.ASCII.GetBytes(responseContent), true);
+            return packets;
         }
 
-        private void HandlePutUserRequest(HttpListenerContext httpContext)
+        public bool ModifyUser(Guid userIdGuid, string newUsername)
         {
-            HttpListenerRequest request = httpContext.Request;
-
-            HttpListenerResponse response = httpContext.Response;
-
-            string? userId = request.QueryString["userId"];
-            if (request.HttpMethod != HttpMethod.Put.ToString())
+            if (string.IsNullOrEmpty(newUsername) || IsUserNameAvailable(userIdGuid, newUsername))
             {
-                string errorMessage = "User request must use HTTP PUT method";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (string.IsNullOrEmpty(userId))
-            {
-                string errorMessage = "User request must have a \"userId\" param";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-            if (!Guid.TryParse(userId, out Guid userIdGuid))
-            {
-                string errorMessage = "User request parameter \"userId\" must respect GUID format";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            if (!IsUserConnected(userIdGuid))
-            {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            string? httpContent = request.ContentType;
-            if (!string.Equals(httpContent, MediaTypeNames.Application.Json))
-            {
-                string errorMessage = $"User request body must be of format : {MediaTypeNames.Application.Json}";
-                logger.LogError(errorMessage);
-
-                response.StatusCode = (int)HttpStatusCode.UnsupportedMediaType;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                return;
-            }
-
-            string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-            if (!string.IsNullOrEmpty(requestBody))
-            {
-                string newUsername = "";
-                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
-                foreach (PacketWrapper packet in packets)
+                if (!string.IsNullOrEmpty(newUsername))
                 {
-                    if (packet.Package is UserInfoPacket userPacket)
-                    {
-                        newUsername = userPacket.UserState.User.Username;
-                    }
+                    User user = Users[userIdGuid].User;
+                    string oldUsername = user.Username;
+                    logger.LogInfo("Username change from {1} to {2} for {0}", user, oldUsername, newUsername);
+                    user.Username = newUsername;
+                    ChatEvents.Add(new UsernameChangeEvent(oldUsername, newUsername));
                 }
-                if (string.IsNullOrEmpty(newUsername) || IsUserNameAvailable(userIdGuid, newUsername))
-                {
-                    if (!string.IsNullOrEmpty(newUsername))
-                    {
-                        User user = Users[userIdGuid].User;
-                        string oldUsername = user.Username;
-                        logger.LogInfo("Username change from {1} to {2} for {0}", user, oldUsername, newUsername);
-                        user.Username = newUsername;
-                        ChatEvents.Add(new UsernameChangeEvent(oldUsername, newUsername));
-                    }
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    response.Close();
-                }
-                else
-                {
-                    string errorMessage = $"This username is already used : \"{newUsername}\"";
-                    logger.LogError(errorMessage);
-
-                    response.StatusCode = (int)HttpStatusCode.Conflict;
-                    response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
-                }
+                return true;
             }
             else
             {
-                string errorMessage = $"Message request body must not be empty";
+                string errorMessage = $"This username is already used : \"{newUsername}\"";
                 logger.LogError(errorMessage);
 
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+                return false;
             }
         }
 
@@ -574,7 +158,7 @@ namespace MySharpChat.Server
             return newUsername;
         }
 
-        private bool IsUserConnected(Guid userId)
+        public bool IsUserConnected(Guid userId)
         {
             bool userExist = Users.Contains(userId);
             if (!userExist)
