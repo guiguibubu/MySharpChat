@@ -41,7 +41,8 @@ namespace MySharpChat.Client.GUI
         {
             if (packet.Package is UserInfoPacket userInfoPacket)
             {
-                User user = userInfoPacket.User;
+                UserState userState = userInfoPacket.UserState;
+                User user = userState.User;
                 Guid userId = user.Id;
                 string username = user.Username;
 
@@ -52,7 +53,7 @@ namespace MySharpChat.Client.GUI
                 }
 
                 bool knownUser = ChatRoom!.Users.Contains(userId);
-                bool isConnected = userInfoPacket.Connected;
+                bool isConnected = userState.IsConnected();
                 bool isDisconnection = knownUser && !isConnected;
                 if (isDisconnection)
                 {
@@ -68,7 +69,7 @@ namespace MySharpChat.Client.GUI
                 bool newUser = !knownUser && isConnected;
                 if (newUser)
                 {
-                    ChatRoom!.Users.Add(new UserState(user, true));
+                    ChatRoom!.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
                     OnUserAddedEvent(username);
                     return;
                 }
@@ -81,7 +82,7 @@ namespace MySharpChat.Client.GUI
                     OnUsernameChangeEvent(oldUsername, username);
                 }
             }
-            else if (packet.Package is ChatPacket chatPackage)
+            else if (packet.Package is ChatMessagePacket chatPackage)
             {
                 HandleChatPacket(chatPackage);
             }
@@ -97,7 +98,7 @@ namespace MySharpChat.Client.GUI
             }
         }
 
-        private void HandleChatPacket(ChatPacket chatPacket)
+        private void HandleChatPacket(ChatMessagePacket chatPacket)
         {
             ChatMessage chatMessage = chatPacket.ChatMessage;
             if (!ChatRoom!.Messages.Contains(chatMessage))

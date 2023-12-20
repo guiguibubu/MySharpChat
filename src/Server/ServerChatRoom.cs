@@ -1,8 +1,11 @@
-﻿using MySharpChat.Core.Http;
+﻿using MySharpChat.Core.Event;
+using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
+using MySharpChat.Core.Utils.Collection;
 using MySharpChat.Core.Utils.Logger;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +19,8 @@ namespace MySharpChat.Server
     public class ServerChatRoom : ChatRoom, IHttpRequestHandler
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ServerChatRoom>();
+
+        private readonly ChatEventCollection ChatEvents = new();
 
         public ServerChatRoom(Guid id) : base(id)
         {
@@ -41,6 +46,10 @@ namespace MySharpChat.Server
             else if (uriPath.StartsWith("message"))
             {
                 HandleMessageRequest(httpContext);
+            }
+            else if (uriPath.StartsWith("event"))
+            {
+                HandleEventsRequest(httpContext);
             }
             else if (uriPath.StartsWith("user"))
             {
@@ -114,25 +123,32 @@ namespace MySharpChat.Server
                     {
                         username = GenerateNewUsername(userIdGuid, username);
                     }
-                    User newUser = new User(userIdGuid, username);
+
+                    UserState newUserState;
+                    User newUser;
                     if (Users.Contains(userIdGuid))
                     {
-                        Users[userIdGuid].User.Username = username;
-                        Users[userIdGuid].Connected = true;
+                        newUserState = Users[userIdGuid];
+                        newUser = newUserState.User;
+                        newUser.Username = username;
+                        newUserState.AddConnexionEvent(ConnexionStatus.GainConnection);
                     }
                     else
                     {
-                        Users.Add(new UserState(newUser, true));
+                        newUser = new User(userIdGuid, username);
+                        newUserState = new UserState(newUser, ConnexionStatus.GainConnection);
+                        Users.Add(newUserState);
                     }
                     logger.LogInfo("New user connected : {0}", newUser);
+                    ChatEvents.Add(new ConnexionEvent(newUser));
 
                     List<PacketWrapper> responsePackets = new();
-                    PacketWrapper initPacket = new PacketWrapper(Id, new UserInfoPacket(userIdGuid, username, true));
+                    PacketWrapper initPacket = new PacketWrapper(Id, new UserInfoPacket(newUserState));
                     responsePackets.Add(initPacket);
 
                     foreach (ChatMessage chatMessage in Messages)
                     {
-                        PacketWrapper chatPacket = new PacketWrapper(Id, new ChatPacket(chatMessage));
+                        PacketWrapper chatPacket = new PacketWrapper(Id, new ChatMessagePacket(chatMessage));
                         responsePackets.Add(chatPacket);
                     }
 
@@ -147,8 +163,10 @@ namespace MySharpChat.Server
             {
                 if (IsUserConnected(userIdGuid))
                 {
-                    logger.LogInfo("Disconnection of : {0}", Users[userIdGuid].User);
-                    Users[userIdGuid].Connected = false;
+                    User user = Users[userIdGuid].User;
+                    logger.LogInfo("Disconnection of : {0}", user);
+                    Users[userIdGuid].AddConnexionEvent(ConnexionStatus.LostConnection);
+                    ChatEvents.Add(new DisconnexionEvent(user));
                 }
 
                 response.StatusCode = (int)HttpStatusCode.OK;
@@ -175,13 +193,9 @@ namespace MySharpChat.Server
             {
                 HandleAddMessageRequest(httpContext);
             }
-            else if (request.HttpMethod == HttpMethod.Get.ToString())
-            {
-                HandleGetMessageRequest(httpContext);
-            }
             else
             {
-                string errorMessage = $"Message request must use HTTP POST or GET method";
+                string errorMessage = $"Message request must use HTTP POST method";
                 logger.LogError(errorMessage);
 
                 response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
@@ -224,7 +238,7 @@ namespace MySharpChat.Server
                 return;
             }
 
-            if (!Users.Contains(userIdGuid))
+            if (!IsUserConnected(userIdGuid))
             {
                 string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
                 logger.LogError(errorMessage);
@@ -252,11 +266,12 @@ namespace MySharpChat.Server
                 User user = Users[userIdGuid].User;
                 foreach (PacketWrapper packet in packets)
                 {
-                    if (packet.Package is ChatPacket chatPacket)
+                    if (packet.Package is ChatMessagePacket chatPacket)
                     {
                         ChatMessage message = chatPacket.ChatMessage;
                         logger.LogInfo("Message received from {0} => {1}", user, message.Message);
                         Messages.Add(message);
+                        ChatEvents.Add(new ChatMessageEvent(message));
                     }
                 }
                 response.StatusCode = (int)HttpStatusCode.OK;
@@ -272,17 +287,37 @@ namespace MySharpChat.Server
             }
         }
 
-        private void HandleGetMessageRequest(HttpListenerContext httpContext)
+        private void HandleEventsRequest(HttpListenerContext httpContext)
+        {
+            HttpListenerRequest request = httpContext.Request;
+
+            HttpListenerResponse response = httpContext.Response;
+
+            if (request.HttpMethod == HttpMethod.Get.ToString())
+            {
+                HandleGetEventsRequest(httpContext);
+            }
+            else
+            {
+                string errorMessage = $"Event request must use HTTP GET method";
+                logger.LogError(errorMessage);
+
+                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                response.Close(Encoding.ASCII.GetBytes(errorMessage), true);
+            }
+        }
+
+        private void HandleGetEventsRequest(HttpListenerContext httpContext)
         {
             HttpListenerRequest request = httpContext.Request;
 
             HttpListenerResponse response = httpContext.Response;
 
             string? userId = request.QueryString["userId"];
-            string? messageId = request.QueryString["messageId"];
+            string? lastId = request.QueryString["lastId"];
             if (request.HttpMethod != HttpMethod.Get.ToString())
             {
-                string errorMessage = "Get Message request must use HTTP GET method";
+                string errorMessage = "Get Events request must use HTTP GET method";
                 logger.LogError(errorMessage);
 
                 response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
@@ -291,7 +326,7 @@ namespace MySharpChat.Server
             }
             if (string.IsNullOrEmpty(userId))
             {
-                string errorMessage = "Message request must have a \"userId\" param";
+                string errorMessage = "Events request must have a \"userId\" param";
                 logger.LogError(errorMessage);
 
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -300,7 +335,7 @@ namespace MySharpChat.Server
             }
             if (!Guid.TryParse(userId, out Guid userIdGuid))
             {
-                string errorMessage = "Message request parameter \"userId\" must respect GUID format";
+                string errorMessage = "Events request parameter \"userId\" must respect GUID format";
                 logger.LogError(errorMessage);
 
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -308,9 +343,9 @@ namespace MySharpChat.Server
                 return;
             }
 
-            if (!Users.Contains(userIdGuid))
+            if (!IsUserConnected(userIdGuid))
             {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before reading any message";
+                string errorMessage = $"User with userId \"{userId}\" must be connected before reading any event";
                 logger.LogError(errorMessage);
 
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -319,21 +354,21 @@ namespace MySharpChat.Server
             }
 
             List<PacketWrapper> packets = new();
-            IReadOnlyCollection<ChatMessage> messagesToSend;
-            if (string.IsNullOrEmpty(messageId))
+            IReadOnlyCollection<ChatEvent> eventToSend;
+            if (string.IsNullOrEmpty(lastId))
             {
-                messagesToSend = Messages;
+                eventToSend = ChatEvents;
             }
             else
             {
-                ChatMessage lastMessageReceived = Messages[Guid.Parse(messageId)];
-                List<ChatMessage> messageOrdered = Messages.OrderByDescending(chat => chat.Date).ToList();
-                int indexLastMessage = messageOrdered.IndexOf(lastMessageReceived);
-                messagesToSend = messageOrdered.GetRange(0, indexLastMessage);
+                ChatEvent lastEventReceived = ChatEvents[Guid.Parse(lastId)];
+                List<ChatEvent> eventOrdered = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date).ToList();
+                int indexLastEvent = eventOrdered.IndexOf(lastEventReceived);
+                eventToSend = eventOrdered.GetRange(0, indexLastEvent);
             }
-            foreach (ChatMessage message in messagesToSend)
+            foreach (ChatEvent chatEvent in eventToSend)
             {
-                PacketWrapper packet = new PacketWrapper(Id, new ChatPacket(message));
+                PacketWrapper packet = new ChatEventPacketWrapper(Id, chatEvent);
                 packets.Add(packet);
             }
             string responseContent = PacketSerializer.Serialize(packets);
@@ -401,7 +436,7 @@ namespace MySharpChat.Server
                 return;
             }
 
-            if (!Users.Contains(userIdGuid))
+            if (!IsUserConnected(userIdGuid))
             {
                 string errorMessage = $"User with userId \"{userId}\" must be connected before reading any info";
                 logger.LogError(errorMessage);
@@ -414,7 +449,7 @@ namespace MySharpChat.Server
             List<PacketWrapper> packets = new();
             foreach (UserState userState in Users)
             {
-                PacketWrapper packet = new PacketWrapper(Id, new UserInfoPacket(userState.User, userState.Connected));
+                PacketWrapper packet = new PacketWrapper(Id, new UserInfoPacket(userState.User, userState.ConnexionHistory));
                 packets.Add(packet);
             }
             string responseContent = PacketSerializer.Serialize(packets);
@@ -457,7 +492,7 @@ namespace MySharpChat.Server
                 return;
             }
 
-            if (!Users.Contains(userIdGuid))
+            if (!IsUserConnected(userIdGuid))
             {
                 string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
                 logger.LogError(errorMessage);
@@ -487,7 +522,7 @@ namespace MySharpChat.Server
                 {
                     if (packet.Package is UserInfoPacket userPacket)
                     {
-                        newUsername = userPacket.User.Username;
+                        newUsername = userPacket.UserState.User.Username;
                     }
                 }
                 if (string.IsNullOrEmpty(newUsername) || IsUserNameAvailable(userIdGuid, newUsername))
@@ -495,8 +530,10 @@ namespace MySharpChat.Server
                     if (!string.IsNullOrEmpty(newUsername))
                     {
                         User user = Users[userIdGuid].User;
-                        logger.LogInfo("Username change to {1} for {0}", user, newUsername);
+                        string oldUsername = user.Username;
+                        logger.LogInfo("Username change from {1} to {2} for {0}", user, oldUsername, newUsername);
                         user.Username = newUsername;
+                        ChatEvents.Add(new UsernameChangeEvent(oldUsername, newUsername));
                     }
                     response.StatusCode = (int)HttpStatusCode.OK;
                     response.Close();
@@ -522,7 +559,7 @@ namespace MySharpChat.Server
 
         private bool IsUserNameAvailable(Guid userId, string username)
         {
-            return !Users.Where(user => user.Id != userId).Where(user => user.Connected).Select(user => user.User.Username).Contains(username);
+            return !Users.Where(user => user.Id != userId).Where(userState => IsUserConnected(userState.Id)).Select(userState => userState.User.Username).Contains(username);
         }
 
         private string GenerateNewUsername(Guid userId, string currentUsername)
@@ -539,7 +576,12 @@ namespace MySharpChat.Server
 
         private bool IsUserConnected(Guid userId)
         {
-            return Users.Contains(userId) && Users[userId].Connected;
+            bool userExist = Users.Contains(userId);
+            if (!userExist)
+                return false;
+
+            UserState userState = Users[userId];
+            return userState.IsConnected();
         }
     }
 }

@@ -9,6 +9,9 @@ using System;
 using System.Threading.Tasks;
 using MySharpChat.Core.Model;
 using System.Threading;
+using MySharpChat.Core.Event;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MySharpChat.Client.Console
 {
@@ -73,7 +76,11 @@ namespace MySharpChat.Client.Console
                         return;
                     }
                 }
+
+                UpdateUI();
             }
+
+            UpdateUI();
 
             CommandParser parser = CurrentLogic.CommandParser;
             string text = userInputTask.Result;
@@ -128,52 +135,12 @@ namespace MySharpChat.Client.Console
 
         private void HandleNetworkPacket(PacketWrapper packet)
         {
-            if (packet.Package is UserInfoPacket userInfoPacket)
+            if (packet.Package is ChatEvent chatEvent)
             {
-                User user = userInfoPacket.User;
-                Guid userId = user.Id;
-                string username = user.Username;
-
-                if (LocalUser.Id == userId)
-                    LocalUser.Username = username;
-
-                bool knownUser = ChatRoom!.Users.Contains(userId);
-                bool isConnected = userInfoPacket.Connected;
-                bool isDisconnection = knownUser && !isConnected;
-                if (isDisconnection)
+                if (!ChatEvents.Contains(chatEvent.Id))
                 {
-                    ChatRoom!.Users.Remove(userId);
-                    string text = $"User leave the session : {username}";
-                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
-                    return;
+                    ChatEvents.Add(chatEvent);
                 }
-
-                bool alreadyDiconnected = !knownUser && !isConnected;
-                if (alreadyDiconnected)
-                    return;
-
-                bool newUser = !knownUser && isConnected;
-                if (newUser)
-                {
-                    ChatRoom!.Users.Add(new UserState(user, true));
-                    string text = $"New user joined : {username}";
-                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
-                    return;
-                }
-
-                User userInCache = ChatRoom!.Users[userId].User;
-                string oldUsername = userInCache.Username;
-                if (oldUsername != username)
-                {
-                    string text = $"Username change from {oldUsername} to {username}";
-                    userInCache.Username = username;
-                    m_userInterfaceModule.OutputModule.WriteLineOutput(text);
-                    UpdateInputLine();
-                }
-            }
-            else if (packet.Package is ChatPacket chatPackage)
-            {
-                HandleChatPacket(chatPackage);
             }
         }
 
@@ -187,17 +154,63 @@ namespace MySharpChat.Client.Console
             }
         }
 
-        private void HandleChatPacket(ChatPacket chatPacket)
+        private static string ToString(ChatEvent chatEvent)
         {
-            ChatMessage chatMessage = chatPacket.ChatMessage;
-            if (!ChatRoom!.Messages.Contains(chatMessage))
+            string text;
+
+            if (chatEvent is ChatMessageEvent chatMessageEvent)
             {
-                ChatRoom!.Messages.Add(chatMessage);
-                string username = chatMessage.User.Username;
-                string messageText = chatMessage.Message;
-                string text = $"({chatMessage.Date}) {username} : {messageText}";
-                m_userInterfaceModule.OutputModule.WriteLineOutput(text);
+                text = ToString(chatMessageEvent);
             }
+            else if (chatEvent is ConnexionEvent connexionEvent)
+            {
+                text = ToString(connexionEvent);
+            }
+            else if (chatEvent is DisconnexionEvent disconnexionEvent)
+            {
+                text = ToString(disconnexionEvent);
+            }
+            else if (chatEvent is UsernameChangeEvent usernameChangeEvent)
+            {
+                text = ToString(usernameChangeEvent);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            return text;
+        }
+
+        private static string ToString(ChatMessageEvent chatMessageEvent)
+        {
+            ChatMessage chatMessage = chatMessageEvent.ChatMessage;
+            string username = chatMessage.User.Username;
+            string messageText = chatMessage.Message;
+            string readText = $"({chatMessage.Date}) {username} : {messageText}";
+            return readText;
+        }
+
+        private static string ToString(ConnexionEvent connexionEvent)
+        {
+            User user = connexionEvent.User;
+            string text = $"New user joined : {user.Username}";
+            return text;
+        }
+
+        private static string ToString(DisconnexionEvent disconnexionEvent)
+        {
+            User user = disconnexionEvent.User;
+            string text = $"User leave the session : {user.Username}";
+            return text;
+        }
+
+        private static string ToString(UsernameChangeEvent usernameChangeEvent)
+        {
+            string oldUsername = usernameChangeEvent.OldUsername;
+            string newUsername = usernameChangeEvent.NewUsername;
+            string text = $"Username change from {oldUsername} to {newUsername}";
+            return text;
         }
 
         private void StartUiUpdater()
@@ -255,11 +268,11 @@ namespace MySharpChat.Client.Console
 
                 IUserInputTextHandler userInputTextHandler = readingState.InputTextHandler;
                 ConsoleCursorHandler inputCursorHandler = readingState.InputCursorHandler;
-                
+
                 string currentInputText = userInputTextHandler.ToString();
                 string currentPrefix = CurrentLogic.Prefix;
                 int inputPosition = inputCursorHandler.Position;
-             
+
                 outputModule.SetInputPrefix(currentPrefix);
                 outputModule.WriteInput(currentInputText);
                 outputModule.SetInputPosition(inputPosition);
@@ -277,6 +290,17 @@ namespace MySharpChat.Client.Console
             outputModule.ClearInput();
             outputModule.SetInputPosition(0);
             outputModule.SetInputPrefix("");
+        }
+
+        private void UpdateUI()
+        {
+            ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
+            List<ChatEvent> eventsToShow = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date).ToList();
+            outputModule.ClearOutput();
+            foreach (string message in eventsToShow.Select(chatEvent => ToString(chatEvent)))
+            {
+                outputModule.WriteLineOutput(message);
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using MySharpChat.Core.Utils;
+using MySharpChat.Core.Utils.Collection;
 using MySharpChat.Core.Utils.Logger;
 using System;
-using System.Collections.Generic;
 
 namespace MySharpChat.Core.Model
 {
@@ -9,8 +9,8 @@ namespace MySharpChat.Core.Model
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ChatRoom>();
 
-        public ObjectWithIdCollection<UserState> Users { get; private set; } = new(UserState.Comparer);
-        public ObjectWithIdCollection<ChatMessage> Messages { get; private set; } = new(ChatMessage.Comparer);
+        public UserStateCollection Users { get; private set; } = new();
+        public ChatMessageCollection Messages { get; private set; } = new();
         public Guid Id { get; private set; }
 
         public ChatRoom(Guid id)
