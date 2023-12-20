@@ -21,6 +21,7 @@ namespace MySharpChat.Client
         private bool m_clientRun = false;
         private SafeThread? m_clientThread = null;
 
+        private bool _initialized = false;
         private static readonly Logger logger = Logger.Factory.GetLogger<Client>();
 
         public virtual void Initialize(object? initObject = null)
@@ -30,7 +31,7 @@ namespace MySharpChat.Client
 
         public bool Start(object? startObject = null)
         {
-            return Start(startObject as string);
+            return _initialized = Start(startObject as string);
         }
 
         public virtual bool Start(string? serverAdress)
@@ -39,6 +40,8 @@ namespace MySharpChat.Client
             sw.Start();
 
             bool clientStarted = false;
+
+            Initialize();
 
             m_clientThread = new SafeThread(Run);
             m_clientThread.Start();

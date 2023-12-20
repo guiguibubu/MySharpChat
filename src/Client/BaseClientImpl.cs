@@ -1,6 +1,6 @@
 ﻿using MySharpChat.Client.Utils;
 using MySharpChat.Core.Model;
-using MySharpChat.Core.Packet;
+using MySharpChat.Core.Utils.Collection;
 using System;
 
 namespace MySharpChat.Client
@@ -12,7 +12,8 @@ namespace MySharpChat.Client
 
         public User LocalUser { get; protected set; } = new User(Guid.NewGuid(), Environment.UserName);
         public ChatRoom? ChatRoom { get; set; } = null;
-    
+        public ChatEventCollection ChatEvents { get; } = new();
+
         protected BaseClientImpl()
         {
             networkModule = new ClientNetworkModule(this);

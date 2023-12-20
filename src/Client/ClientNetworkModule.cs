@@ -13,6 +13,7 @@ using System.Linq;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
 using MySharpChat.Client.Utils;
+using MySharpChat.Core.Utils.Collection;
 
 namespace MySharpChat.Client
 {
@@ -112,7 +113,6 @@ namespace MySharpChat.Client
             if (isConnected)
             {
                 StartStatusUpdater();
-                _client.ChatRoom = new ChatRoom(packetsQueue.Peek().SourceId);
             }
 
             return isConnected;
@@ -240,7 +240,7 @@ namespace MySharpChat.Client
         private void StatusUpdateAction()
         {
             UserStatusUpdateAction();
-            MessageStatusUpdateAction();
+            EventsStatusUpdateAction();
         }
 
         private void UserStatusUpdateAction()
@@ -258,14 +258,14 @@ namespace MySharpChat.Client
             }
         }
 
-        private void MessageStatusUpdateAction()
+        private void EventsStatusUpdateAction()
         {
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/message";
+            requestUriBuilder.Path += "/event";
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
-            ChatRoom chatRoom = _client.ChatRoom!;
-            if (chatRoom.Messages.Any())
-                requestUriBuilder.Query += $"&messageId={chatRoom.Messages.MaxBy(message => message.Date)!.Id}";
+            ChatEventCollection chatEvents = _client.ChatEvents;
+            if (chatEvents.Any())
+                requestUriBuilder.Query += $"&lastId={chatEvents.MaxBy(chatEvent => chatEvent.Date)!.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;

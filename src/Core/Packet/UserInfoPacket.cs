@@ -1,5 +1,6 @@
 ﻿using MySharpChat.Core.Model;
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Packet
@@ -7,18 +8,28 @@ namespace MySharpChat.Core.Packet
     [Serializable]
     public class UserInfoPacket
     {
-        public UserInfoPacket(Guid userId, string username, bool connected) 
-            : this(new User(userId, username), connected)
+        public UserInfoPacket(Guid userId, string username, Dictionary<DateTime, ConnexionStatus> connexionHistory)
+            : this(new User(userId, username), connexionHistory)
+        { }
+
+        public UserInfoPacket(Guid userId, string username, ConnexionStatus connexionStatus)
+            : this(new User(userId, username), connexionStatus)
+        { }
+
+        public UserInfoPacket(User user, Dictionary<DateTime, ConnexionStatus> connexionHistory)
+            : this(new UserState(user, connexionHistory))
+        { }
+
+        public UserInfoPacket(User user, ConnexionStatus connexionStatus)
+            : this(new UserState(user, connexionStatus))
         { }
 
         [JsonConstructor]
-        public UserInfoPacket(User user, bool connected)
+        public UserInfoPacket(UserState userState)
         {
-            User = user;
-            Connected = connected;
+            UserState = userState;
         }
 
-        public User User { get; }
-        public bool Connected { get; }
+        public UserState UserState { get; }
     }
 }

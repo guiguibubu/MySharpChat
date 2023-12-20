@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MySharpChat.Core.Utils
+namespace MySharpChat.Core.Utils.Collection
 {
     [Serializable]
     public class ObjectWithIdCollection<T> : HashSet<T> where T : class, IObjectWithId
@@ -13,7 +11,7 @@ namespace MySharpChat.Core.Utils
         public ObjectWithIdCollection()
             : base()
         { }
-        public ObjectWithIdCollection(IEnumerable<T> collection) 
+        public ObjectWithIdCollection(IEnumerable<T> collection)
             : base(collection)
         { }
         public ObjectWithIdCollection(IEqualityComparer<T>? comparer)
@@ -55,6 +53,10 @@ namespace MySharpChat.Core.Utils
             get
             {
                 return Get(id);
+            }
+            set
+            {
+                this[id] = value;
             }
         }
 

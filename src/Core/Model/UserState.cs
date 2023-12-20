@@ -2,22 +2,47 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Model
 {
+    [Serializable]
     public sealed class UserState : IEquatable<UserState>, IObjectWithId
     {
         public User User { get; private set; }
-        public bool Connected { get; set; }
+        public Dictionary<DateTime, ConnexionStatus> ConnexionHistory { get; private set; } = new();
 
         public Guid Id => User.Id;
-
-        public UserState(User user, bool connected)
+        public ConnexionStatus LastConnexionStatus => ConnexionHistory.MaxBy((pair) => pair.Key).Value;
+        
+        public UserState(User user, ConnexionStatus connexionStatus)
         {
             User = user;
-            Connected = connected;
+            ConnexionHistory.Add(DateTime.Now, connexionStatus);
         }
 
+        [JsonConstructor]
+        public UserState(User user, Dictionary<DateTime, ConnexionStatus> connexionHistory)
+        {
+            User = user;
+            ConnexionHistory = connexionHistory;
+        }
+
+        public bool IsConnected()
+        {
+            return LastConnexionStatus == ConnexionStatus.GainConnection;
+        }
+
+        public bool HasLostConnection()
+        {
+            return LastConnexionStatus == ConnexionStatus.LostConnection;
+        }
+
+        public void AddConnexionEvent(ConnexionStatus connexionStatus)
+        {
+            ConnexionHistory.Add(DateTime.Now, connexionStatus);
+        }
         public static readonly IEqualityComparer<UserState> Comparer = new UserStateEqualityComparer();
         private sealed class UserStateEqualityComparer : IEqualityComparer<UserState>
         {
@@ -34,7 +59,7 @@ namespace MySharpChat.Core.Model
 
         public bool Equals(UserState? other)
         {
-            return other!= null && Comparer.Equals(this, other);
+            return other != null && Comparer.Equals(this, other);
         }
 
         public override bool Equals(object? obj)

@@ -1,5 +1,6 @@
 ﻿using MySharpChat.Core.Command;
 using MySharpChat.Core.Http;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
 using System;
@@ -21,7 +22,7 @@ namespace MySharpChat.Client.Command
             if (!string.IsNullOrEmpty(newUsername))
             {
                 Guid userID = client.LocalUser.Id;
-                UserInfoPacket initPacket = new UserInfoPacket(userID, newUsername, true);
+                UserInfoPacket initPacket = new UserInfoPacket(userID, newUsername, ConnexionStatus.GainConnection);
                 PacketWrapper packet = new PacketWrapper(userID, initPacket);
                 ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
                 UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);
