@@ -27,11 +27,6 @@ namespace MySharpChat.Core.Utils.Collection
             : base(capacity, comparer)
         { }
 
-
-        protected ObjectWithIdCollection(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        { }
-
         public bool Contains(Guid id)
         {
             return this.Any((o) => o.Id == id);
