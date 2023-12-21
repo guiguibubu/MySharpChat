@@ -1,8 +1,6 @@
-﻿using MySharpChat.Core.Event;
-using MySharpChat.Core.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
+using MySharpChat.Core.Model;
 
 namespace MySharpChat.Core.Utils.Collection
 {

@@ -1,7 +1,7 @@
-﻿using MySharpChat.Core.Utils;
+﻿using System;
+using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Collection;
 using MySharpChat.Core.Utils.Logger;
-using System;
 
 namespace MySharpChat.Core.Model
 {

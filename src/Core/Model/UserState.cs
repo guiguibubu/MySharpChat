@@ -1,10 +1,9 @@
-﻿using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Model
 {
@@ -13,7 +12,7 @@ namespace MySharpChat.Core.Model
     {
         public User User { get; private set; }
         public ConnexionStatus ConnexionStatus { get; private set; }
-        
+
         [JsonIgnore]
         public Guid Id => User.Id;
 

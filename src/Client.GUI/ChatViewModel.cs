@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MySharpChat.Client.GUI
 {
@@ -35,7 +31,7 @@ namespace MySharpChat.Client.GUI
         public void OnSendSuccess()
         {
             OnSendFinishedEvent();
-            
+
         }
 
         public void OnDisconnection(bool manual)
@@ -47,7 +43,7 @@ namespace MySharpChat.Client.GUI
         {
             OnUserAddedEvent(username);
         }
-        
+
         public void OnUserRemoved(string username)
         {
             OnUserRemovedEvent(username);

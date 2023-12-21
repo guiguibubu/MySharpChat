@@ -13,7 +13,7 @@ namespace MySharpChat.Client.Console.Input
 
         public void Append(IEnumerable<char> chars)
         {
-            foreach(char c in chars)
+            foreach (char c in chars)
                 _chars.Add(c);
         }
 

@@ -1,19 +1,9 @@
 ﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Sockets;
-using System.Threading;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
+using System.Threading;
 using MySharpChat.Core.Command;
-using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Http;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
-using MySharpChat.Core.Console;
 using MySharpChat.Server.Command;
 
 namespace MySharpChat.Server

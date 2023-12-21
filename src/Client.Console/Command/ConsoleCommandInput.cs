@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-
-using MySharpChat.Client.Console.Input;
-using System.IO;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using MySharpChat.Client.Console.Input;
 using MySharpChat.Client.Console.UI;
 using MySharpChat.Core.Console;
 

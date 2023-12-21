@@ -1,7 +1,6 @@
 ﻿using MySharpChat.Client.Utils;
 using MySharpChat.Core.Model;
 using MySharpChat.Core.Utils.Collection;
-using System.Collections.Generic;
 
 namespace MySharpChat.Client
 {

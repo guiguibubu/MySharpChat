@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MySharpChat.Client.GUI
+﻿namespace MySharpChat.Client.GUI
 {
     internal class MainWindowViewModel
     {

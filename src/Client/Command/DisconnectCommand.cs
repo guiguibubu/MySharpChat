@@ -1,6 +1,5 @@
-﻿using MySharpChat.Core.Command;
+﻿using System;
 using MySharpChat.Core.Utils;
-using System;
 
 namespace MySharpChat.Client.Command
 {

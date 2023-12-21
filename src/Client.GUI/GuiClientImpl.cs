@@ -1,6 +1,6 @@
-﻿using MySharpChat.Core.Model;
+﻿using System;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
-using System;
 
 namespace MySharpChat.Client.GUI
 {
@@ -39,7 +39,7 @@ namespace MySharpChat.Client.GUI
 
         private void HandleNetworkPacket(PacketWrapper packet)
         {
-            if(ChatRoom == null || packet.SourceId != ChatRoom.Id)
+            if (ChatRoom == null || packet.SourceId != ChatRoom.Id)
             {
                 ChatRoom = new ChatRoom(packet.SourceId);
             }

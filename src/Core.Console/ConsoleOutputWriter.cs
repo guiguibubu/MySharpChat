@@ -1,5 +1,5 @@
-﻿using MySharpChat.Core.Utils;
-using System.IO;
+﻿using System.IO;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Console
 {

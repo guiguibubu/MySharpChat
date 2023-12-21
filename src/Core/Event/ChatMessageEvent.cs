@@ -1,6 +1,6 @@
-﻿using MySharpChat.Core.Model;
-using System;
+﻿using System;
 using System.Text.Json.Serialization;
+using MySharpChat.Core.Model;
 
 namespace MySharpChat.Core.Event
 {
@@ -9,14 +9,14 @@ namespace MySharpChat.Core.Event
     {
         public ChatMessage ChatMessage { get; }
 
-        public ChatMessageEvent(ChatMessage message) 
+        public ChatMessageEvent(ChatMessage message)
             : base()
         {
             ChatMessage = message;
         }
 
         [JsonConstructor]
-        public ChatMessageEvent(Guid id, DateTime date, ChatMessage chatMessage) 
+        public ChatMessageEvent(Guid id, DateTime date, ChatMessage chatMessage)
             : base(id, date)
         {
             ChatMessage = chatMessage;

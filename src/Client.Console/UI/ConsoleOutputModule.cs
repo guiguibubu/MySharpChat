@@ -1,9 +1,7 @@
-﻿using MySharpChat.Core.Console;
-using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.IO;
-using System.Runtime.Versioning;
 using System.Text;
+using MySharpChat.Core.Console;
 
 namespace MySharpChat.Client.Console.UI
 {

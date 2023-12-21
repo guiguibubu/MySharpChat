@@ -1,11 +1,9 @@
-﻿using MySharpChat.Core.Utils.Logger;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Net;
+using MySharpChat.Core.Utils.Logger;
 
 namespace MySharpChat.Server
 {

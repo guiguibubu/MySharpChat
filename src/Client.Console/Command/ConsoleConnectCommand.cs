@@ -1,9 +1,8 @@
-﻿using MySharpChat.Client.Console.UI;
-using MySharpChat.Core.Command;
-using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using MySharpChat.Client.Console.UI;
+using MySharpChat.Core.Command;
 
 namespace MySharpChat.Client.Console.Command
 {
@@ -45,7 +44,7 @@ namespace MySharpChat.Client.Console.Command
                 string errorMessage = "Connection fail !";
                 _client.UserInterfaceModule.OutputModule.WriteLineOutput(errorMessage);
             }
-                
+
             return isConnected;
         }
     }

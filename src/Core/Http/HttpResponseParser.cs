@@ -59,7 +59,7 @@ namespace MySharpChat.Core.Http
 
                             // Parse each header
                             int split = line.IndexOf(": ", StringComparison.Ordinal);
-                            if (split < 1) 
+                            if (split < 1)
                                 throw new ArgumentException($"Response contains an invalid header definition: \"{line}\". Missing whitespace between the headers and body?");
 
                             var headerName = line.Substring(0, split);
@@ -69,7 +69,7 @@ namespace MySharpChat.Core.Http
                             break;
 
                         case ParserState.Content:
-                            
+
                             string restOfBody = reader.ReadToEnd() ?? string.Empty;
 
                             // normalize line endings to CRLF, which is required for headers, etc.
@@ -91,7 +91,7 @@ namespace MySharpChat.Core.Http
                 string line1 = $"HTTP/{response.Version} {statusCode} {response.ReasonPhrase}";
                 sb.AppendLine(line1);
 
-                foreach ((string key, IEnumerable<string>values) in response.Headers)
+                foreach ((string key, IEnumerable<string> values) in response.Headers)
                     foreach (string value in values)
                     {
                         string header = $"{key}: {value}";

@@ -6,7 +6,7 @@ using MySharpChat.Core.Utils;
 namespace MySharpChat.Core.Command
 {
     public abstract class CommandAlias<U, V> : Singleton<U>, ICommand
-        where U : class 
+        where U : class
         where V : Singleton<V>, ICommand
     {
         public abstract string Name { get; }

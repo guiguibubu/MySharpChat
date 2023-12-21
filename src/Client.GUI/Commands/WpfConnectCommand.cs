@@ -1,8 +1,8 @@
 ﻿using System;
-using MySharpChat.Client.Command;
-using System.Windows.Input;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using System.Windows.Threading;
+using MySharpChat.Client.Command;
 
 namespace MySharpChat.Client.GUI.Commands
 {

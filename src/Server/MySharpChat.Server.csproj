@@ -43,6 +43,14 @@
             <PackagePath></PackagePath>
         </None>
     </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Core.Console\MySharpChat.Core.Console.csproj" />

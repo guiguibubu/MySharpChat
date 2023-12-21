@@ -1,6 +1,6 @@
 ﻿
-using MySharpChat.Core.Utils;
 using System;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
@@ -12,12 +12,12 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
         {
-            if(asyncMachine == null)
+            if (asyncMachine == null)
                 return true;
 
             try
             {
-                if(args.Length == 1 && int.TryParse(args[0], out int exitCode))
+                if (args.Length == 1 && int.TryParse(args[0], out int exitCode))
                 {
                     asyncMachine.Stop(exitCode);
                 }
@@ -26,7 +26,7 @@ namespace MySharpChat.Core.Command
                     asyncMachine.Stop();
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new CommandException(string.Format("Fail to stop {0}", asyncMachine.ToString()), e);
             }

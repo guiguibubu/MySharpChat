@@ -1,9 +1,4 @@
-﻿using NLog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 using InternalLoggerType = NLog.Logger;
 
@@ -13,7 +8,7 @@ namespace MySharpChat.Core.Utils.Logger
     {
         private readonly InternalLoggerType _logger;
 
-        private Logger(InternalLoggerType logger) 
+        private Logger(InternalLoggerType logger)
         {
             _logger = logger;
         }
@@ -83,7 +78,7 @@ namespace MySharpChat.Core.Utils.Logger
         {
             _logger.Warn(text);
         }
-        
+
         public void LogWarning(string format, params object?[] args)
         {
             LogWarning(string.Format(format, args));

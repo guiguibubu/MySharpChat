@@ -7,7 +7,8 @@ namespace MySharpChat.Core.Command
     public class CommandManager
     {
         private readonly HelpCommand helpCommand;
-        public CommandManager() {
+        public CommandManager()
+        {
             helpCommand = new HelpCommand(this);
             AddCommand(helpCommand);
         }

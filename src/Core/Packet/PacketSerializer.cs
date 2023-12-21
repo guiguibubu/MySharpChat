@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
@@ -57,7 +55,7 @@ namespace MySharpChat.Core.Packet
                 return false;
             }
         }
-       
+
         private static IEnumerable<PacketWrapper> DeserializeImpl(string data)
         {
             List<byte> objectBytes;

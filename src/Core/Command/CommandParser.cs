@@ -9,7 +9,8 @@ namespace MySharpChat.Core.Command
     {
         private readonly CommandManager _commandManager;
 
-        public CommandParser(CommandManager commandManager) {
+        public CommandParser(CommandManager commandManager)
+        {
             _commandManager = commandManager;
         }
 
@@ -26,8 +27,8 @@ namespace MySharpChat.Core.Command
                 return null;
 
             string[] commandTokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            
-            if(!commandTokens.Any())
+
+            if (!commandTokens.Any())
                 return null;
 
             string commandName = commandTokens[0];

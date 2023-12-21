@@ -1,13 +1,13 @@
-﻿using MySharpChat.Core.Model;
-using System;
+﻿using System;
 using System.Text.Json.Serialization;
+using MySharpChat.Core.Model;
 
 namespace MySharpChat.Core.Packet
 {
     [Serializable]
     public class ChatMessagePacket
     {
-        public ChatMessagePacket(Guid id, User user, DateTime date, string message) 
+        public ChatMessagePacket(Guid id, User user, DateTime date, string message)
             : this(new ChatMessage(id, user, date, message))
         { }
 

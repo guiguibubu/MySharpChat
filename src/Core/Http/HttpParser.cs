@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace MySharpChat.Core.Http
 {
@@ -82,7 +82,7 @@ namespace MySharpChat.Core.Http
         {
             return await HttpResponseParser.ToString(response);
         }
-#endregion
+        #endregion
 
         private enum ParserState
         {

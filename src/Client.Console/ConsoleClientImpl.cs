@@ -1,17 +1,17 @@
-﻿using MySharpChat.Client.Command;
-using MySharpChat.Client.Console.Command;
-using MySharpChat.Client.Console.UI;
-using MySharpChat.Client.Console.Input;
-using MySharpChat.Core.Command;
-using MySharpChat.Core.Packet;
-using MySharpChat.Core.Utils.Logger;
-using System;
-using System.Threading.Tasks;
-using MySharpChat.Core.Model;
-using System.Threading;
-using MySharpChat.Core.Event;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using MySharpChat.Client.Command;
+using MySharpChat.Client.Console.Command;
+using MySharpChat.Client.Console.Input;
+using MySharpChat.Client.Console.UI;
+using MySharpChat.Core.Command;
+using MySharpChat.Core.Event;
+using MySharpChat.Core.Model;
+using MySharpChat.Core.Packet;
+using MySharpChat.Core.Utils.Logger;
 
 namespace MySharpChat.Client.Console
 {

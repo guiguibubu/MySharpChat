@@ -1,22 +1,15 @@
-﻿using MySharpChat.Core.Packet;
-using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Utils;
-using MySharpChat.Core.Utils.Logger;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
-using System.IO;
-using System.Net.Http;
 using MySharpChat.Core.Http;
+using MySharpChat.Core.Packet;
+using MySharpChat.Core.Utils.Logger;
 using MySharpChat.Server.Utils;
-using MySharpChat.Core.Event;
-using MySharpChat.Core.Model;
-using System.Net.Mime;
 
 namespace MySharpChat.Server
 {

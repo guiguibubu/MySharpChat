@@ -9,7 +9,7 @@ namespace MySharpChat.Core.Event
         public string OldUsername { get; }
         public string NewUsername { get; }
 
-        public UsernameChangeEvent(string oldUsername, string newUsername) 
+        public UsernameChangeEvent(string oldUsername, string newUsername)
             : base()
         {
             OldUsername = oldUsername;
@@ -17,7 +17,7 @@ namespace MySharpChat.Core.Event
         }
 
         [JsonConstructor]
-        public UsernameChangeEvent(Guid id, DateTime date, string oldUsername, string newUsername) 
+        public UsernameChangeEvent(Guid id, DateTime date, string oldUsername, string newUsername)
             : base(id, date)
         {
             OldUsername = oldUsername;

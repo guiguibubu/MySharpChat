@@ -1,9 +1,4 @@
 ﻿using MySharpChat.Core.Command;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MySharpChat.Client.Console.Command
 {
@@ -17,7 +12,7 @@ namespace MySharpChat.Client.Console.Command
         public override bool Execute(object? data, params string[] args)
         {
             bool commandSuccess = _command.Execute(data, args);
-            if(commandSuccess)
+            if (commandSuccess)
                 _client.CurrentLogic = new LoaderClientLogic(_client);
             return commandSuccess;
         }

@@ -1,9 +1,8 @@
-﻿using MySharpChat.Core.Command;
+﻿using System;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
-using System;
 
 namespace MySharpChat.Client.Command
 {

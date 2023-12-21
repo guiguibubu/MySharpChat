@@ -1,7 +1,7 @@
-﻿using MySharpChat.Core.Utils.Logger;
-using System;
+﻿using System;
 using System.Threading;
 using System.Windows;
+using MySharpChat.Core.Utils.Logger;
 
 namespace MySharpChat.Client.GUI
 {
@@ -12,7 +12,7 @@ namespace MySharpChat.Client.GUI
     {
         public App() : base()
         {
-            
+
             ClientImpl = new GuiClientImpl();
 
             clientMainThread = new Thread(StartClient);

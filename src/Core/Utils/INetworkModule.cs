@@ -1,9 +1,9 @@
-﻿using MySharpChat.Core.Http;
-using MySharpChat.Core.Packet;
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using MySharpChat.Core.Http;
+using MySharpChat.Core.Packet;
 
 namespace MySharpChat.Core.Utils
 {

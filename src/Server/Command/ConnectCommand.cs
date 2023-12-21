@@ -18,7 +18,7 @@ namespace MySharpChat.Server.Command
 
         public bool Execute(IServerImpl? server, params string[] args)
         {
-            if(server == null)
+            if (server == null)
                 throw new ArgumentNullException(nameof(server));
 
             ConnexionInfos connexionInfos = new ConnexionInfos();

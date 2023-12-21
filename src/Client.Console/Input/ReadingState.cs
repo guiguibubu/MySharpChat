@@ -1,5 +1,5 @@
-﻿using MySharpChat.Client.Console.UI;
-using System;
+﻿using System;
+using MySharpChat.Client.Console.UI;
 
 namespace MySharpChat.Client.Console.Input
 {

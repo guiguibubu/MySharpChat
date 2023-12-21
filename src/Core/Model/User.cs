@@ -1,7 +1,7 @@
-﻿using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Model
 {
@@ -15,7 +15,7 @@ namespace MySharpChat.Core.Model
             Id = id;
             Username = username;
         }
-        
+
         public override string ToString()
         {
             return string.Format("{0} (id : {1})", Username, Id);

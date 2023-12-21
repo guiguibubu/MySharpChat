@@ -1,5 +1,4 @@
 ﻿using MySharpChat.Core.Console;
-using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Client.Console.UI
 {

@@ -1,6 +1,6 @@
-﻿using MySharpChat.Core.Utils;
-using System;
+﻿using System;
 using System.Linq;
+using MySharpChat.Core.Utils;
 
 namespace MySharpChat.Core.Command
 {
@@ -17,7 +17,7 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(LockTextWriter? writer, params string[] args)
         {
-            if(writer == null)
+            if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
             string? commandName = args.Length > 0 ? args[0] : null;
@@ -71,7 +71,7 @@ namespace MySharpChat.Core.Command
 
         public string GetHelp()
         {
-            return string.Join(Environment.NewLine,"usage:", "\"help\" to list all available commands", "\"help <command>\" to have help for specific command");
+            return string.Join(Environment.NewLine, "usage:", "\"help\" to list all available commands", "\"help <command>\" to have help for specific command");
         }
 
         public string GetSummary()

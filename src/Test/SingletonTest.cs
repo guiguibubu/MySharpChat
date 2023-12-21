@@ -21,7 +21,7 @@ namespace MySharpChat.Test
         public void TestValideConstructor()
         {
             TestDelegate testDelegate = () => { };
-            foreach(Type type in singletonTypes)
+            foreach (Type type in singletonTypes)
             {
                 IEnumerable<MethodInfo> possibleMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
                             .Where(m => m.Name == Singleton<object>.INSTANCE_CREATOR_NAME && m.GetParameters().Length == 0 && m.ReturnType == type);
