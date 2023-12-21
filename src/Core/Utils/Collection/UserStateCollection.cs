@@ -23,9 +23,5 @@ namespace MySharpChat.Core.Utils.Collection
         public UserStateCollection(int capacity)
             : base(capacity, UserState.Comparer)
         { }
-
-        private UserStateCollection(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        { }
     }
 }

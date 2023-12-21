@@ -13,6 +13,5 @@ namespace MySharpChat.Core.Utils
         public MySharpChatException() : base() { }
         public MySharpChatException(string? message) : base(message) { }
         public MySharpChatException(string? message, Exception? innerException) : base(message, innerException) { }
-        protected MySharpChatException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

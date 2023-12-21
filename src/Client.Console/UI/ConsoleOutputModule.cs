@@ -2,6 +2,7 @@
 using MySharpChat.Core.Utils;
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace MySharpChat.Client.Console.UI

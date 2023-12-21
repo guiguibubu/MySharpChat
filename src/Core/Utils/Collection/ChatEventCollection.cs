@@ -19,9 +19,5 @@ namespace MySharpChat.Core.Utils.Collection
         public ChatEventCollection(int capacity)
             : base(capacity, ChatEvent.Comparer)
         { }
-
-        private ChatEventCollection(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        { }
     }
 }
