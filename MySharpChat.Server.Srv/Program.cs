@@ -13,7 +13,13 @@ namespace MySharpChat.Server.Srv
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddHttpLogging(o => { });
+
+            builder.Services.AddSingleton<IServerImpl, SrvServerImpl>();
+
             var app = builder.Build();
+
+            app.UseHttpLogging();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

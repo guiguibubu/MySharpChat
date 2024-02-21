@@ -6,23 +6,23 @@ using MySharpChat.Core.Packet;
 namespace MySharpChat.Server.Srv.Controllers
 {
     [ApiController]
-    [Route(ApiConstantes.API_PREFIX + "/" + ApiConstantes.API_MESSAGE_PREFIX)]
+    [Route(ApiConstantes.API_PREFIX + "/" + ApiConstantes.API_EVENT_PREFIX)]
     [ApiVersion("1.0")]
-    public class MessagesController : ControllerBase
+    public class EventController : ControllerBase
     {
-        private readonly ILogger<MessagesController> _logger;
+        private readonly ILogger<EventController> _logger;
         private readonly IServerImpl _server;
 
-        public MessagesController(ILogger<MessagesController> logger, IServerImpl server)
+        public EventController(ILogger<EventController> logger, IServerImpl server)
         {
             _logger = logger;
             _server = server;
         }
 
-        [HttpPost(Name = "PostMessage")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
+        [HttpGet(Name = "GetEvents")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Post([FromQuery] string? userId, [FromBody] ChatMessagePacket chatPacket)
+        public IActionResult Get([FromQuery] string? userId, [FromQuery] string? lastId)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -36,23 +36,18 @@ namespace MySharpChat.Server.Srv.Controllers
                 _logger.LogError(errorMessage);
                 return BadRequest(errorMessage);
             }
+
             if (!_server.ChatRoom.IsUserConnected(userIdGuid))
             {
-                string errorMessage = $"User with userId \"{userId}\" must be connected before sending any message";
-                _logger.LogError(errorMessage);
-
-                return BadRequest(errorMessage);
-            }
-            if (chatPacket == null)
-            {
-                string errorMessage = $"Message request body must not be empty";
+                string errorMessage = $"User with userId \"{userId}\" must be connected before reading any event";
                 _logger.LogError(errorMessage);
 
                 return BadRequest(errorMessage);
             }
 
-            _server.ChatRoom.AddMessage(userIdGuid, chatPacket.ChatMessage);
-            return Created($"{Request.Scheme}://{Request.Host}/api/messages/{chatPacket.ChatMessage.Id}", null);
+            IEnumerable<PacketWrapper> packets = _server.ChatRoom.GetChatEvents(lastId);
+            string responseContent = PacketSerializer.Serialize(packets);
+            return Ok(responseContent);
         }
     }
 }
