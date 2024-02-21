@@ -1,6 +1,5 @@
 ﻿using MySharpChat.Core.Packet;
 using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ namespace MySharpChat.Client
 
         public bool HasDataAvailable => packetsQueue.Any();
 
-        public PacketWrapper CurrentData => packetsQueue.Dequeue();
+        public PacketWrapper? CurrentData => packetsQueue.Dequeue();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {

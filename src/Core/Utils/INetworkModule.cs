@@ -10,7 +10,7 @@ namespace MySharpChat.Core.Utils
     public interface INetworkModule<T> : IConnectMachine
     {
         bool HasDataAvailable { get; }
-        T CurrentData { get; }
+        T? CurrentData { get; }
         Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet);
         HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan);
         public HttpResponseMessage? Read(HttpReadRequestContext context)

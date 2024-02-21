@@ -1,11 +1,9 @@
 ﻿using MySharpChat.Core.Packet;
 using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Net;
@@ -21,14 +19,13 @@ namespace MySharpChat.Server.Console
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleServerImpl>();
 
-        private readonly IServerNetworkModule networkModule;
-        public IServerNetworkModule NetworkModule => networkModule;
+        private readonly IServerNetworkModule _networkModule;
 
         public ServerChatRoom ChatRoom { get; private set; }
 
         public ConsoleServerImpl()
         {
-            networkModule = new HttpServerNetworkModule();
+            _networkModule = new HttpServerNetworkModule();
             ChatRoom = new ServerChatRoom(Guid.NewGuid());
         }
 
@@ -37,31 +34,59 @@ namespace MySharpChat.Server.Console
             // Start an asynchronous socket to listen for connections.  
             logger.LogDebug("Waiting for a request ...");
 
-            while (!networkModule.HasDataAvailable)
+            while (!_networkModule.HasDataAvailable)
             {
                 Thread.Sleep(1000);
             }
 
-            HandleHttpRequest(networkModule.CurrentData);
+            HandleHttpRequest(_networkModule.CurrentData);
         }
 
         public void Start()
         {
+            ConnexionInfos connexionInfos = new ConnexionInfos();
+            ConnexionInfos.Data data = connexionInfos.Local!;
 
+            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = NetworkUtils.GetAvailableIpAdresses();
+            data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
+            if (data.Ip == null)
+            {
+                StringBuilder sb = new();
+                sb.AppendLine("No valid ip adress available");
+                sb.AppendLine("Available ip adresses Host");
+                foreach (IPAddress ipAddress in ipAddressesHost)
+                {
+                    sb.AppendLine(string.Format("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily)));
+
+                }
+                sb.AppendLine("Available ip adresses non virtual");
+                foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+                {
+                    sb.AppendLine(string.Format("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily)));
+                }
+                logger.LogError(sb.ToString());
+                throw new InvalidOperationException("No valid ip adress available");
+            }
+
+            data.Port = ConnexionInfos.DEFAULT_PORT;
+
+            Connect(connexionInfos);
         }
 
         public void Stop()
         {
-            networkModule.Disconnect();
+            _networkModule.Disconnect();
         }
 
         public bool Connect(ConnexionInfos connexionInfos)
         {
-            return networkModule.Connect(connexionInfos);
+            return _networkModule.Connect(connexionInfos);
         }
 
-        public void HandleHttpRequest(HttpListenerContext httpContext)
+        public void HandleHttpRequest(HttpListenerContext? httpContext)
         {
+            ArgumentNullException.ThrowIfNull(httpContext);
+
             HttpListenerRequest request = httpContext.Request;
 
             //Remove the first '/' character
@@ -217,7 +242,7 @@ namespace MySharpChat.Server.Console
                 {
                     ChatRoom.DisconnectUser(userIdGuid);
                 }
-                response.StatusCode = (int)HttpStatusCode.OK;
+                response.StatusCode = (int)HttpStatusCode.NoContent;
                 response.Close();
             }
             else

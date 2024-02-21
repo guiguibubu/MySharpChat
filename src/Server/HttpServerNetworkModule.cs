@@ -25,12 +25,12 @@ namespace MySharpChat.Server
 
         public bool HasDataAvailable => !httpServer.requestQueue.IsEmpty;
 
-        public HttpListenerContext CurrentData
+        public HttpListenerContext? CurrentData
         {
             get
             {
-                HttpListenerContext context;
-                while (!httpServer.requestQueue.TryDequeue(out context!)) { }
+                HttpListenerContext? context;
+                while (!httpServer.requestQueue.TryDequeue(out context)) { }
 
 
                 return context;
