@@ -54,7 +54,7 @@ namespace MySharpChat.Server.Srv.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public IActionResult Post([FromQuery] string? userId, [FromQuery] string? user)
+        public IActionResult Post([FromQuery] string? userId, [FromQuery] string? username)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -80,7 +80,7 @@ namespace MySharpChat.Server.Srv.Controllers
             }
             else
             {
-                IEnumerable<PacketWrapper> responsePackets = _server.ChatRoom.ConnectUser(user, userIdGuid);
+                IEnumerable<PacketWrapper> responsePackets = _server.ChatRoom.ConnectUser(username, userIdGuid);
                 string packetSerialized = PacketSerializer.Serialize(responsePackets);
 
                 return Ok(packetSerialized);

@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Server.Console"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySharpChat.Core.GUI", "src\Core.GUI\MySharpChat.Core.GUI.csproj", "{AA3E7D83-9638-4D1A-88EE-61A329E2889A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySharpChat.Server.Srv", "MySharpChat.Server.Srv\MySharpChat.Server.Srv.csproj", "{B0F81B88-DA2A-4CCF-914F-E1A62BDC5B60}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySharpChat.Server.Srv", "src\Server.Srv\MySharpChat.Server.Srv.csproj", "{B0F81B88-DA2A-4CCF-914F-E1A62BDC5B60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
