@@ -12,13 +12,13 @@ using MySharpChat.Server.Utils;
 
 namespace MySharpChat.Server
 {
-    public class ServerNetworkModule : IServerNetworkModule
+    public class HttpServerNetworkModule : IServerNetworkModule
     {
-        private static readonly Logger logger = Logger.Factory.GetLogger<ServerNetworkModule>();
+        private static readonly Logger logger = Logger.Factory.GetLogger<HttpServerNetworkModule>();
 
         private readonly HttpServer httpServer;
 
-        public ServerNetworkModule()
+        public HttpServerNetworkModule()
         {
             httpServer = new HttpServer();
         }
@@ -31,6 +31,8 @@ namespace MySharpChat.Server
             {
                 HttpListenerContext context;
                 while (!httpServer.requestQueue.TryDequeue(out context!)) { }
+
+
                 return context;
             }
         }

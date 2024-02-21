@@ -8,17 +8,14 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using System.Net.Http;
 using MySharpChat.Core.Http;
 using MySharpChat.Server.Utils;
-using MySharpChat.Core.Event;
-using MySharpChat.Core.Model;
 using System.Net.Mime;
 
-namespace MySharpChat.Server
+namespace MySharpChat.Server.Console
 {
     internal class ConsoleServerImpl : IServerImpl, IHttpRequestHandler
     {
@@ -31,7 +28,7 @@ namespace MySharpChat.Server
 
         public ConsoleServerImpl()
         {
-            networkModule = new ServerNetworkModule();
+            networkModule = new HttpServerNetworkModule();
             ChatRoom = new ServerChatRoom(Guid.NewGuid());
         }
 
@@ -117,7 +114,7 @@ namespace MySharpChat.Server
             output.Close();
         }
 
-        public void HandleHttpRequestImpl(HttpListenerContext httpContext)
+        private void HandleHttpRequestImpl(HttpListenerContext httpContext)
         {
             HttpListenerRequest request = httpContext.Request;
 
