@@ -12,6 +12,7 @@ using System.Net.Http;
 using MySharpChat.Core.Http;
 using MySharpChat.Server.Utils;
 using System.Net.Mime;
+using MySharpChat.Core.Constantes;
 
 namespace MySharpChat.Server.Console
 {
@@ -94,8 +95,9 @@ namespace MySharpChat.Server.Console
 
             logger.LogDebug("Request received : {0} {1}", request.HttpMethod, uriPath);
 
-            bool isChatRequest = uriPath.StartsWith("chat", StringComparison.InvariantCultureIgnoreCase) && (uriPath.Length == "chat".Length || (uriPath.Length > "chat".Length && uriPath["chat".Length] == '/'));
-            if (isChatRequest)
+            bool isApiRequest = (uriPath.StartsWith(ApiConstantes.API_PREFIX, StringComparison.InvariantCultureIgnoreCase) && uriPath.Length == ApiConstantes.API_PREFIX.Length) 
+                || uriPath.StartsWith(ApiConstantes.API_PREFIX + '/', StringComparison.InvariantCultureIgnoreCase);
+            if (isApiRequest)
             {
                 HandleHttpRequestImpl(httpContext);
             }
@@ -144,7 +146,7 @@ namespace MySharpChat.Server.Console
             HttpListenerRequest request = httpContext.Request;
 
             //Remove the first '/' character
-            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring("chat".Length);
+            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring(ApiConstantes.API_PREFIX.Length);
 
             if (!string.IsNullOrEmpty(uriPath))
             {
@@ -152,19 +154,19 @@ namespace MySharpChat.Server.Console
             }
             HttpListenerResponse response = httpContext.Response;
 
-            if (uriPath.StartsWith("connect"))
+            if (uriPath.StartsWith(ApiConstantes.API_CONNEXION_PREFIX))
             {
                 HandleConnexionRequest(httpContext);
             }
-            else if (uriPath.StartsWith("message"))
+            else if (uriPath.StartsWith(ApiConstantes.API_MESSAGE_PREFIX))
             {
                 HandleMessageRequest(httpContext);
             }
-            else if (uriPath.StartsWith("event"))
+            else if (uriPath.StartsWith(ApiConstantes.API_EVENT_PREFIX))
             {
                 HandleEventsRequest(httpContext);
             }
-            else if (uriPath.StartsWith("user"))
+            else if (uriPath.StartsWith(ApiConstantes.API_USER_PREFIX))
             {
                 HandleUserRequest(httpContext);
             }
@@ -181,7 +183,7 @@ namespace MySharpChat.Server.Console
 
             HttpListenerResponse response = httpContext.Response;
 
-            string? username = request.QueryString["user"];
+            string? username = request.QueryString["username"];
             string? userId = request.QueryString["userId"];
 
             if (string.IsNullOrEmpty(userId))

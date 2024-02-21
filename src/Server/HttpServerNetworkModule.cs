@@ -81,7 +81,12 @@ namespace MySharpChat.Server
             return httpServer != null && httpServer.IsRunning;
         }
 
-        public Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet)
+        public Task<HttpResponseMessage?> SendAsync<T>(HttpSendRequestContext context, T? packet)
+        {
+            throw new NotImplementedException("Server should not be able to send data");
+        }
+        
+        public Task<HttpResponseMessage?> SendAsync(HttpSendRequestContext context)
         {
             throw new NotImplementedException("Server should not be able to send data");
         }

@@ -13,6 +13,7 @@ using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
 using MySharpChat.Client.Utils;
 using MySharpChat.Core.Utils.Collection;
+using MySharpChat.Core.Constantes;
 
 namespace MySharpChat.Client
 {
@@ -52,17 +53,17 @@ namespace MySharpChat.Client
             ServerUri = serverUriBuilder.Uri;
 
             UriBuilder chatUriBuilder = new UriBuilder(ServerUri);
-            chatUriBuilder.Path = "chat";
+            chatUriBuilder.Path = ApiConstantes.API_PREFIX;
             ChatUri = chatUriBuilder.Uri;
 
             User localUser = _client.LocalUser;
 
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri);
-            requestUriBuilder.Path += "/connect";
+            requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
             requestUriBuilder.Query = $"userId={localUser.Id}";
-            requestUriBuilder.Query += $"&user={localUser.Username}";
+            requestUriBuilder.Query += $"&username={localUser.Username}";
             HttpSendRequestContext httpContext = HttpSendRequestContext.Post(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = Send(httpContext, null).Result!;
+            HttpResponseMessage httpResponseMessage = SendAsync(httpContext).Result!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
             bool isConnected = IsConnected();
@@ -84,7 +85,7 @@ namespace MySharpChat.Client
                 attempt++;
 
                 // Connect to the remote endpoint.  
-                Task<HttpResponseMessage?> connectTask = Send(httpContext, null);
+                Task<HttpResponseMessage?> connectTask = SendAsync(httpContext);
 
                 try
                 {
@@ -163,9 +164,9 @@ namespace MySharpChat.Client
             {
                 logger.LogInfo("Disconnection of Network Module");
                 UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-                requestUriBuilder.Path += "/connect";
+                requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
                 requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
-                Send(HttpSendRequestContext.Delete(requestUriBuilder.Uri), null).Wait();
+                SendAsync(HttpSendRequestContext.Delete(requestUriBuilder.Uri)).Wait();
                 StopStatusUpdater();
             }
         }
@@ -177,17 +178,22 @@ namespace MySharpChat.Client
                 return false;
 
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/connect";
+            requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(HttpReadRequestContext.Get(requestUriBuilder.Uri))!;
             return httpResponseMessage.IsSuccessStatusCode;
         }
 
-        public Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet)
+        public Task<HttpResponseMessage?> SendAsync<T>(HttpSendRequestContext context, T? packet)
         {
             string content = packet != null ? PacketSerializer.Serialize(packet) : "";
             logger.LogInfo("Request send : {0}", content);
             return NetworkUtils.SendAsync(m_httpClient, context, content);
+        }
+
+        public Task<HttpResponseMessage?> SendAsync(HttpSendRequestContext context)
+        {
+            return SendAsync<object>(context, null);
         }
 
         public HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan)
@@ -251,8 +257,8 @@ namespace MySharpChat.Client
         private void UserStatusUpdateAction()
         {
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/user";
-            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            requestUriBuilder.Path += "/" + ApiConstantes.API_USER_PREFIX;
+            requestUriBuilder.Query += $"userId={_client.LocalUser.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -269,7 +275,7 @@ namespace MySharpChat.Client
         private void EventsStatusUpdateAction()
         {
             UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/event";
+            requestUriBuilder.Path += "/" + ApiConstantes.API_EVENT_PREFIX;
             requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
             ChatEventCollection chatEvents = _client.ChatEvents;
             if (chatEvents.Any())

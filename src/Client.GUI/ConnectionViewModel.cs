@@ -29,6 +29,7 @@ namespace MySharpChat.Client.GUI
 
         public void OnConnectionSuccess()
         {
+            Client.ConnexionSuccess = true;
             OnConnectionSuccessEvent();
         }
 

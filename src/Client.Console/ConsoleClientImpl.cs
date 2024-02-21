@@ -300,7 +300,7 @@ namespace MySharpChat.Client.Console
         private void UpdateUI()
         {
             ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
-            List<ChatEvent> eventsToShow = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date).ToList();
+            IEnumerable<ChatEvent> eventsToShow = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date);
             outputModule.ClearOutput();
             foreach (string message in eventsToShow.Select(chatEvent => ToString(chatEvent)))
             {

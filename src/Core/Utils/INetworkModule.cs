@@ -1,5 +1,4 @@
 ﻿using MySharpChat.Core.Http;
-using MySharpChat.Core.Packet;
 using System;
 using System.Net.Http;
 using System.Threading;
@@ -11,7 +10,8 @@ namespace MySharpChat.Core.Utils
     {
         bool HasDataAvailable { get; }
         T? CurrentData { get; }
-        Task<HttpResponseMessage?> Send(HttpSendRequestContext context, PacketWrapper? packet);
+        Task<HttpResponseMessage?> SendAsync<U>(HttpSendRequestContext context, U? packet);
+        Task<HttpResponseMessage?> SendAsync(HttpSendRequestContext context);
         HttpResponseMessage? Read(HttpReadRequestContext context, TimeSpan timeoutSpan);
         public HttpResponseMessage? Read(HttpReadRequestContext context)
         {

@@ -121,7 +121,7 @@ namespace MySharpChat.Server
                     string oldUsername = user.Username;
                     logger.LogInfo("Username change from {1} to {2} for {0}", user, oldUsername, newUsername);
                     user.Username = newUsername;
-                    ChatEvents.Add(new UsernameChangeEvent(oldUsername, newUsername));
+                    ChatEvents.Add(new UsernameChangeEvent(userIdGuid, oldUsername, newUsername));
                 }
                 return true;
             }
