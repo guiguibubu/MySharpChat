@@ -11,7 +11,7 @@ namespace MySharpChat.Client
         public IClientNetworkModule NetworkModule => networkModule;
 
         public User LocalUser { get; protected set; } = new User(Guid.NewGuid(), Environment.UserName);
-        public ChatRoom? ChatRoom { get; set; } = null;
+        public ChatRoom ChatRoom { get; set; } = new ChatRoom(Guid.Empty);
         public ChatEventCollection ChatEvents { get; } = new();
 
         protected BaseClientImpl()

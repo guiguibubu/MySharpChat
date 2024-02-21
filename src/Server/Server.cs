@@ -1,20 +1,10 @@
 ﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 using MySharpChat.Core.Command;
-using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Http;
 using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
-using MySharpChat.Core.Console;
-using MySharpChat.Server.Command;
 
 namespace MySharpChat.Server
 {
@@ -49,7 +39,6 @@ namespace MySharpChat.Server
 
         public void InitCommands()
         {
-            commandManager.AddCommand(ConnectCommand.Instance);
         }
 
         public bool Start(object? startObject = null)
@@ -90,7 +79,7 @@ namespace MySharpChat.Server
 
         public void Stop(int exitCode = 0)
         {
-            _serverImpl.NetworkModule.Disconnect();
+            _serverImpl.Stop();
             m_serverRun = false;
             ExitCode = exitCode;
         }
@@ -113,15 +102,11 @@ namespace MySharpChat.Server
                 logger.LogDebug(string.Format("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId));
             }
 
-            ConnectCommand command = commandManager.GetCommand<ConnectCommand>(ConnectCommand.Instance!.Name)!;
-            if (command.Execute(_serverImpl))
+            _serverImpl.Start();
+            m_serverRun = true;
+            while (m_serverRun)
             {
-                _serverImpl.Start();
-                m_serverRun = true;
-                while (m_serverRun)
-                {
-                    _serverImpl.Run(this);
-                }
+                _serverImpl.Run(this);
             }
 
             logger.LogInfo("Server stopped !");

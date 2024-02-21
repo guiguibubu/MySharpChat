@@ -133,14 +133,19 @@ namespace MySharpChat.Client.Console
             }
         }
 
-        private void HandleNetworkPacket(PacketWrapper packet)
+        private void HandleNetworkPacket(PacketWrapper? packet)
         {
-            if (packet.Package is ChatEvent chatEvent)
+            if (packet != null && packet.Package is ChatEvent chatEvent)
             {
-                if (!ChatEvents.Contains(chatEvent.Id))
-                {
-                    ChatEvents.Add(chatEvent);
-                }
+                HandleNetworkPacket(chatEvent);
+            }
+        }
+
+        private void HandleNetworkPacket(ChatEvent chatEvent)
+        {
+            if (!ChatEvents.Contains(chatEvent.Id))
+            {
+                ChatEvents.Add(chatEvent);
             }
         }
 
@@ -149,7 +154,7 @@ namespace MySharpChat.Client.Console
             int nbPacketsHandles = 0;
             while (networkModule.HasDataAvailable && nbPacketsHandles < nbMaxPacket)
             {
-                PacketWrapper packet = networkModule.CurrentData;
+                PacketWrapper? packet = networkModule.CurrentData;
                 HandleNetworkPacket(packet);
             }
         }
@@ -295,7 +300,7 @@ namespace MySharpChat.Client.Console
         private void UpdateUI()
         {
             ConsoleOutputModule outputModule = m_userInterfaceModule.OutputModule;
-            List<ChatEvent> eventsToShow = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date).ToList();
+            IEnumerable<ChatEvent> eventsToShow = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date);
             outputModule.ClearOutput();
             foreach (string message in eventsToShow.Select(chatEvent => ToString(chatEvent)))
             {

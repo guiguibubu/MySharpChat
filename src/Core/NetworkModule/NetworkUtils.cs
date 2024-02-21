@@ -399,7 +399,7 @@ namespace MySharpChat.Core.NetworkModule
             , cancelToken);
         }
 
-        public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname)
+        public static Tuple<IEnumerable<IPAddress>, IEnumerable<IPAddress>> GetAvailableIpAdresses(string? hostname = "")
         {
             string actualHostName =
                 !string.IsNullOrEmpty(hostname) ?

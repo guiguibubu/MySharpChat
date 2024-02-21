@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
@@ -10,33 +8,45 @@ namespace MySharpChat.Core.Packet
 {
     public static class PacketSerializer
     {
-        public static string Serialize(IEnumerable<PacketWrapper?> packets)
+        public static string Serialize<T>(IEnumerable<T?> packets)
         {
-            IEnumerator<PacketWrapper?> enumerator = packets.GetEnumerator();
-            StringBuilder sb = new StringBuilder();
-            while (enumerator.MoveNext())
+            StringBuilder sb = new();
+            foreach (T? packet in packets)
             {
-                sb.Append(Serialize(enumerator.Current));
+                sb.Append(Serialize(packet));
             }
 
             return sb.ToString();
         }
 
-        public static string Serialize(PacketWrapper? packet)
+        public static string Serialize<T>(T? packet)
         {
-            if (packet == null)
-                throw new ArgumentNullException(nameof(packet));
+            ArgumentNullException.ThrowIfNull(packet);
 
             return JsonSerializer.Serialize(packet);
         }
 
         public static IEnumerable<PacketWrapper> Deserialize(string? data)
         {
-            if (string.IsNullOrEmpty(data))
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
             try
             {
                 return DeserializeImpl(data);
+            }
+            catch (JsonException e)
+            {
+                throw new ArgumentException("Fail deserialize this : " + data, e);
+            }
+        }
+
+        public static IEnumerable<T> Deserialize<T>(string? data)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            try
+            {
+                return DeserializeImpl<T>(data);
             }
             catch (JsonException e)
             {
@@ -57,8 +67,32 @@ namespace MySharpChat.Core.Packet
                 return false;
             }
         }
-       
+
+        public static bool TryDeserialize<T>(string? data, out IEnumerable<T> listPackets)
+        {
+            try
+            {
+                listPackets = Deserialize<T>(data);
+                return true;
+            }
+            catch
+            {
+                listPackets = new List<T>();
+                return false;
+            }
+        }
+
         private static IEnumerable<PacketWrapper> DeserializeImpl(string data)
+        {
+            IEnumerable<PacketWrapper> packets = DeserializeImpl<PacketWrapper>(data);
+            foreach (PacketWrapper packet in packets)
+            {
+                packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)!) ?? throw new NotSupportedException();
+                yield return packet;
+            }
+        }
+
+        private static IEnumerable<T> DeserializeImpl<T>(string data)
         {
             List<byte> objectBytes;
             List<byte> remainingBytes = Encoding.UTF8.GetBytes(data).ToList();
@@ -100,8 +134,7 @@ namespace MySharpChat.Core.Packet
 
                 string stringObject = Encoding.UTF8.GetString(objectBytes.ToArray());
                 //DeserializeAsyncEnumerable
-                PacketWrapper packet = JsonSerializer.Deserialize<PacketWrapper>(stringObject) ?? throw new NotSupportedException();
-                packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)!) ?? throw new NotSupportedException();
+                T packet = JsonSerializer.Deserialize<T>(stringObject) ?? throw new NotSupportedException();
                 yield return packet;
             }
         }

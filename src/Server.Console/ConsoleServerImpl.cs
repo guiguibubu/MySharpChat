@@ -1,37 +1,32 @@
 ﻿using MySharpChat.Core.Packet;
 using MySharpChat.Core.NetworkModule;
-using MySharpChat.Core.Utils;
 using MySharpChat.Core.Utils.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using System.Net.Http;
 using MySharpChat.Core.Http;
 using MySharpChat.Server.Utils;
-using MySharpChat.Core.Event;
-using MySharpChat.Core.Model;
 using System.Net.Mime;
+using MySharpChat.Core.Constantes;
 
-namespace MySharpChat.Server
+namespace MySharpChat.Server.Console
 {
     internal class ConsoleServerImpl : IServerImpl, IHttpRequestHandler
     {
         private static readonly Logger logger = Logger.Factory.GetLogger<ConsoleServerImpl>();
 
-        private readonly IServerNetworkModule networkModule;
-        public IServerNetworkModule NetworkModule => networkModule;
+        private readonly IServerNetworkModule _networkModule;
 
         public ServerChatRoom ChatRoom { get; private set; }
 
         public ConsoleServerImpl()
         {
-            networkModule = new ServerNetworkModule();
+            _networkModule = new HttpServerNetworkModule();
             ChatRoom = new ServerChatRoom(Guid.NewGuid());
         }
 
@@ -40,31 +35,59 @@ namespace MySharpChat.Server
             // Start an asynchronous socket to listen for connections.  
             logger.LogDebug("Waiting for a request ...");
 
-            while (!networkModule.HasDataAvailable)
+            while (!_networkModule.HasDataAvailable)
             {
                 Thread.Sleep(1000);
             }
 
-            HandleHttpRequest(networkModule.CurrentData);
+            HandleHttpRequest(_networkModule.CurrentData);
         }
 
         public void Start()
         {
+            ConnexionInfos connexionInfos = new ConnexionInfos();
+            ConnexionInfos.Data data = connexionInfos.Local!;
 
+            (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = NetworkUtils.GetAvailableIpAdresses();
+            data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
+            if (data.Ip == null)
+            {
+                StringBuilder sb = new();
+                sb.AppendLine("No valid ip adress available");
+                sb.AppendLine("Available ip adresses Host");
+                foreach (IPAddress ipAddress in ipAddressesHost)
+                {
+                    sb.AppendLine(string.Format("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily)));
+
+                }
+                sb.AppendLine("Available ip adresses non virtual");
+                foreach (IPAddress ipAddress in ipAddressesNonVirtual)
+                {
+                    sb.AppendLine(string.Format("{0} ({1})", ipAddress, string.Join(",", ipAddress.AddressFamily)));
+                }
+                logger.LogError(sb.ToString());
+                throw new InvalidOperationException("No valid ip adress available");
+            }
+
+            data.Port = ConnexionInfos.DEFAULT_PORT;
+
+            Connect(connexionInfos);
         }
 
         public void Stop()
         {
-            networkModule.Disconnect();
+            _networkModule.Disconnect();
         }
 
         public bool Connect(ConnexionInfos connexionInfos)
         {
-            return networkModule.Connect(connexionInfos);
+            return _networkModule.Connect(connexionInfos);
         }
 
-        public void HandleHttpRequest(HttpListenerContext httpContext)
+        public void HandleHttpRequest(HttpListenerContext? httpContext)
         {
+            ArgumentNullException.ThrowIfNull(httpContext);
+
             HttpListenerRequest request = httpContext.Request;
 
             //Remove the first '/' character
@@ -72,8 +95,9 @@ namespace MySharpChat.Server
 
             logger.LogDebug("Request received : {0} {1}", request.HttpMethod, uriPath);
 
-            bool isChatRequest = uriPath.StartsWith("chat", StringComparison.InvariantCultureIgnoreCase) && (uriPath.Length == "chat".Length || (uriPath.Length > "chat".Length && uriPath["chat".Length] == '/'));
-            if (isChatRequest)
+            bool isApiRequest = (uriPath.StartsWith(ApiConstantes.API_PREFIX, StringComparison.InvariantCultureIgnoreCase) && uriPath.Length == ApiConstantes.API_PREFIX.Length) 
+                || uriPath.StartsWith(ApiConstantes.API_PREFIX + '/', StringComparison.InvariantCultureIgnoreCase);
+            if (isApiRequest)
             {
                 HandleHttpRequestImpl(httpContext);
             }
@@ -117,12 +141,12 @@ namespace MySharpChat.Server
             output.Close();
         }
 
-        public void HandleHttpRequestImpl(HttpListenerContext httpContext)
+        private void HandleHttpRequestImpl(HttpListenerContext httpContext)
         {
             HttpListenerRequest request = httpContext.Request;
 
             //Remove the first '/' character
-            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring("chat".Length);
+            string uriPath = request.Url!.AbsolutePath.Substring(1).Substring(ApiConstantes.API_PREFIX.Length);
 
             if (!string.IsNullOrEmpty(uriPath))
             {
@@ -130,19 +154,19 @@ namespace MySharpChat.Server
             }
             HttpListenerResponse response = httpContext.Response;
 
-            if (uriPath.StartsWith("connect"))
+            if (uriPath.StartsWith(ApiConstantes.API_CONNEXION_PREFIX))
             {
                 HandleConnexionRequest(httpContext);
             }
-            else if (uriPath.StartsWith("message"))
+            else if (uriPath.StartsWith(ApiConstantes.API_MESSAGE_PREFIX))
             {
                 HandleMessageRequest(httpContext);
             }
-            else if (uriPath.StartsWith("event"))
+            else if (uriPath.StartsWith(ApiConstantes.API_EVENT_PREFIX))
             {
                 HandleEventsRequest(httpContext);
             }
-            else if (uriPath.StartsWith("user"))
+            else if (uriPath.StartsWith(ApiConstantes.API_USER_PREFIX))
             {
                 HandleUserRequest(httpContext);
             }
@@ -159,7 +183,7 @@ namespace MySharpChat.Server
 
             HttpListenerResponse response = httpContext.Response;
 
-            string? username = request.QueryString["user"];
+            string? username = request.QueryString["username"];
             string? userId = request.QueryString["userId"];
 
             if (string.IsNullOrEmpty(userId))
@@ -220,7 +244,7 @@ namespace MySharpChat.Server
                 {
                     ChatRoom.DisconnectUser(userIdGuid);
                 }
-                response.StatusCode = (int)HttpStatusCode.OK;
+                response.StatusCode = (int)HttpStatusCode.NoContent;
                 response.Close();
             }
             else

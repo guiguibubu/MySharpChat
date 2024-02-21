@@ -1,6 +1,9 @@
-﻿using MySharpChat.Core.Model;
+﻿using MySharpChat.Core.Event;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MySharpChat.Client.GUI
 {
@@ -12,6 +15,8 @@ namespace MySharpChat.Client.GUI
         public event Action OnLocalUsernameChangeEvent = () => { };
         public event Action<string> ChatMessageReceivedEvent = (string message) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };
+
+        public bool ConnexionSuccess { get; set; } = false;
 
         public GuiClientImpl() : base()
         { }
@@ -28,7 +33,7 @@ namespace MySharpChat.Client.GUI
 
         public override void Run(Client client)
         {
-            if (networkModule.IsConnected())
+            if (ConnexionSuccess && networkModule.IsConnected())
             {
                 if (networkModule.HasDataAvailable)
                 {
@@ -37,59 +42,23 @@ namespace MySharpChat.Client.GUI
             }
         }
 
-        private void HandleNetworkPacket(PacketWrapper packet)
+        private void HandleNetworkPacket(PacketWrapper? packet)
         {
-            if(ChatRoom == null || packet.SourceId != ChatRoom.Id)
+            ArgumentNullException.ThrowIfNull(packet);
+
+            if (packet.SourceId != ChatRoom.Id)
             {
                 ChatRoom = new ChatRoom(packet.SourceId);
             }
 
             if (packet.Package is UserInfoPacket userInfoPacket)
             {
-                UserState userState = userInfoPacket.UserState;
-                User user = userState.User;
-                Guid userId = user.Id;
-                string username = user.Username;
+                HandleUserInfoPacket(userInfoPacket);
 
-                if (LocalUser.Id == userId)
-                {
-                    LocalUser.Username = username;
-                    OnLocalUsernameChangeEvent();
-                }
-
-                bool knownUser = ChatRoom.Users.Contains(userId);
-                bool isConnected = userState.IsConnected();
-                bool isDisconnection = knownUser && !isConnected;
-                if (isDisconnection)
-                {
-                    ChatRoom.Users.Remove(userId);
-                    OnUserRemovedEvent(username);
-                    return;
-                }
-
-                bool alreadyDiconnected = !knownUser && !isConnected;
-                if (alreadyDiconnected)
-                    return;
-
-                bool newUser = !knownUser && isConnected;
-                if (newUser)
-                {
-                    ChatRoom.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
-                    OnUserAddedEvent(username);
-                    return;
-                }
-
-                User userInCache = ChatRoom.Users[userId].User;
-                string oldUsername = userInCache.Username;
-                if (oldUsername != username)
-                {
-                    userInCache.Username = username;
-                    OnUsernameChangeEvent(oldUsername, username);
-                }
             }
-            else if (packet.Package is ChatMessagePacket chatPackage)
+            else if (packet.Package is ChatEvent chatEvent)
             {
-                HandleChatPacket(chatPackage);
+                HandleChatEvent(chatEvent);
             }
         }
 
@@ -98,21 +67,130 @@ namespace MySharpChat.Client.GUI
             int nbPacketsHandles = 0;
             while (networkModule.HasDataAvailable && nbPacketsHandles < nbMaxPacket)
             {
-                PacketWrapper packet = networkModule.CurrentData;
+                PacketWrapper? packet = networkModule.CurrentData;
                 HandleNetworkPacket(packet);
             }
         }
 
-        private void HandleChatPacket(ChatMessagePacket chatPacket)
+        private void HandleChatEvent(ChatEvent chatEvent)
         {
-            ChatMessage chatMessage = chatPacket.ChatMessage;
-            if (!ChatRoom!.Messages.Contains(chatMessage))
+            if (!ChatEvents.Contains(chatEvent.Id))
             {
-                ChatRoom!.Messages.Add(chatMessage);
+                ChatEvents.Add(chatEvent);
+                if (chatEvent is ChatMessageEvent chatMessageEvent)
+                {
+                    HandleChatMessageEvent(chatMessageEvent);
+                }
+                if (chatEvent is ConnexionEvent connexionEvent)
+                {
+                    HandleConnexionEvent(connexionEvent);
+                }
+                if (chatEvent is DisconnexionEvent disconnexionEvent)
+                {
+                    HandleDisconnexionEvent(disconnexionEvent);
+                }
+                if (chatEvent is UsernameChangeEvent userChangeEvent)
+                {
+                    HandleUsernameChangeEvent(userChangeEvent);
+                }
+            }
+        }
+
+        private void HandleUserInfoPacket(UserInfoPacket userInfoPacket)
+        {
+            ArgumentNullException.ThrowIfNull(userInfoPacket);
+
+            UserState userState = userInfoPacket.UserState;
+            User user = userState.User;
+            Guid userId = user.Id;
+            string username = user.Username;
+
+            if (LocalUser.Id == userId)
+            {
+                LocalUser.Username = username;
+                OnLocalUsernameChangeEvent();
+            }
+
+            bool knownUser = ChatRoom.Users.Contains(userId);
+            bool isConnected = userState.IsConnected();
+            bool isDisconnection = knownUser && !isConnected;
+            if (isDisconnection)
+            {
+                ChatRoom.Users.Remove(userId);
+                OnUserRemovedEvent(username);
+                return;
+            }
+
+            bool alreadyDiconnected = !knownUser && !isConnected;
+            if (alreadyDiconnected)
+                return;
+
+            bool newUser = !knownUser && isConnected;
+            if (newUser)
+            {
+                ChatRoom.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
+                OnUserAddedEvent(username);
+                return;
+            }
+
+            User userInCache = ChatRoom.Users[userId].User;
+            string oldUsername = userInCache.Username;
+            if (oldUsername != username)
+            {
+                userInCache.Username = username;
+                OnUsernameChangeEvent(oldUsername, username);
+            }
+        }
+
+        private void HandleChatMessageEvent(ChatMessageEvent chatEvent)
+        {
+            ArgumentNullException.ThrowIfNull(chatEvent);
+
+            ChatMessage chatMessage = chatEvent.ChatMessage;
+            if (!ChatRoom.Messages.Contains(chatMessage.Id))
+            {
+                ChatRoom.Messages.Add(chatMessage);
                 string username = chatMessage.User.Username;
                 string messageText = chatMessage.Message;
                 string readText = $"({chatMessage.Date}) {username} : {messageText}";
                 ChatMessageReceivedEvent(readText);
+            }
+        }
+
+        private void HandleConnexionEvent(ConnexionEvent connexionEvent)
+        {
+            ArgumentNullException.ThrowIfNull(connexionEvent);
+
+            User user = connexionEvent.User;
+            if (!ChatRoom.Users.Contains(user.Id))
+            {
+                ChatRoom.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
+                OnUserAddedEvent(user.Username);
+            }
+        }
+
+        private void HandleDisconnexionEvent(DisconnexionEvent disconnexionEvent)
+        {
+            ArgumentNullException.ThrowIfNull(disconnexionEvent);
+
+            User user = disconnexionEvent.User;
+            if (ChatRoom.Users.Contains(user.Id))
+            {
+                ChatRoom.Users.Remove(user.Id);
+                OnUserRemovedEvent(user.Username);
+            }
+        }
+
+        private void HandleUsernameChangeEvent(UsernameChangeEvent userChangeEvent)
+        {
+            ArgumentNullException.ThrowIfNull(userChangeEvent);
+
+            Guid userId = userChangeEvent.UidUser;
+            if (ChatRoom.Users.Contains(userId))
+            {
+                User userInCache = ChatRoom.Users[userChangeEvent.UidUser].User;
+                userInCache.Username = userChangeEvent.NewUsername;
+                OnUsernameChangeEvent(userChangeEvent.OldUsername, userChangeEvent.NewUsername);
             }
         }
     }
