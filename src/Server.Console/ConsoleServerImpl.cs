@@ -51,7 +51,7 @@ namespace MySharpChat.Server.Console
 
             (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = NetworkUtils.GetAvailableIpAdresses();
             data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
-            if (data.Ip == null)
+            if (data.Ip is null)
             {
                 StringBuilder sb = new();
                 sb.AppendLine("No valid ip adress available");

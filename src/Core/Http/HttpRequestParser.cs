@@ -29,7 +29,7 @@ namespace MySharpChat.Core.Http
 
                 HttpRequestMessage request = new HttpRequestMessage();
 
-                while ((line = reader.ReadLine()) != null)
+                while ((line = reader.ReadLine()) is not null)
                 {
                     switch (state)
                     {
@@ -112,7 +112,7 @@ namespace MySharpChat.Core.Http
                         sb.AppendLine(header);
                     }
 
-                if (request.Content?.Headers != null)
+                if (request.Content?.Headers is not null)
                 {
                     foreach ((string key, IEnumerable<string> values) in request.Content.Headers)
                         foreach (var valus in values)

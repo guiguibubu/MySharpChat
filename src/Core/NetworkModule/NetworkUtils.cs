@@ -26,7 +26,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static Socket CreateSocket(ConnexionInfos.Data data)
         {
-            if (data.Ip == null)
+            if (data.Ip is null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
                 throw new ArgumentNullException(nameof(data.Ip));
 #pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
@@ -39,7 +39,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static void ShutdownSocket(Socket? socket)
         {
-            if (socket == null)
+            if (socket is null)
                 throw new ArgumentNullException(nameof(socket));
 
             try
@@ -66,7 +66,7 @@ namespace MySharpChat.Core.NetworkModule
         //https://github.com/jchristn/SuperSimpleTcp/blob/5c4bfbef56dd7a5a2e437f17ac62450f26feb3bf/src/SuperSimpleTcp/SimpleTcpClient.cs
         public static bool IsConnected(Socket? socket)
         {
-            if (socket == null)
+            if (socket is null)
                 throw new ArgumentNullException(nameof(socket));
 
             try
@@ -99,7 +99,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnected(TcpClient? tcpClient)
         {
-            if (tcpClient == null)
+            if (tcpClient is null)
                 throw new ArgumentNullException(nameof(tcpClient));
 
             return tcpClient.Connected && IsConnected(tcpClient.Client);
@@ -108,7 +108,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnectionPending(Socket? socket)
         {
-            if (socket == null)
+            if (socket is null)
                 throw new ArgumentNullException(nameof(socket));
 
             try
@@ -124,7 +124,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool IsConnectionPending(TcpListener? tcpListener)
         {
-            if (tcpListener == null)
+            if (tcpListener is null)
                 throw new ArgumentNullException(nameof(tcpListener));
 
             return tcpListener.Pending();
@@ -132,7 +132,7 @@ namespace MySharpChat.Core.NetworkModule
 
         public static IPEndPoint CreateEndPoint(ConnexionInfos.Data data)
         {
-            if (data.Ip == null)
+            if (data.Ip is null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
                 throw new ArgumentNullException(nameof(data.Ip));
 #pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
@@ -144,7 +144,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static string Read(Socket? handler, object? caller = null, CancellationToken cancelToken = default)
         {
-            if (handler == null)
+            if (handler is null)
                 throw new ArgumentNullException(nameof(handler));
 
             // Create the state object.  
@@ -167,7 +167,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static string Read(TcpClient? tcpClient, CancellationToken cancelToken = default)
         {
-            if (tcpClient == null)
+            if (tcpClient is null)
                 throw new ArgumentNullException(nameof(tcpClient));
 
             while (tcpClient.Available == 0)
@@ -249,7 +249,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         private static void ReadImpl(SocketContext state, CancellationToken cancelToken = default)
         {
-            if (state.workSocket == null)
+            if (state.workSocket is null)
 #pragma warning disable S3928 // Parameter names used into ArgumentException constructors should match an existing one 
                 throw new ArgumentNullException(nameof(state.workSocket));
 #pragma warning restore S3928 // Parameter names used into ArgumentException constructors should match an existing one 
@@ -280,7 +280,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool Send(Socket? handler, string data, object? caller = null)
         {
-            if (handler == null)
+            if (handler is null)
                 throw new ArgumentNullException(nameof(handler));
 
             // Convert the string data to byte data using ASCII encoding.  
@@ -315,7 +315,7 @@ namespace MySharpChat.Core.NetworkModule
         [Obsolete("No more use of raw sockets and TCP connections")]
         public static bool Send(TcpClient? tcpClient, string data)
         {
-            if (tcpClient == null)
+            if (tcpClient is null)
                 throw new ArgumentNullException(nameof(tcpClient));
 
             bool success;
@@ -418,7 +418,7 @@ namespace MySharpChat.Core.NetworkModule
 #else
             List<NetworkInterface> networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
                 .Where(ni => ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet) //WiFI or Ethernet
-                .Where(ni => ni.GetIPProperties().GatewayAddresses.FirstOrDefault() != null) //Virtual (like VirtualBox) network interfaces does not have Gateway address
+                .Where(ni => ni.GetIPProperties().GatewayAddresses.FirstOrDefault() is not null) //Virtual (like VirtualBox) network interfaces does not have Gateway address
                 .ToList();
 
             List<IPAddress> ipAddressesNonVirtual = networkInterfaces!.Select(ni => ni.GetIPProperties()).SelectMany(ipprop => ipprop.UnicastAddresses).Select(uniAddr => uniAddr.Address).ToList();

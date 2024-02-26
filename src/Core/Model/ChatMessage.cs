@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace MySharpChat.Core.Model
 {
     [Serializable]
-    public sealed class ChatMessage : IEquatable<ChatMessage>, IObjectWithId
+    public sealed class ChatMessage : IEquatable<ChatMessage>, IEqualityComparer<ChatMessage>, IObjectWithId
     {
         public Guid Id { get; private set; }
         public User User { get; private set; }
@@ -28,7 +28,7 @@ namespace MySharpChat.Core.Model
         {
             public bool Equals(ChatMessage? x, ChatMessage? y)
             {
-                return x != null && y != null && x.Id == y.Id;
+                return x is not null && y is not null && x.Id == y.Id;
             }
 
             public int GetHashCode([DisallowNull] ChatMessage obj)
@@ -39,7 +39,7 @@ namespace MySharpChat.Core.Model
 
         public bool Equals(ChatMessage? other)
         {
-            return other != null && Comparer.Equals(this, other);
+            return other is not null && Comparer.Equals(this, other);
         }
 
         public override bool Equals(object? obj)
@@ -52,14 +52,14 @@ namespace MySharpChat.Core.Model
             return Comparer.GetHashCode(this);
         }
 
-        public static bool operator !=(ChatMessage? x, ChatMessage? y)
+        bool IEqualityComparer<ChatMessage>.Equals(ChatMessage? x, ChatMessage? y)
         {
-            return ReferenceEquals(x, null) || ReferenceEquals(y, null) || !Comparer.Equals(x, y);
+            return Comparer.Equals(x, y);
         }
 
-        public static bool operator ==(ChatMessage? x, ChatMessage? y)
+        int IEqualityComparer<ChatMessage>.GetHashCode([DisallowNull] ChatMessage obj)
         {
-            return !(x != y);
+            return Comparer.GetHashCode(obj);
         }
     }
 }

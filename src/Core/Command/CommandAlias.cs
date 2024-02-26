@@ -36,7 +36,7 @@ namespace MySharpChat.Core.Command
         {
             Type type = typeof(T);
             PropertyInfo? instanceProperty = type.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            if (instanceProperty == null)
+            if (instanceProperty is null)
                 throw new ArgumentException($"The type {type.FullName} must be a {typeof(Singleton<T>).FullName}");
             return (T?)instanceProperty.GetValue(null);
         }

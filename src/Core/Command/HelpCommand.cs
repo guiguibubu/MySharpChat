@@ -17,7 +17,7 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(LockTextWriter? writer, params string[] args)
         {
-            if(writer == null)
+            if(writer is null)
                 throw new ArgumentNullException(nameof(writer));
 
             string? commandName = args.Length > 0 ? args[0] : null;
@@ -45,7 +45,7 @@ namespace MySharpChat.Core.Command
             {
                 ICommand? command = _commandManager.GetCommands().FirstOrDefault(c => string.Equals(c.Name, commandName, StringComparison.InvariantCultureIgnoreCase));
 
-                if (command == null)
+                if (command is null)
                 {
                     writer.Write("Unknown command \"{0}\"", commandName);
                 }

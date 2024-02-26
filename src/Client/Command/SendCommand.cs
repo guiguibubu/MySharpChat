@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net.Http;
 using MySharpChat.Core;
+using MySharpChat.Core.API;
 using MySharpChat.Core.Constantes;
 using MySharpChat.Core.Http;
 using MySharpChat.Core.Model;
@@ -16,7 +18,7 @@ namespace MySharpChat.Client.Command
 
         public bool Execute(IClientImpl? client, params string[] args)
         {
-            if (client == null)
+            if (client is null)
                 throw new ArgumentNullException(nameof(client));
 
             if (client.LocalUser.Id == Guid.Empty)
@@ -27,12 +29,10 @@ namespace MySharpChat.Client.Command
             {
                 ChatMessage chatMessage = new ChatMessage(Guid.NewGuid(), client.LocalUser, DateTime.Now, text);
                 ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
-                UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);
-                requestUriBuilder.Path += "/" + ApiConstantes.API_MESSAGE_PREFIX;
-                requestUriBuilder.Query = $"userId={client.LocalUser.Id}";
-                clientNetworkModule.SendAsync(HttpSendRequestContext.Post(requestUriBuilder.Uri), chatMessage).GetAwaiter().GetResult();
+                IMessagesApi messagesApi = RestEase.RestClient.For<IMessagesApi>(clientNetworkModule.ServerUri);
+                HttpResponseMessage httpResponseMessage = messagesApi.PostMessageAsync(client.LocalUser.Id.ToString(), chatMessage).GetAwaiter().GetResult();
 
-                return true;
+                return httpResponseMessage.IsSuccessStatusCode;
             }
             else
             {

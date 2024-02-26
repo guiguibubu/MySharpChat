@@ -45,7 +45,7 @@ namespace MySharpChat.Server
         public bool Connect(ConnexionInfos connexionInfos)
         {
             ConnexionInfos.Data? connexionData = connexionInfos.Local;
-            if (connexionData == null)
+            if (connexionData is null)
                 throw new ArgumentException(nameof(connexionInfos.Local));
 
             IPEndPoint localEP = NetworkUtils.CreateEndPoint(connexionData);
@@ -70,7 +70,7 @@ namespace MySharpChat.Server
 
         public void Disconnect()
         {
-            if (httpServer != null)
+            if (httpServer is not null)
             {
                 httpServer.Stop();
             }
@@ -78,7 +78,7 @@ namespace MySharpChat.Server
 
         public bool IsConnected()
         {
-            return httpServer != null && httpServer.IsRunning;
+            return httpServer is not null && httpServer.IsRunning;
         }
 
         public Task<HttpResponseMessage?> SendAsync<T>(HttpSendRequestContext context, T? packet)

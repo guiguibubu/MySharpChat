@@ -44,7 +44,7 @@ namespace MySharpChat.Server.Srv.Controllers
 
                 return BadRequest(errorMessage);
             }
-            if (chatMessage == null)
+            if (chatMessage is null)
             {
                 string errorMessage = $"Message request body must not be empty";
                 _logger.LogError(errorMessage);
@@ -53,7 +53,7 @@ namespace MySharpChat.Server.Srv.Controllers
             }
 
             _server.ChatRoom.AddMessage(userIdGuid, chatMessage);
-            return Created($"{Request.Scheme}://{Request.Host}/{ApiConstantes.API_PREFIX}/{ApiConstantes.API_EVENT_PREFIX}/{chatMessage.Id}", null);
+            return Created($"{Request.Scheme}://{Request.Host}/{ApiConstantes.API_PREFIX}/{ApiConstantes.API_MESSAGE_PREFIX}/{chatMessage.Id}", null);
         }
     }
 }

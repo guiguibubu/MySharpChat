@@ -63,7 +63,7 @@ namespace MySharpChat.Core.Utils
 
         private void ThrowIfException()
         {
-            if (_exception != null)
+            if (_exception is not null)
                 throw new AggregateException(_exception);
         }
 

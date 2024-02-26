@@ -64,7 +64,7 @@ namespace MySharpChat.Core.Model
         {
             public bool Equals(UserState? x, UserState? y)
             {
-                return x != null && y != null && x.User == y.User;
+                return x is not null && y is not null && x.User == y.User;
             }
 
             public int GetHashCode([DisallowNull] UserState obj)
@@ -75,7 +75,7 @@ namespace MySharpChat.Core.Model
 
         public bool Equals(UserState? other)
         {
-            return other != null && Comparer.Equals(this, other);
+            return other is not null && Comparer.Equals(this, other);
         }
 
         public override bool Equals(object? obj)

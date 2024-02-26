@@ -43,7 +43,7 @@ namespace MySharpChat.Server
 
         public bool Start(object? startObject = null)
         {
-            if (Thread.CurrentThread.Name == null)
+            if (Thread.CurrentThread.Name is null)
             {
                 Thread.CurrentThread.Name = "MainServerThread";
             }
@@ -96,7 +96,7 @@ namespace MySharpChat.Server
 
         private void Run()
         {
-            if (Thread.CurrentThread.Name == null)
+            if (Thread.CurrentThread.Name is null)
             {
                 Thread.CurrentThread.Name = "RunningServerThread";
                 logger.LogDebug(string.Format("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId));

@@ -29,7 +29,7 @@ namespace MySharpChat.Core.Model
         {
             public bool Equals(User? x, User? y)
             {
-                return x != null && y != null && x.Id == y.Id;
+                return x is not null && y is not null && x.Id == y.Id;
             }
 
             public int GetHashCode([DisallowNull] User obj)
@@ -40,7 +40,7 @@ namespace MySharpChat.Core.Model
 
         public bool Equals(User? other)
         {
-            return other != null && Comparer.Equals(this, other);
+            return other is not null && Comparer.Equals(this, other);
         }
 
         public override bool Equals(object? obj)
