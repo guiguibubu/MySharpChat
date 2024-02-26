@@ -65,6 +65,18 @@ namespace MySharpChat.Server
             ChatEvents.Add(new ChatMessageEvent(message));
         }
 
+        public ChatMessage? GetMessage(Guid messageId)
+        {
+            if (Messages.TryGet(messageId, out ChatMessage? chatMessage))
+            {
+                return chatMessage;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public IReadOnlyCollection<ChatEventPacketWrapper> GetChatEventPackets(string? lastId)
         {
             IReadOnlyCollection<ChatEvent> eventToSend = GetChatEvents(lastId);

@@ -55,5 +55,35 @@ namespace MySharpChat.Server.Srv.Controllers
             _server.ChatRoom.AddMessage(userIdGuid, chatMessage);
             return Created($"{Request.Scheme}://{Request.Host}/{ApiConstantes.API_PREFIX}/{ApiConstantes.API_MESSAGE_PREFIX}/{chatMessage.Id}", null);
         }
+
+        [HttpGet("{uid}", Name = "GetMessage")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult Get([FromRoute] string? uid)
+        {
+            if (string.IsNullOrEmpty(uid))
+            {
+                string errorMessage = $"Message request must have a \"{nameof(uid)}\" param";
+                _logger.LogError(errorMessage);
+                return BadRequest(errorMessage);
+            }
+            if (!Guid.TryParse(uid, out Guid messageIdGuid))
+            {
+                string errorMessage = $"Message request parameter \"{nameof(uid)}\" must respect GUID format";
+                _logger.LogError(errorMessage);
+                return BadRequest(errorMessage);
+            }
+            ChatMessage? chatMessage = _server.ChatRoom.GetMessage(messageIdGuid);
+            if(chatMessage is null)
+            {
+                string errorMessage = $"Message {uid} not found";
+                _logger.LogError(errorMessage);
+
+                return NotFound(errorMessage);
+            }
+
+            return Ok(chatMessage);
+        }
     }
 }
