@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Model
 {
+    [Serializable]
     public sealed class ChatMessage : IEquatable<ChatMessage>, IObjectWithId
     {
         public Guid Id { get; private set; }
@@ -12,6 +14,7 @@ namespace MySharpChat.Core.Model
         public DateTime Date { get; private set; }
         public string Message { get; private set; }
 
+        [JsonConstructor]
         public ChatMessage(Guid id, User user, DateTime date, string message)
         {
             Id = id;

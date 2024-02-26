@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using MySharpChat.Core.Constantes;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 
 namespace MySharpChat.Server.Srv.Controllers
@@ -48,7 +49,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return NotFound(errorMessage);
             }
 
-            IEnumerable<PacketWrapper<UserInfoPacket>> packets = _server.ChatRoom.GetUserPackets();
+            IEnumerable<PacketWrapper<User>> packets = _server.ChatRoom.GetUserPackets();
 
             string responseContent = PacketSerializer.Serialize(packets);
             return Ok(responseContent);
@@ -59,7 +60,7 @@ namespace MySharpChat.Server.Srv.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public IActionResult Put([FromRoute] string? userId, [FromBody] UserInfoPacket? userPacket)
+        public IActionResult Put([FromRoute] string? userId, [FromBody] User? userInfo)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -84,7 +85,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return NotFound(errorMessage);
             }
 
-            if (userPacket == null)
+            if (userInfo == null)
             {
                 string errorMessage = $"Message request body must not be empty";
                 _logger.LogError(errorMessage);
@@ -92,7 +93,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return BadRequest(errorMessage);
             }
 
-            string newUsername = userPacket.UserState.User.Username;
+            string newUsername = userInfo.Username;
             if (_server.ChatRoom.ModifyUser(userIdGuid, newUsername))
             {
                 return NoContent();

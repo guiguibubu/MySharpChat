@@ -88,15 +88,15 @@ namespace MySharpChat.Server
             return eventToSend;
         }
 
-        public IReadOnlyCollection<PacketWrapper<UserInfoPacket>> GetUserPackets()
+        public IReadOnlyCollection<PacketWrapper<User>> GetUserPackets()
         {
-            IReadOnlyCollection<UserInfoPacket> userinfos = GetUsers();
-            return userinfos.Select(userInfo => new PacketWrapper<UserInfoPacket>(Id, userInfo)).ToList();
+            IReadOnlyCollection<User> userinfos = GetUsers();
+            return userinfos.Select(userInfo => new PacketWrapper<User>(Id, userInfo)).ToList();
         }
 
-        public IReadOnlyCollection<UserInfoPacket> GetUsers()
+        public IReadOnlyCollection<User> GetUsers()
         {
-            return Users.Select(userState => new UserInfoPacket(userState)).ToList();
+            return Users.Where(u => u.IsConnected()).Select(userState => userState.User).ToList();
         }
 
         public bool ModifyUser(Guid userIdGuid, string newUsername)

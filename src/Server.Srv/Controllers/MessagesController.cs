@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using MySharpChat.Core.Constantes;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 
 namespace MySharpChat.Server.Srv.Controllers
@@ -22,7 +23,7 @@ namespace MySharpChat.Server.Srv.Controllers
         [HttpPost(Name = "PostMessage")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Post([FromQuery] string? userId, [FromBody] ChatMessagePacket chatPacket)
+        public IActionResult Post([FromQuery] string? userId, [FromBody] ChatMessage chatMessage)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -43,7 +44,7 @@ namespace MySharpChat.Server.Srv.Controllers
 
                 return BadRequest(errorMessage);
             }
-            if (chatPacket == null)
+            if (chatMessage == null)
             {
                 string errorMessage = $"Message request body must not be empty";
                 _logger.LogError(errorMessage);
@@ -51,8 +52,8 @@ namespace MySharpChat.Server.Srv.Controllers
                 return BadRequest(errorMessage);
             }
 
-            _server.ChatRoom.AddMessage(userIdGuid, chatPacket.ChatMessage);
-            return Created($"{Request.Scheme}://{Request.Host}/api/messages/{chatPacket.ChatMessage.Id}", null);
+            _server.ChatRoom.AddMessage(userIdGuid, chatMessage);
+            return Created($"{Request.Scheme}://{Request.Host}/{ApiConstantes.API_PREFIX}/{ApiConstantes.API_EVENT_PREFIX}/{chatMessage.Id}", null);
         }
     }
 }
