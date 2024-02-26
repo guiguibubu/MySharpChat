@@ -1,20 +1,13 @@
 ﻿using MySharpChat.Client.GUI.Commands;
+using MySharpChat.Core.Event;
+using MySharpChat.Core.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Resources;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace MySharpChat.Client.GUI
@@ -26,7 +19,8 @@ namespace MySharpChat.Client.GUI
     {
         private readonly ChatViewModel m_viewModel;
 
-        private readonly List<TextBlock> usersUiElements = new List<TextBlock>();
+        private readonly Dictionary<Guid, TextBlock> usersUiElements = new();
+        private readonly Dictionary<Guid, UIElement> chatUiElements = new();
 
         internal ChatUserControl(ChatViewModel viewModel)
         {
@@ -55,101 +49,29 @@ namespace MySharpChat.Client.GUI
 
         private void OnLocalUsernameChange()
         {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                UserName.Foreground = new SolidColorBrush(Colors.Black);
-                UserName.Text = m_viewModel.Client.LocalUser.Username;
-                ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
-                ConnectionStatus.Text = "Connected !";
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnLocalUsernameChange);
-            }
+            UpdateUI();
         }
 
         public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
 
-        private void OnUsernameRemoved(string username)
+        private void OnUsernameRemoved(Guid idUser)
         {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == username);
-                if (userUiElement != null)
-                {
-                    usersUiElements.Remove(userUiElement);
-                    UsersStack.Children.Remove(userUiElement);
-                    OnUserStatusChange($"User leave the session : {username}");
-                }
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnUsernameRemoved, username);
-            }
+            UpdateUI();
         }
 
-        private void OnUsernameChange(string oldUsername, string newUsername)
+        private void OnUsernameChange(Guid idUser, string oldUsername, string newUsername)
         {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                TextBlock? userUiElement = usersUiElements.FirstOrDefault((ui) => ui.Text == oldUsername);
-                if (userUiElement != null)
-                {
-                    userUiElement.Text = newUsername;
-
-                    OnUserStatusChange($"Username change from {oldUsername} to {newUsername}");
-                }
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnUsernameChange, oldUsername, newUsername);
-            }
+            UpdateUI();
         }
 
-        private void OnUsernameAdded(string username)
+        private void OnUsernameAdded(Guid idUser)
         {
-            Dispatcher uiDispatcher = Application.Current.Dispatcher;
-            if (uiDispatcher.CheckAccess())
-            {
-                TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
-                usersUiElements.Add(userUiElement);
-                UsersStack.Children.Add(userUiElement);
-
-                OnUserStatusChange($"New user joined : {username}");
-            }
-            else
-            {
-                uiDispatcher.Invoke(OnUsernameAdded, username);
-            }
+            UpdateUI();
         }
 
-        private void OnMessageReceived(string message)
+        private void OnMessageReceived(Guid idMessage)
         {
-            string text = message;
-            if (!string.IsNullOrEmpty(text))
-            {
-                Dispatcher uiDispatcher = Application.Current.Dispatcher;
-                if (uiDispatcher.CheckAccess())
-                {
-                    TextBlock outpuBlock = new TextBlock();
-                    outpuBlock.TextWrapping = TextWrapping.Wrap;
-                    outpuBlock.Margin = new Thickness(0, 2, 0, 2);
-                    outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    outpuBlock.VerticalAlignment = VerticalAlignment.Center;
-                    outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                    outpuBlock.Text = text;
-
-                    OutputStack.Children.Add(outpuBlock);
-                    OutputScroller.ScrollToEnd();
-                }
-                else
-                {
-                    uiDispatcher.Invoke(() => OnMessageReceived(text));
-                }
-            }
+            UpdateUI();
         }
 
         private void OnDisconnection(bool manual)
@@ -173,7 +95,7 @@ namespace MySharpChat.Client.GUI
             InputBox.Focus();
         }
 
-        private void OnUserStatusChange(string message)
+        private void OnUserStatusChange(Guid idEvent, string message)
         {
             TextBlock outpuBlock = new TextBlock();
             outpuBlock.TextWrapping = TextWrapping.Wrap;
@@ -183,8 +105,10 @@ namespace MySharpChat.Client.GUI
             outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
             outpuBlock.Text = message;
 
-            OutputStack.Children.Add(outpuBlock);
-            OutputScroller.ScrollToEnd();
+            if(!chatUiElements.TryAdd(idEvent, outpuBlock))
+            {
+                chatUiElements[idEvent] = outpuBlock;
+            }
         }
 
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
@@ -192,6 +116,122 @@ namespace MySharpChat.Client.GUI
             Key key = e.Key;
             if (key == Key.Enter)
                 SendButton.Command.Execute(SendButton.CommandParameter);
+        }
+
+        private void UpdateUI()
+        {
+            Dispatcher uiDispatcher = Application.Current.Dispatcher;
+            if (uiDispatcher.CheckAccess())
+            {
+                IOrderedEnumerable<ChatEvent> chatEvents = m_viewModel.Client.ChatEvents.OrderedList;
+                foreach (ChatEvent chatEvent in chatEvents)
+                {
+                    if (chatEvent is ChatMessageEvent chatMessageEvent)
+                    {
+                        HandleChatMessageEvent(chatMessageEvent);
+                    }
+                    if (chatEvent is ConnexionEvent connexionEvent)
+                    {
+                        HandleConnexionEvent(connexionEvent);
+                    }
+                    if (chatEvent is DisconnexionEvent disconnexionEvent)
+                    {
+                        HandleDisconnexionEvent(disconnexionEvent);
+                    }
+                    if (chatEvent is UsernameChangeEvent userChangeEvent)
+                    {
+                        HandleUsernameChangeEvent(userChangeEvent);
+                    }
+                }
+
+                OutputStack.Children.Clear();
+                foreach (UIElement uIElement in chatUiElements.Values)
+                {
+                    OutputStack.Children.Add(uIElement);
+                }
+                OutputScroller.ScrollToEnd();
+            }
+            else
+            {
+                uiDispatcher.Invoke(() => UpdateUI());
+            }
+        }
+
+        private void HandleChatMessageEvent(ChatMessageEvent chatEvent)
+        {
+            ArgumentNullException.ThrowIfNull(chatEvent);
+
+            ChatMessage chatMessage = chatEvent.ChatMessage;
+            string username = chatMessage.User.Username;
+            string messageText = chatMessage.Message;
+            string text = $"({chatMessage.Date}) {username} : {messageText}";
+
+            TextBlock outpuBlock = new TextBlock();
+            outpuBlock.TextWrapping = TextWrapping.Wrap;
+            outpuBlock.Margin = new Thickness(0, 2, 0, 2);
+            outpuBlock.HorizontalAlignment = HorizontalAlignment.Stretch;
+            outpuBlock.VerticalAlignment = VerticalAlignment.Center;
+            outpuBlock.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            outpuBlock.Text = text;
+
+            if(!chatUiElements.TryAdd(chatMessage.Id, outpuBlock))
+            {
+                chatUiElements[chatMessage.Id] = outpuBlock;
+            }
+        }
+
+        private void HandleConnexionEvent(ConnexionEvent connexionEvent)
+        {
+            ArgumentNullException.ThrowIfNull(connexionEvent);
+
+            string username = connexionEvent.User.Username;
+            TextBlock userUiElement = new TextBlock() { Text = username, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap };
+
+            if (!usersUiElements.TryAdd(connexionEvent.Id, userUiElement))
+            {
+                TextBlock currentUiElement = usersUiElements[connexionEvent.Id];
+                UsersStack.Children.Remove(currentUiElement);
+                usersUiElements[connexionEvent.Id] = userUiElement;
+            }
+            UsersStack.Children.Add(userUiElement);
+
+            OnUserStatusChange(connexionEvent.Id, $"New user joined : {username}");
+
+            if (m_viewModel.Client.LocalUser.Id == connexionEvent.User.Id)
+            {
+                UserName.Foreground = new SolidColorBrush(Colors.Black);
+                UserName.Text = m_viewModel.Client.LocalUser.Username;
+                ConnectionStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);
+                ConnectionStatus.Text = "Connected !";
+            }
+        }
+
+        private void HandleDisconnexionEvent(DisconnexionEvent disconnexionEvent)
+        {
+            ArgumentNullException.ThrowIfNull(disconnexionEvent);
+            User user = disconnexionEvent.User;
+            if (usersUiElements.TryGetValue(user.Id, out TextBlock? userUiElement))
+            {
+                UsersStack.Children.Remove(userUiElement);
+                usersUiElements.Remove(user.Id);
+
+                OnUserStatusChange(disconnexionEvent.Id, $"User leave the session : {user.Username}");
+            }
+        }
+
+        private void HandleUsernameChangeEvent(UsernameChangeEvent userChangeEvent)
+        {
+            ArgumentNullException.ThrowIfNull(userChangeEvent);
+
+            string oldUsername = userChangeEvent.OldUsername;
+            string newUsername = userChangeEvent.NewUsername;
+
+            if (usersUiElements.TryGetValue(userChangeEvent.UidUser, out TextBlock? userUiElement))
+            {
+                userUiElement.Text = newUsername;
+
+                OnUserStatusChange(userChangeEvent.Id, $"Username change from {oldUsername} to {newUsername}");
+            }
         }
     }
 }

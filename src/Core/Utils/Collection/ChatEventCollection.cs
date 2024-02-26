@@ -1,7 +1,7 @@
 ﻿using MySharpChat.Core.Event;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
+using System.Linq;
 
 namespace MySharpChat.Core.Utils.Collection
 {
@@ -19,5 +19,8 @@ namespace MySharpChat.Core.Utils.Collection
         public ChatEventCollection(int capacity)
             : base(capacity, ChatEvent.Comparer)
         { }
+
+
+        public IOrderedEnumerable<ChatEvent> OrderedList => this.OrderBy(e => e.Date);
     }
 }

@@ -84,6 +84,7 @@ namespace MySharpChat.Server
                 List<ChatEvent> eventOrdered = ChatEvents.OrderByDescending(chatEvent => chatEvent.Date).ToList();
                 int indexLastEvent = eventOrdered.IndexOf(lastEventReceived);
                 eventToSend = eventOrdered.GetRange(0, indexLastEvent);
+                eventToSend = eventToSend.Reverse().ToList();
             }
             return eventToSend;
         }

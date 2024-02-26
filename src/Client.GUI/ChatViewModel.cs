@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MySharpChat.Client.GUI
 {
     internal class ChatViewModel
     {
         public GuiClientImpl Client { get; private set; }
-        public ObservableCollection<string> Messages { get; private set; } = new ObservableCollection<string>();
         public string InputMessage { get; set; } = "";
 
         public ChatViewModel(GuiClientImpl client)
@@ -20,22 +14,20 @@ namespace MySharpChat.Client.GUI
             Client.OnUserAddedEvent += OnUserAdded;
             Client.OnUserRemovedEvent += OnUserRemoved;
             Client.OnUsernameChangeEvent += OnUsernameChange;
-            Client.OnLocalUsernameChangeEvent += OnLocalUsernameChange;
             Client.ChatMessageReceivedEvent += OnMessageReceived;
         }
 
         public event Action<bool> OnDisconnectionEvent = (bool manual) => { };
-        public event Action<string> OnUserAddedEvent = (string s) => { };
-        public event Action<string> OnUserRemovedEvent = (string s) => { };
-        public event Action<string, string> OnUsernameChangeEvent = (string s1, string s2) => { };
+        public event Action<Guid> OnUserAddedEvent = (Guid idUser) => { };
+        public event Action<Guid> OnUserRemovedEvent = (Guid idUser) => { };
+        public event Action<Guid, string, string> OnUsernameChangeEvent = (Guid idUser, string s1, string s2) => { };
         public event Action OnLocalUsernameChangeEvent = () => { };
-        public event Action<string> OnMessageReceivedEvent = (string message) => { };
+        public event Action<Guid> OnMessageReceivedEvent = (Guid idMessage) => { };
         public event Action OnSendFinishedEvent = () => { };
 
         public void OnSendSuccess()
         {
             OnSendFinishedEvent();
-            
         }
 
         public void OnDisconnection(bool manual)
@@ -43,19 +35,19 @@ namespace MySharpChat.Client.GUI
             OnDisconnectionEvent(manual);
         }
 
-        public void OnUserAdded(string username)
+        public void OnUserAdded(Guid idUser)
         {
-            OnUserAddedEvent(username);
+            OnUserAddedEvent(idUser);
         }
         
-        public void OnUserRemoved(string username)
+        public void OnUserRemoved(Guid idUser)
         {
-            OnUserRemovedEvent(username);
+            OnUserRemovedEvent(idUser);
         }
 
-        public void OnUsernameChange(string oldUsername, string newUsername)
+        public void OnUsernameChange(Guid idUser, string oldUsername, string newUsername)
         {
-            OnUsernameChangeEvent(oldUsername, newUsername);
+            OnUsernameChangeEvent(idUser, oldUsername, newUsername);
         }
 
         public void OnLocalUsernameChange()
@@ -63,12 +55,11 @@ namespace MySharpChat.Client.GUI
             OnLocalUsernameChangeEvent();
         }
 
-        public void OnMessageReceived(string message)
+        public void OnMessageReceived(Guid idMessage)
         {
-            if (!string.IsNullOrEmpty(message))
+            if (idMessage != Guid.Empty)
             {
-                Messages.Add(message);
-                OnMessageReceivedEvent(message);
+                OnMessageReceivedEvent(idMessage);
             }
         }
     }
