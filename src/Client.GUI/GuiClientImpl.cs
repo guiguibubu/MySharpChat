@@ -2,18 +2,16 @@
 using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MySharpChat.Client.GUI
 {
     internal class GuiClientImpl : BaseClientImpl
     {
-        public event Action<string> OnUserAddedEvent = (string username) => { };
-        public event Action<string> OnUserRemovedEvent = (string username) => { };
-        public event Action<string, string> OnUsernameChangeEvent = (string oldUsername, string newUsername) => { };
+        public event Action<Guid> OnUserAddedEvent = (Guid idUser) => { };
+        public event Action<Guid> OnUserRemovedEvent = (Guid idUser) => { };
+        public event Action<Guid, string, string> OnUsernameChangeEvent = (Guid idUser, string oldUsername, string newUsername) => { };
         public event Action OnLocalUsernameChangeEvent = () => { };
-        public event Action<string> ChatMessageReceivedEvent = (string message) => { };
+        public event Action<Guid> ChatMessageReceivedEvent = (Guid idMessage) => { };
         public event Action<bool> DisconnectionEvent = (bool manual) => { };
 
         public bool ConnexionSuccess { get; set; } = false;
@@ -33,12 +31,11 @@ namespace MySharpChat.Client.GUI
 
         public override void Run(Client client)
         {
-            if (ConnexionSuccess && networkModule.IsConnected())
+            if (ConnexionSuccess
+                && networkModule.IsConnected()
+                && networkModule.HasDataAvailable)
             {
-                if (networkModule.HasDataAvailable)
-                {
-                    HandleNetworkPackets(100);
-                }
+                HandleNetworkPackets(100);
             }
         }
 
@@ -99,10 +96,7 @@ namespace MySharpChat.Client.GUI
             if (!ChatRoom.Messages.Contains(chatMessage.Id))
             {
                 ChatRoom.Messages.Add(chatMessage);
-                string username = chatMessage.User.Username;
-                string messageText = chatMessage.Message;
-                string readText = $"({chatMessage.Date}) {username} : {messageText}";
-                ChatMessageReceivedEvent(readText);
+                ChatMessageReceivedEvent(chatMessage.Id);
             }
         }
 
@@ -114,7 +108,7 @@ namespace MySharpChat.Client.GUI
             if (!ChatRoom.Users.Contains(user.Id))
             {
                 ChatRoom.Users.Add(new UserState(user, ConnexionStatus.GainConnection));
-                OnUserAddedEvent(user.Username);
+                OnUserAddedEvent(user.Id);
             }
         }
 
@@ -126,7 +120,11 @@ namespace MySharpChat.Client.GUI
             if (ChatRoom.Users.Contains(user.Id))
             {
                 ChatRoom.Users.Remove(user.Id);
-                OnUserRemovedEvent(user.Username);
+                OnUserRemovedEvent(user.Id);
+            }
+            if (LocalUser.Id == user.Id)
+            {
+                DisconnectionEvent(false);
             }
         }
 
@@ -139,7 +137,11 @@ namespace MySharpChat.Client.GUI
             {
                 User userInCache = ChatRoom.Users[userChangeEvent.UidUser].User;
                 userInCache.Username = userChangeEvent.NewUsername;
-                OnUsernameChangeEvent(userChangeEvent.OldUsername, userChangeEvent.NewUsername);
+                OnUsernameChangeEvent(userInCache.Id, userChangeEvent.OldUsername, userChangeEvent.NewUsername);
+            }
+            if (LocalUser.Id == userChangeEvent.UidUser)
+            {
+                OnLocalUsernameChangeEvent();
             }
         }
     }
