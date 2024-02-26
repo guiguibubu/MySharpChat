@@ -12,7 +12,7 @@ namespace MySharpChat.Client.Command
 
         public bool Execute(IClientImpl? client, params string[] args)
         {
-            if (client == null)
+            if (client is null)
                 throw new ArgumentNullException(nameof(client));
 
             client.NetworkModule.Disconnect();

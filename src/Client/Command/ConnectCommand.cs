@@ -17,7 +17,7 @@ namespace MySharpChat.Client.Command
 
         public bool Execute(IClientImpl? client, params string[] args)
         {
-            if (client == null)
+            if (client is null)
                 throw new ArgumentNullException(nameof(client));
 
             ConnexionInfos connexionInfos = new ConnexionInfos();
@@ -26,7 +26,7 @@ namespace MySharpChat.Client.Command
 
             (IEnumerable<IPAddress> ipAddressesHost, IEnumerable<IPAddress> ipAddressesNonVirtual) = NetworkUtils.GetAvailableIpAdresses(serverAdress);
             data.Ip = ipAddressesHost.Intersect(ipAddressesNonVirtual).FirstOrDefault();
-            if (data.Ip == null)
+            if (data.Ip is null)
             {
                 StringWriter writer = new StringWriter();
                 writer.WriteLine("No valid ip adress available");

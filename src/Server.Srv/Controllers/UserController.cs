@@ -85,7 +85,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return NotFound(errorMessage);
             }
 
-            if (userInfo == null)
+            if (userInfo is null)
             {
                 string errorMessage = $"Message request body must not be empty";
                 _logger.LogError(errorMessage);

@@ -27,7 +27,7 @@ namespace MySharpChat.Server
 
         public void Start(IPEndPoint? endpoint)
         {
-            if (endpoint == null)
+            if (endpoint is null)
                 throw new ArgumentNullException(nameof(endpoint));
 
             string httpAdresse = string.Format("http://{0}:{1}/", endpoint.Address.ToString(), endpoint.Port);

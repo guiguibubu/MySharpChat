@@ -19,7 +19,7 @@ namespace MySharpChat.Client.GUI.Commands
 
         public void Execute(object? parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
                 throw new ArgumentNullException(nameof(parameter));
 
             if (parameter is WpfConnectionArgs connectionArgs)

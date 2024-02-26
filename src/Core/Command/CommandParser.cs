@@ -53,7 +53,7 @@ namespace MySharpChat.Core.Command
         public bool TryParse(string? text, out string[] args, out ICommand? command)
         {
             command = Parse(text, out args);
-            return command != null;
+            return command is not null;
         }
 
         public bool TryParse(string? text, out ICommand? parsedObject)
@@ -72,7 +72,7 @@ namespace MySharpChat.Core.Command
                 args = new string[0];
                 command = null;
             }
-            return command != null;
+            return command is not null;
         }
 
         public bool TryParse<T>(string? text, out T? command) where T : class, ICommand

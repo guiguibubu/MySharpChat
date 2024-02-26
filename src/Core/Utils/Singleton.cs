@@ -25,10 +25,10 @@ namespace MySharpChat.Core.Utils
 #pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
                 ConstructorInfo? possibleConstructor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
 #pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
-                if (possibleConstructor != null)
+                if (possibleConstructor is not null)
                     instance = (T)possibleConstructor.Invoke(null);
             }
-            if (s_instance == null)
+            if (s_instance is null)
             {
                 if (nbPossibleMethods == 1)
                 {

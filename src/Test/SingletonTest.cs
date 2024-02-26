@@ -31,7 +31,7 @@ namespace MySharpChat.Test
                 ConstructorInfo? defaultConstructor = possibleConstructors.FirstOrDefault(c => c.GetParameters().Length == 0);
 
                 testDelegate += () => { Assert.IsFalse(publicConstructors.Any(), "{0} must not have public constructors (currently : {1})", type.FullName, publicConstructors.Count()); };
-                testDelegate += () => { Assert.IsTrue(possibleMethods.Count() == 1 || defaultConstructor != null, "{0} must have a default constructor (currently : {2}) or one, and only one, static method \"{0} {1}()\" (currently : {3})", type.FullName, Singleton<object>.INSTANCE_CREATOR_NAME, defaultConstructor?.ToString() ?? "null", possibleMethods.Count()); };
+                testDelegate += () => { Assert.IsTrue(possibleMethods.Count() == 1 || defaultConstructor is not null, "{0} must have a default constructor (currently : {2}) or one, and only one, static method \"{0} {1}()\" (currently : {3})", type.FullName, Singleton<object>.INSTANCE_CREATOR_NAME, defaultConstructor?.ToString() ?? "null", possibleMethods.Count()); };
             }
             Assert.Multiple(testDelegate);
         }
@@ -50,12 +50,12 @@ namespace MySharpChat.Test
                 if (singletonTypeGeneric == currentChild)
                     return true;
 
-                currentChild = currentChild.BaseType != null
+                currentChild = currentChild.BaseType is not null
                                && currentChild.BaseType.IsGenericType
                                    ? currentChild.BaseType.GetGenericTypeDefinition()
                                    : currentChild.BaseType;
 
-                if (currentChild == null)
+                if (currentChild is null)
                     return false;
             }
             return false;

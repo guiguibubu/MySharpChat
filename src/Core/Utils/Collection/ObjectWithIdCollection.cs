@@ -40,7 +40,7 @@ namespace MySharpChat.Core.Utils.Collection
         public bool TryGet(Guid id, out T? result)
         {
             result = this.FirstOrDefault((o) => o?.Id == id, null);
-            return result != null;
+            return result is not null;
         }
 
         public T this[Guid id]

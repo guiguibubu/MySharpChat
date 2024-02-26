@@ -25,7 +25,7 @@ namespace MySharpChat.Core.Http
 
                 HttpResponseMessage response = new HttpResponseMessage();
 
-                while ((line = reader.ReadLine()) != null)
+                while ((line = reader.ReadLine()) is not null)
                 {
                     switch (mode)
                     {

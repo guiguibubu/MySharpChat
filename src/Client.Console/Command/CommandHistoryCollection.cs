@@ -43,13 +43,13 @@ namespace MySharpChat.Client.Console.Command
         public bool TryGetPreviousCommand(out string? command)
         {
             command = GetPreviousCommand();
-            return command != null;
+            return command is not null;
         }
 
         public bool TryGetNextCommand(out string? command)
         {
             command = GetNextCommand();
-            return command != null;
+            return command is not null;
         }
     }
 }

@@ -43,6 +43,10 @@
             <PackagePath></PackagePath>
         </None>
     </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="RestEase" Version="1.6.4" />
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Client.Input\MySharpChat.Client.Input.csproj" />

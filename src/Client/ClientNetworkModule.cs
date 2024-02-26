@@ -15,6 +15,7 @@ using MySharpChat.Client.Utils;
 using MySharpChat.Core.Utils.Collection;
 using MySharpChat.Core.Constantes;
 using MySharpChat.Core.Event;
+using MySharpChat.Core.API;
 
 namespace MySharpChat.Client
 {
@@ -31,7 +32,7 @@ namespace MySharpChat.Client
 
         public ClientNetworkModule(IClientImpl client)
         {
-            if (client == null)
+            if (client is null)
                 throw new ArgumentNullException(nameof(client));
 
             _client = client;
@@ -59,11 +60,7 @@ namespace MySharpChat.Client
 
             User localUser = _client.LocalUser;
 
-            UriBuilder requestUriBuilder = new UriBuilder(ChatUri);
-            requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
-            requestUriBuilder.Query = $"userId={localUser.Id}";
-            requestUriBuilder.Query += $"&username={localUser.Username}";
-            HttpSendRequestContext httpContext = HttpSendRequestContext.Post(requestUriBuilder.Uri);
+            IConnexionsApi connexionsApi = RestEase.RestClient.For<IConnexionsApi>(ServerUri);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             int attempt = 0;
@@ -74,7 +71,7 @@ namespace MySharpChat.Client
                 attempt++;
 
                 // Connect to the remote endpoint.  
-                Task<HttpResponseMessage?> connectTask = SendAsync(httpContext);
+                Task<HttpResponseMessage> connectTask = connexionsApi.PostConnexionAsync(localUser.Id.ToString(), localUser.Username.ToString());
 
                 try
                 {
@@ -117,7 +114,7 @@ namespace MySharpChat.Client
         public bool Connect(ConnexionInfos connexionInfos)
         {
             ConnexionInfos.Data? connexionData = connexionInfos.Remote;
-            if (connexionData == null)
+            if (connexionData is null)
                 throw new ArgumentException(nameof(connexionInfos.Remote));
 
             IPEndPoint remoteEP = NetworkUtils.CreateEndPoint(connexionData);
@@ -153,30 +150,28 @@ namespace MySharpChat.Client
             if (IsConnected())
             {
                 logger.LogInfo("Disconnection of Network Module");
-                UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-                requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
-                requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
-                SendAsync(HttpSendRequestContext.Delete(requestUriBuilder.Uri)).Wait();
+
+                IConnexionsApi connexionsApi = RestEase.RestClient.For<IConnexionsApi>(ServerUri);
+                connexionsApi.DeleteConnexionAsync(_client.LocalUser.Id.ToString()).GetAwaiter().GetResult();
+
                 StopStatusUpdater();
             }
         }
 
         public bool IsConnected()
         {
-            if (ServerUri == null
-                || ChatUri == null)
+            if (ServerUri is null
+                || ChatUri is null)
                 return false;
 
-            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/" + ApiConstantes.API_CONNEXION_PREFIX;
-            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
-            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(HttpReadRequestContext.Get(requestUriBuilder.Uri))!;
+            IConnexionsApi connexionsApi = RestEase.RestClient.For<IConnexionsApi>(ServerUri);
+            HttpResponseMessage httpResponseMessage = connexionsApi.GetConnexionAsync(_client.LocalUser.Id.ToString()).GetAwaiter().GetResult();
             return httpResponseMessage.IsSuccessStatusCode;
         }
 
         public Task<HttpResponseMessage?> SendAsync<T>(HttpSendRequestContext context, T? packet)
         {
-            string content = packet != null ? PacketSerializer.Serialize(packet) : "";
+            string content = packet is not null ? PacketSerializer.Serialize(packet) : "";
             logger.LogInfo("Request send : {0}", content);
             return NetworkUtils.SendAsync(m_httpClient, context, content);
         }
@@ -212,7 +207,7 @@ namespace MySharpChat.Client
 
         private void StartStatusUpdater()
         {
-            if (_statusUpdateTask == null)
+            if (_statusUpdateTask is null)
                 _statusUpdateTask = Task.Run(() =>
                 {
                     Stopwatch stopwatch = new Stopwatch();
@@ -254,24 +249,18 @@ namespace MySharpChat.Client
 
         private void UserStatusUpdateAction()
         {
-            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/" + ApiConstantes.API_USER_PREFIX;
-            requestUriBuilder.Query += $"userId={_client.LocalUser.Id}";
-            HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
+            IUsersApi usersApi = RestEase.RestClient.For<IUsersApi>(ServerUri);
+            HttpResponseMessage httpResponseMessage = usersApi.GetUsersAsync(_client.LocalUser.Id.ToString()).GetAwaiter().GetResult();
             ReadEvents(httpResponseMessage);
         }
 
         private void EventsStatusUpdateAction()
         {
-            UriBuilder requestUriBuilder = new UriBuilder(ChatUri!);
-            requestUriBuilder.Path += "/" + ApiConstantes.API_EVENT_PREFIX;
-            requestUriBuilder.Query = $"userId={_client.LocalUser.Id}";
+            IEventsApi eventsApi = RestEase.RestClient.For<IEventsApi>(ServerUri);
             ChatEventCollection chatEvents = _client.ChatEvents;
-            if (chatEvents.Any())
-                requestUriBuilder.Query += $"&lastId={chatEvents.MaxBy(chatEvent => chatEvent.Date)!.Id}";
-            HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
+            string? userId = _client.LocalUser.Id.ToString();
+            string? lastId = chatEvents.Any() ? chatEvents.MaxBy(chatEvent => chatEvent.Date)!.Id.ToString() : null;
+            HttpResponseMessage httpResponseMessage = eventsApi.GetEventsAsync(userId, lastId).GetAwaiter().GetResult();
             ReadEvents(httpResponseMessage);
         }
 
@@ -279,7 +268,7 @@ namespace MySharpChat.Client
         {
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-            if ((int)httpResponseMessage.StatusCode >= 400)
+            if (!httpResponseMessage.IsSuccessStatusCode)
             {
                 return;
             }

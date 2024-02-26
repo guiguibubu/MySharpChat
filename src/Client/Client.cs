@@ -57,7 +57,7 @@ namespace MySharpChat.Client
 
         private void Run()
         {
-            if (Thread.CurrentThread.Name == null)
+            if (Thread.CurrentThread.Name is null)
             {
                 Thread.CurrentThread.Name = "RunningClientThread";
                 logger.LogDebug(string.Format("{0} started (Thread {1})", Thread.CurrentThread.Name, Thread.CurrentThread.ManagedThreadId));

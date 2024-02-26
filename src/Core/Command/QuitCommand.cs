@@ -12,7 +12,7 @@ namespace MySharpChat.Core.Command
 
         public bool Execute(IAsyncMachine? asyncMachine, params string[] args)
         {
-            if(asyncMachine == null)
+            if(asyncMachine is null)
                 return true;
 
             try

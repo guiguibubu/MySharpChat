@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace MySharpChat.Core.Event
 {
@@ -11,7 +12,7 @@ namespace MySharpChat.Core.Event
     [JsonDerivedType(typeof(ConnexionEvent))]
     [JsonDerivedType(typeof(DisconnexionEvent))]
     [JsonDerivedType(typeof(UsernameChangeEvent))]
-    public abstract class ChatEvent : IEqualityComparer<ChatEvent>, IObjectWithId
+    public abstract class ChatEvent : IEquatable<ChatEvent>, IEqualityComparer<ChatEvent>, IObjectWithId
     {
         public Guid Id { get; }
         public DateTime Date { get; }
@@ -31,7 +32,7 @@ namespace MySharpChat.Core.Event
         {
             public bool Equals(ChatEvent? x, ChatEvent? y)
             {
-                return x != null && y != null && x.Id == y.Id;
+                return x is not null && y is not null && x.Id == y.Id;
             }
 
             public int GetHashCode([DisallowNull] ChatEvent obj)
@@ -58,6 +59,11 @@ namespace MySharpChat.Core.Event
         int IEqualityComparer<ChatEvent>.GetHashCode([DisallowNull] ChatEvent obj)
         {
             return Comparer.GetHashCode(obj);
+        }
+
+        bool IEquatable<ChatEvent>.Equals(ChatEvent? other)
+        {
+            return ((IEqualityComparer<ChatEvent>)this).Equals(this, other);
         }
     }
 }

@@ -21,8 +21,8 @@ namespace MySharpChat.Core.Command
 
         public bool Equals(ICommand? x, ICommand? y)
         {
-            bool notNull = x != null && y != null;
-            bool allNull = x == null && y == null;
+            bool notNull = x is not null && y is not null;
+            bool allNull = x is null && y is null;
             return allNull || (notNull && nameComparer.Equals(x!.Name, y!.Name));
         }
 

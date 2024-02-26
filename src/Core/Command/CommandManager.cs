@@ -40,7 +40,7 @@ namespace MySharpChat.Core.Command
 
         public void AddCommand(ICommand? command)
         {
-            if (command == null)
+            if (command is null)
                 throw new ArgumentNullException(nameof(command));
 
             if (_commands.Values.Contains(command, CommandComparer.Instance))

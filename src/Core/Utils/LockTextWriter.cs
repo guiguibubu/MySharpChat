@@ -55,7 +55,7 @@ namespace MySharpChat.Core.Utils
             {
                 lock (_lockObject)
                 {
-                    return _scope != null && _scope.IsActive;
+                    return _scope is not null && _scope.IsActive;
                 }
             }
         }

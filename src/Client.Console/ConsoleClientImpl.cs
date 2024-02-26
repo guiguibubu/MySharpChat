@@ -135,7 +135,7 @@ namespace MySharpChat.Client.Console
 
         private void HandleNetworkPacket(PacketWrapper<ChatEvent>? packet)
         {
-            if (packet != null && packet.Package is not null )
+            if (packet is not null && packet.Package is not null )
             {
                 ChatEvent chatEvent = packet.Package;
                 HandleNetworkPacket(chatEvent);
@@ -221,7 +221,7 @@ namespace MySharpChat.Client.Console
 
         private void StartUiUpdater()
         {
-            if (_uiUpdateTask == null)
+            if (_uiUpdateTask is null)
                 _uiUpdateTask = Task.Run(() =>
                 {
                     while (!_cancellationSource.IsCancellationRequested)
