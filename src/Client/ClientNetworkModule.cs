@@ -14,6 +14,7 @@ using MySharpChat.Core.Model;
 using MySharpChat.Client.Utils;
 using MySharpChat.Core.Utils.Collection;
 using MySharpChat.Core.Constantes;
+using MySharpChat.Core.Event;
 
 namespace MySharpChat.Client
 {
@@ -38,11 +39,11 @@ namespace MySharpChat.Client
 
         private CancellationTokenSource _cancellationSource = new CancellationTokenSource();
         private Task? _statusUpdateTask = null;
-        private readonly Queue<PacketWrapper> packetsQueue = new();
+        private readonly Queue<PacketWrapper<ChatEvent>> packetsQueue = new();
 
         public bool HasDataAvailable => packetsQueue.Any();
 
-        public PacketWrapper? CurrentData => packetsQueue.Dequeue();
+        public PacketWrapper<ChatEvent>? CurrentData => packetsQueue.Dequeue();
 
         public bool Connect(IPEndPoint remoteEP, int timeoutMs = Timeout.Infinite)
         {
@@ -63,24 +64,12 @@ namespace MySharpChat.Client
             requestUriBuilder.Query = $"userId={localUser.Id}";
             requestUriBuilder.Query += $"&username={localUser.Username}";
             HttpSendRequestContext httpContext = HttpSendRequestContext.Post(requestUriBuilder.Uri);
-            HttpResponseMessage httpResponseMessage = SendAsync(httpContext).Result!;
-            string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
-
-            bool isConnected = IsConnected();
-
-            if (isConnected && PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
-            {
-                foreach (PacketWrapper packet in packets)
-                {
-                    packetsQueue.Enqueue(packet);
-                }
-            }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             int attempt = 0;
-            bool timeout = stopwatch.ElapsedMilliseconds > timeoutMs;
-            bool attemptConnection = !isConnected && !timeout;
-            while (attemptConnection)
+            bool isConnected;
+            bool attemptConnection;
+            do
             {
                 attempt++;
 
@@ -89,18 +78,18 @@ namespace MySharpChat.Client
 
                 try
                 {
-                    timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
+                    bool timeout = !connectTask.Wait(Math.Max(timeoutMs - Convert.ToInt32(stopwatch.ElapsedMilliseconds), 0));
 
                     isConnected = IsConnected();
 
                     if (!timeout)
                     {
-                        httpResponseMessage = connectTask.Result!;
-                        responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+                        HttpResponseMessage httpResponseMessage = connectTask.Result!;
+                        string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-                        if (isConnected && PacketSerializer.TryDeserialize(responseContent, out packets))
+                        if (isConnected && PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper<ChatEvent>> packets))
                         {
-                            foreach (PacketWrapper packet in packets)
+                            foreach (PacketWrapper<ChatEvent> packet in packets)
                             {
                                 packetsQueue.Enqueue(packet);
                             }
@@ -115,6 +104,7 @@ namespace MySharpChat.Client
                     attemptConnection = false;
                 }
             }
+            while (attemptConnection);
 
             if (isConnected)
             {
@@ -250,7 +240,7 @@ namespace MySharpChat.Client
 
         private void StatusUpdateAction()
         {
-            UserStatusUpdateAction();
+            //UserStatusUpdateAction();
             EventsStatusUpdateAction();
         }
 
@@ -261,15 +251,7 @@ namespace MySharpChat.Client
             requestUriBuilder.Query += $"userId={_client.LocalUser.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
-            string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
-
-            if (PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
-            {
-                foreach (PacketWrapper packet in packets)
-                {
-                    packetsQueue.Enqueue(packet);
-                }
-            }
+            ReadEvents(httpResponseMessage);
         }
 
         private void EventsStatusUpdateAction()
@@ -282,11 +264,20 @@ namespace MySharpChat.Client
                 requestUriBuilder.Query += $"&lastId={chatEvents.MaxBy(chatEvent => chatEvent.Date)!.Id}";
             HttpReadRequestContext httpContext = HttpReadRequestContext.Get(requestUriBuilder.Uri);
             HttpResponseMessage httpResponseMessage = ((IClientNetworkModule)this).Read(httpContext)!;
+            ReadEvents(httpResponseMessage);
+        }
+
+        private void ReadEvents(HttpResponseMessage httpResponseMessage)
+        {
             string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
-            if (PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper> packets))
+            if ((int)httpResponseMessage.StatusCode >= 400)
             {
-                foreach (PacketWrapper packet in packets)
+                return;
+            }
+            if (PacketSerializer.TryDeserialize(responseContent, out IEnumerable<PacketWrapper<ChatEvent>> packets))
+            {
+                foreach (PacketWrapper<ChatEvent> packet in packets)
                 {
                     packetsQueue.Enqueue(packet);
                 }

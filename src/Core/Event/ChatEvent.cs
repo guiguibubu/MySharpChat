@@ -1,13 +1,17 @@
-﻿using MySharpChat.Core.Model;
-using MySharpChat.Core.Utils;
+﻿using MySharpChat.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Event
 {
     [Serializable]
-    public abstract class ChatEvent : IEquatable<ChatEvent>, IObjectWithId
+    [JsonDerivedType(typeof(ChatMessageEvent))]
+    [JsonDerivedType(typeof(ConnexionEvent))]
+    [JsonDerivedType(typeof(DisconnexionEvent))]
+    [JsonDerivedType(typeof(UsernameChangeEvent))]
+    public abstract class ChatEvent : IEqualityComparer<ChatEvent>, IObjectWithId
     {
         public Guid Id { get; }
         public DateTime Date { get; }
@@ -36,14 +40,9 @@ namespace MySharpChat.Core.Event
             }
         }
 
-        public bool Equals(ChatEvent? other)
-        {
-            return other != null && Comparer.Equals(this, other);
-        }
-
         public override bool Equals(object? obj)
         {
-            return Equals(obj as ChatEvent);
+            return ((IEqualityComparer<ChatEvent>)this).Equals(this, obj as ChatEvent);
         }
 
         public override int GetHashCode()
@@ -51,14 +50,14 @@ namespace MySharpChat.Core.Event
             return Comparer.GetHashCode(this);
         }
 
-        public static bool operator !=(ChatEvent? x, ChatEvent? y)
+        bool IEqualityComparer<ChatEvent>.Equals(ChatEvent? x, ChatEvent? y)
         {
-            return ReferenceEquals(x, null) || ReferenceEquals(y, null) || !Comparer.Equals(x, y);
+            return Comparer.Equals(x, y);
         }
 
-        public static bool operator ==(ChatEvent? x, ChatEvent? y)
+        int IEqualityComparer<ChatEvent>.GetHashCode([DisallowNull] ChatEvent obj)
         {
-            return !(x != y);
+            return Comparer.GetHashCode(obj);
         }
     }
 }

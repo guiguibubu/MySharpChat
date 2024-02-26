@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MySharpChat.Core.Model
 {
+    [Serializable]
     public sealed class User : IEquatable<User>, IObjectWithId
     {
         public Guid Id { get; private set; }

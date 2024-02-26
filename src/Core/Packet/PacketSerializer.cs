@@ -40,7 +40,7 @@ namespace MySharpChat.Core.Packet
             }
         }
 
-        public static IEnumerable<T> Deserialize<T>(string? data)
+        public static IEnumerable<PacketWrapper<T>> Deserialize<T>(string? data)
         {
             ArgumentNullException.ThrowIfNull(data);
 
@@ -63,12 +63,12 @@ namespace MySharpChat.Core.Packet
             }
             catch
             {
-                listPackets = new List<PacketWrapper>();
+                listPackets = Array.Empty<PacketWrapper>();
                 return false;
             }
         }
 
-        public static bool TryDeserialize<T>(string? data, out IEnumerable<T> listPackets)
+        public static bool TryDeserialize<T>(string? data, out IEnumerable<PacketWrapper<T>> listPackets)
         {
             try
             {
@@ -77,22 +77,28 @@ namespace MySharpChat.Core.Packet
             }
             catch
             {
-                listPackets = new List<T>();
+                listPackets = Array.Empty<PacketWrapper<T>>();
                 return false;
             }
         }
 
         private static IEnumerable<PacketWrapper> DeserializeImpl(string data)
         {
-            IEnumerable<PacketWrapper> packets = DeserializeImpl<PacketWrapper>(data);
+            IEnumerable<PacketWrapper> packets = DeserializeObjectsImpl<PacketWrapper>(data);
             foreach (PacketWrapper packet in packets)
             {
-                packet.Package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)!) ?? throw new NotSupportedException();
-                yield return packet;
+                object package = ((JsonElement)packet.Package).Deserialize(Type.GetType(packet.Type)!) ?? throw new NotSupportedException();
+                yield return new PacketWrapper(packet.SourceId, package);
             }
         }
 
-        private static IEnumerable<T> DeserializeImpl<T>(string data)
+        private static IEnumerable<PacketWrapper<T>> DeserializeImpl<T>(string data)
+        {
+            IEnumerable<PacketWrapper> packets = DeserializeImpl(data);
+            return packets.Select(p => new PacketWrapper<T>(p.SourceId, (T)p.Package));
+        }
+
+        private static IEnumerable<T> DeserializeObjectsImpl<T>(string data)
         {
             List<byte> objectBytes;
             List<byte> remainingBytes = Encoding.UTF8.GetBytes(data).ToList();

@@ -95,7 +95,7 @@ namespace MySharpChat.Server.Console
 
             logger.LogDebug("Request received : {0} {1}", request.HttpMethod, uriPath);
 
-            bool isApiRequest = (uriPath.StartsWith(ApiConstantes.API_PREFIX, StringComparison.InvariantCultureIgnoreCase) && uriPath.Length == ApiConstantes.API_PREFIX.Length) 
+            bool isApiRequest = (uriPath.StartsWith(ApiConstantes.API_PREFIX, StringComparison.InvariantCultureIgnoreCase) && uriPath.Length == ApiConstantes.API_PREFIX.Length)
                 || uriPath.StartsWith(ApiConstantes.API_PREFIX + '/', StringComparison.InvariantCultureIgnoreCase);
             if (isApiRequest)
             {
@@ -230,12 +230,10 @@ namespace MySharpChat.Server.Console
                 }
                 else
                 {
-                    IEnumerable<PacketWrapper> responsePackets = ChatRoom.ConnectUser(username, userIdGuid);
-                    string packetSerialized = PacketSerializer.Serialize(responsePackets);
+                    ChatRoom.ConnectUser(username, userIdGuid);
 
-                    response.ContentType = MediaTypeNames.Application.Json;
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    response.Close(Encoding.ASCII.GetBytes(packetSerialized), true);
+                    response.StatusCode = (int)HttpStatusCode.NoContent;
+                    response.Close();
                 }
             }
             else if (request.HttpMethod == HttpMethod.Delete.ToString())
@@ -334,15 +332,12 @@ namespace MySharpChat.Server.Console
             }
 
             string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-            if (!string.IsNullOrEmpty(requestBody))
+            if (!string.IsNullOrEmpty(requestBody)
+                && PacketSerializer.TryDeserialize(requestBody, out IEnumerable<PacketWrapper<ChatMessagePacket>> packets))
             {
-                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
-                foreach (PacketWrapper packet in packets)
+                foreach (ChatMessagePacket chatPacket in packets.Where(p => p.Package is not null).Select(p => p.Package))
                 {
-                    if (packet.Package is ChatMessagePacket chatPacket)
-                    {
-                        ChatRoom.AddMessage(userIdGuid, chatPacket.ChatMessage);
-                    }
+                    ChatRoom.AddMessage(userIdGuid, chatPacket.ChatMessage);
                 }
                 response.StatusCode = (int)HttpStatusCode.OK;
                 response.Close();
@@ -423,7 +418,7 @@ namespace MySharpChat.Server.Console
                 return;
             }
 
-            IEnumerable<PacketWrapper> packets = ChatRoom.GetChatEvents(lastId);
+            IEnumerable<ChatEventPacketWrapper> packets = ChatRoom.GetChatEventPackets(lastId);
             string responseContent = PacketSerializer.Serialize(packets);
             response.StatusCode = (int)HttpStatusCode.OK;
             response.Close(Encoding.ASCII.GetBytes(responseContent), true);
@@ -499,7 +494,7 @@ namespace MySharpChat.Server.Console
                 return;
             }
 
-            IEnumerable<PacketWrapper> packets = ChatRoom.GetUsers();
+            IEnumerable<PacketWrapper<UserInfoPacket>> packets = ChatRoom.GetUserPackets();
 
             string responseContent = PacketSerializer.Serialize(packets);
             response.StatusCode = (int)HttpStatusCode.OK;
@@ -563,20 +558,17 @@ namespace MySharpChat.Server.Console
             }
 
             string requestBody = new StreamReader(request.InputStream).ReadToEnd();
-            if (!string.IsNullOrEmpty(requestBody))
+            if (!string.IsNullOrEmpty(requestBody)
+                && PacketSerializer.TryDeserialize(requestBody, out IEnumerable<PacketWrapper<UserInfoPacket>> packets))
             {
                 string newUsername = "";
-                IEnumerable<PacketWrapper> packets = PacketSerializer.Deserialize(requestBody);
-                foreach (PacketWrapper packet in packets)
+                foreach (UserInfoPacket userPacket in packets.Where(p => p.Package is not null).Select(p => p.Package))
                 {
-                    if (packet.Package is UserInfoPacket userPacket)
-                    {
-                        newUsername = userPacket.UserState.User.Username;
-                    }
+                    newUsername = userPacket.UserState.User.Username;
                 }
                 if (ChatRoom.ModifyUser(userIdGuid, newUsername))
                 {
-                    response.StatusCode = (int)HttpStatusCode.OK;
+                    response.StatusCode = (int)HttpStatusCode.NoContent;
                     response.Close();
                 }
                 else

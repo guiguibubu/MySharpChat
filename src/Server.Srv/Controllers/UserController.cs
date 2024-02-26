@@ -48,7 +48,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return NotFound(errorMessage);
             }
 
-            IEnumerable<PacketWrapper> packets = _server.ChatRoom.GetUsers();
+            IEnumerable<PacketWrapper<UserInfoPacket>> packets = _server.ChatRoom.GetUserPackets();
 
             string responseContent = PacketSerializer.Serialize(packets);
             return Ok(responseContent);
