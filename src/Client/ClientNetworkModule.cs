@@ -215,9 +215,17 @@ namespace MySharpChat.Client
             if (_statusUpdateTask == null)
                 _statusUpdateTask = Task.Run(() =>
                 {
+                    Stopwatch stopwatch = new Stopwatch();
                     while (!_cancellationSource.IsCancellationRequested)
                     {
                         StatusUpdateAction();
+
+                        stopwatch.Start();
+                        while (stopwatch.Elapsed <= TimeSpan.FromSeconds(1))
+                        {
+                            // On attend 1 sec
+                        }
+                        stopwatch.Reset();
                     }
                 }, _cancellationSource.Token);
         }
