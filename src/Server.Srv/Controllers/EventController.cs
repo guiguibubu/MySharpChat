@@ -45,7 +45,7 @@ namespace MySharpChat.Server.Srv.Controllers
                 return BadRequest(errorMessage);
             }
 
-            IEnumerable<PacketWrapper> packets = _server.ChatRoom.GetChatEvents(lastId);
+            IEnumerable<ChatEventPacketWrapper> packets = _server.ChatRoom.GetChatEventPackets(lastId);
             string responseContent = PacketSerializer.Serialize(packets);
             return Ok(responseContent);
         }

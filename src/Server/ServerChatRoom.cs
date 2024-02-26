@@ -19,46 +19,34 @@ namespace MySharpChat.Server
         {
         }
 
-        public IEnumerable<PacketWrapper> ConnectUser(string? username, Guid userIdGuid)
+        public void ConnectUser(string? username, Guid userId)
         {
             if (string.IsNullOrEmpty(username))
             {
                 username = "AnonymousUser";
             }
-            if (!IsUserNameAvailable(userIdGuid, username))
+            if (!IsUserNameAvailable(userId, username))
             {
-                username = GenerateNewUsername(userIdGuid, username);
+                username = GenerateNewUsername(userId, username);
             }
 
             UserState newUserState;
             User newUser;
-            if (Users.Contains(userIdGuid))
+            if (Users.Contains(userId))
             {
-                newUserState = Users[userIdGuid];
+                newUserState = Users[userId];
                 newUser = newUserState.User;
                 newUser.Username = username;
                 newUserState.AddConnexionEvent(ConnexionStatus.GainConnection);
             }
             else
             {
-                newUser = new User(userIdGuid, username);
+                newUser = new User(userId, username);
                 newUserState = new UserState(newUser, ConnexionStatus.GainConnection);
                 Users.Add(newUserState);
             }
             logger.LogInfo("New user connected : {0}", newUser);
             ChatEvents.Add(new ConnexionEvent(newUser));
-
-            List<PacketWrapper> responsePackets = new();
-            PacketWrapper initPacket = new PacketWrapper(Id, new UserInfoPacket(newUserState));
-            responsePackets.Add(initPacket);
-
-            foreach (ChatMessage chatMessage in Messages)
-            {
-                PacketWrapper chatPacket = new PacketWrapper(Id, new ChatMessagePacket(chatMessage));
-                responsePackets.Add(chatPacket);
-            }
-
-            return responsePackets;
         }
 
         public void DisconnectUser(Guid userIdGuid)
@@ -77,9 +65,14 @@ namespace MySharpChat.Server
             ChatEvents.Add(new ChatMessageEvent(message));
         }
 
-        public IEnumerable<PacketWrapper> GetChatEvents(string? lastId)
+        public IReadOnlyCollection<ChatEventPacketWrapper> GetChatEventPackets(string? lastId)
         {
-            List<PacketWrapper> packets = new();
+            IReadOnlyCollection<ChatEvent> eventToSend = GetChatEvents(lastId);
+            return eventToSend.Select(chatEvent => new ChatEventPacketWrapper(Id, chatEvent)).ToList();
+        }
+
+        public IReadOnlyCollection<ChatEvent> GetChatEvents(string? lastId)
+        {
             IReadOnlyCollection<ChatEvent> eventToSend;
             if (string.IsNullOrEmpty(lastId))
             {
@@ -92,23 +85,18 @@ namespace MySharpChat.Server
                 int indexLastEvent = eventOrdered.IndexOf(lastEventReceived);
                 eventToSend = eventOrdered.GetRange(0, indexLastEvent);
             }
-            foreach (ChatEvent chatEvent in eventToSend)
-            {
-                PacketWrapper packet = new ChatEventPacketWrapper(Id, chatEvent);
-                packets.Add(packet);
-            }
-            return packets;
+            return eventToSend;
         }
 
-        public IEnumerable<PacketWrapper> GetUsers()
+        public IReadOnlyCollection<PacketWrapper<UserInfoPacket>> GetUserPackets()
         {
-            List<PacketWrapper> packets = new();
-            foreach (UserState userState in Users)
-            {
-                PacketWrapper packet = new PacketWrapper(Id, new UserInfoPacket(userState));
-                packets.Add(packet);
-            }
-            return packets;
+            IReadOnlyCollection<UserInfoPacket> userinfos = GetUsers();
+            return userinfos.Select(userInfo => new PacketWrapper<UserInfoPacket>(Id, userInfo)).ToList();
+        }
+
+        public IReadOnlyCollection<UserInfoPacket> GetUsers()
+        {
+            return Users.Select(userState => new UserInfoPacket(userState)).ToList();
         }
 
         public bool ModifyUser(Guid userIdGuid, string newUsername)

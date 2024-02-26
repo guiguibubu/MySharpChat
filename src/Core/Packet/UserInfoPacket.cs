@@ -1,6 +1,5 @@
 ﻿using MySharpChat.Core.Model;
 using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Packet
