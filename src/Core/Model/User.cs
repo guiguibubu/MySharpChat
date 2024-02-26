@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace MySharpChat.Core.Model
 {
@@ -11,6 +12,7 @@ namespace MySharpChat.Core.Model
         public Guid Id { get; private set; }
         public string Username { get; set; }
 
+        [JsonConstructor]
         public User(Guid id, string username)
         {
             Id = id;

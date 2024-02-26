@@ -2,6 +2,7 @@
 using MySharpChat.Core;
 using MySharpChat.Core.Constantes;
 using MySharpChat.Core.Http;
+using MySharpChat.Core.Model;
 using MySharpChat.Core.Packet;
 using MySharpChat.Core.Utils;
 
@@ -24,12 +25,12 @@ namespace MySharpChat.Client.Command
             string? text = args.Length > 0 ? args[0] : null;
             if (!string.IsNullOrEmpty(text))
             {
-                ChatMessagePacket chatPacket = new ChatMessagePacket(Guid.NewGuid(), client.LocalUser, DateTime.Now, text);
+                ChatMessage chatMessage = new ChatMessage(Guid.NewGuid(), client.LocalUser, DateTime.Now, text);
                 ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
                 UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);
                 requestUriBuilder.Path += "/" + ApiConstantes.API_MESSAGE_PREFIX;
                 requestUriBuilder.Query = $"userId={client.LocalUser.Id}";
-                clientNetworkModule.SendAsync(HttpSendRequestContext.Post(requestUriBuilder.Uri), chatPacket).GetAwaiter().GetResult();
+                clientNetworkModule.SendAsync(HttpSendRequestContext.Post(requestUriBuilder.Uri), chatMessage).GetAwaiter().GetResult();
 
                 return true;
             }

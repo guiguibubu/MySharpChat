@@ -23,7 +23,7 @@ namespace MySharpChat.Client.Command
             if (!string.IsNullOrEmpty(newUsername))
             {
                 Guid userID = client.LocalUser.Id;
-                UserInfoPacket initPacket = new UserInfoPacket(userID, newUsername, ConnexionStatus.GainConnection);
+                User initPacket = new User(userID, newUsername);
                 ClientNetworkModule clientNetworkModule = (ClientNetworkModule)client.NetworkModule;
                 UriBuilder requestUriBuilder = new UriBuilder(clientNetworkModule.ChatUri!);
                 requestUriBuilder.Path += "/" + ApiConstantes.API_USER_PREFIX;
