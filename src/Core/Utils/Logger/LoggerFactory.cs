@@ -11,9 +11,8 @@ namespace MySharpChat.Core.Utils.Logger
             {
                 FileName = "log.txt",
                 ArchiveFileName = "log.{#}.txt",
-                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.Date,
+                ArchiveSuffixFormat = System.DateTime.Now.ToString("dd_MM_yyyy"),
                 ArchiveEvery = NLog.Targets.FileArchivePeriod.Day,
-                ArchiveDateFormat = "dd_MM_yyyy",
             };
             private readonly static NLog.Targets.Target logConsoleTarget = new NLog.Targets.ConsoleTarget("logconsole");
 

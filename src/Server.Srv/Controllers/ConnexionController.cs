@@ -1,7 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using MySharpChat.Core.Constantes;
-using MySharpChat.Core.Packet;
 
 namespace MySharpChat.Server.Srv.Controllers
 {

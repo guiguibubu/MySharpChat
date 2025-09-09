@@ -45,9 +45,9 @@
     </ItemGroup>
     
     <ItemGroup>
-      <PackageReference Include="NLog" Version="5.2.5" />
+      <PackageReference Include="NLog" Version="6.0.3" />
       <PackageReference Include="RestEase" Version="1.6.4" />
-      <PackageReference Include="System.Text.Json" Version="7.0.3" />
+      <PackageReference Include="System.Text.Json" Version="9.0.9" />
     </ItemGroup>
 
 </Project>
